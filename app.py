@@ -487,51 +487,51 @@ def login_page():
                         st.session_state.login_username_value = ""
                         
                         # 아이디 저장 설정
-                    if remember_username:
-                        st.session_state.saved_username = username
-                        st.session_state.remember_username = True
-                        # localStorage 저장
-                        st.markdown(f"""
-                        <script>
-                        try {{
-                            localStorage.setItem('saved_username', '{username}');
-                            localStorage.setItem('remember_username', 'true');
-                        }} catch(e) {{}}
-                        </script>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.session_state.saved_username = ""
-                        st.session_state.remember_username = False
-                        st.markdown("""
-                        <script>
-                        try {
-                            localStorage.removeItem('saved_username');
-                            localStorage.removeItem('remember_username');
-                        } catch(e) {}
-                        </script>
-                        """, unsafe_allow_html=True)
-                    
-                    # 자동 로그인 설정
-                    st.session_state.auto_login = auto_login
-                    if auto_login:
-                        st.markdown("""
-                        <script>
-                        try {
-                            localStorage.setItem('auto_login', 'true');
-                        } catch(e) {}
-                        </script>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <script>
-                        try {
-                            localStorage.removeItem('auto_login');
-                        } catch(e) {}
-                        </script>
-                        """, unsafe_allow_html=True)
-                    
-                    # 즉시 페이지 전환
-                    st.rerun()
+                        if remember_username:
+                            st.session_state.saved_username = username
+                            st.session_state.remember_username = True
+                            # localStorage 저장
+                            st.markdown(f"""
+                            <script>
+                            try {{
+                                localStorage.setItem('saved_username', '{username}');
+                                localStorage.setItem('remember_username', 'true');
+                            }} catch(e) {{}}
+                            </script>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.session_state.saved_username = ""
+                            st.session_state.remember_username = False
+                            st.markdown("""
+                            <script>
+                            try {
+                                localStorage.removeItem('saved_username');
+                                localStorage.removeItem('remember_username');
+                            } catch(e) {}
+                            </script>
+                            """, unsafe_allow_html=True)
+                        
+                        # 자동 로그인 설정
+                        st.session_state.auto_login = auto_login
+                        if auto_login:
+                            st.markdown("""
+                            <script>
+                            try {
+                                localStorage.setItem('auto_login', 'true');
+                            } catch(e) {}
+                            </script>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown("""
+                            <script>
+                            try {
+                                localStorage.removeItem('auto_login');
+                            } catch(e) {}
+                            </script>
+                            """, unsafe_allow_html=True)
+                        
+                        # 즉시 페이지 전환
+                        st.rerun()
                 else:
                     # 로그인 실패
                     st.error("❌ 사용자명 또는 비밀번호가 올바르지 않습니다.")
