@@ -16,18 +16,20 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background-color: #f0f7ff !important;
     }
     
-    /* 전체 컨테이너 여백 */
+    /* 전체 컨테이너 여백 조정 */
     [data-testid="stSidebarContent"] {
-        padding: 20px 15px !important;
+        padding: 5px 15px !important;
+        background-color: #f0f7ff !important;
     }
 
-    /* 프로필 카드 (파스텔 그라데이션) */
+    /* 프로필 카드 (여백 최적화) */
     .child-profile-card {
         background: linear-gradient(135deg, #ffcfdf 0%, #b0f3f1 100%);
-        padding: 25px 20px;
+        padding: 20px 15px;
         border-radius: 24px;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        margin-top: 5px;
+        margin-bottom: 15px;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.05);
         text-align: center;
         border: 3px solid white;
     }
