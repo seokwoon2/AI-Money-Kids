@@ -142,37 +142,71 @@ def login_page():
             text-align: center;
             padding: 40px 0 20px 0;
         }
-        .login-logo {
-            font-size: 60px;
-            margin-bottom: 10px;
-            display: block;
+        .login-logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .login-logo-circle {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.15);
+            border: 1px solid #eef2ff;
         }
         .login-title {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 900;
-            background: linear-gradient(90deg, #6366f1, #a855f7);
+            letter-spacing: -1px;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        .login-title span {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
         }
         .login-subtitle {
             color: #718096;
             font-size: 1.1rem;
             font-weight: 500;
+            letter-spacing: -0.5px;
         }
         </style>
         
         <div class="login-header">
-            <span class="login-logo">💰</span>
-            <h1 class="login-title">AI Money Friends</h1>
-            <p class="login-subtitle">아이와 함께 성장하는 똑똑한 금융 친구</p>
+            <div class="login-logo-container">
+                <div class="login-logo-circle">🤖</div>
+            </div>
+            <h1 class="login-title">AI <span>Money Friends</span></h1>
+            <p class="login-subtitle">우리 아이를 위한 가장 똑똑한 금융 첫걸음</p>
         </div>
     """, unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["🔐 로그인", "📝 회원가입"])
     
     with tab1:
-        st.subheader("로그인")
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 20px;'>
+                <h3 style='color: #2d3748; margin-bottom: 5px;'>환영합니다! 👋</h3>
+                <p style='color: #718096; font-size: 0.9rem;'>로그인 유형을 선택하고 정보를 입력해주세요.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 로그인 유형 선택 추가
+        login_type = st.radio(
+            "로그인 유형",
+            ["👨‍👩‍👧 부모님 로그인", "👶 우리 아이 로그인"],
+            key="login_user_type_radio",
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        login_type_value = 'parent' if "부모님" in login_type else 'child'
         
         # 페이지 로드 시마다 localStorage 값을 읽어와서 쿠키에 동기화
         # JavaScript로 localStorage 값을 읽어와서 쿠키에 저장 (매번 실행)
@@ -440,14 +474,19 @@ def login_page():
                 # 사용자 인증
                 user = db.get_user_by_username(username)
                 if user and db.verify_password(password, user['password_hash']):
-                    # 로그인 성공 - 모든 상태를 먼저 설정
-                    st.session_state.logged_in = True
-                    st.session_state.user_id = user['id']
-                    st.session_state.user_name = user['name']
-                    st.session_state.show_login_success = True
-                    st.session_state.login_username_value = ""
-                    
-                    # 아이디 저장 설정
+                    # 로그인 유형 일치 확인
+                    if user['user_type'] != login_type_value:
+                        type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
+                        st.error(f"❌ 이 계정은 **{type_kr}** 계정입니다. 로그인 유형을 확인해주세요.")
+                    else:
+                        # 로그인 성공 - 모든 상태를 먼저 설정
+                        st.session_state.logged_in = True
+                        st.session_state.user_id = user['id']
+                        st.session_state.user_name = user['name']
+                        st.session_state.show_login_success = True
+                        st.session_state.login_username_value = ""
+                        
+                        # 아이디 저장 설정
                     if remember_username:
                         st.session_state.saved_username = username
                         st.session_state.remember_username = True
