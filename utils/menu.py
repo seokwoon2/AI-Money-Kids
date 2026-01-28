@@ -23,10 +23,38 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background-color: #ffffff !important;
     }
     
+    /* 상단 유틸리티 아이콘 행 */
+    .top-utility-row {
+        display: flex;
+        justify-content: space-around;
+        padding: 10px 5px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f2f4f6;
+    }
+    .utility-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        color: #4e5968;
+    }
+    .utility-item:hover {
+        color: #191f28;
+    }
+    .utility-icon {
+        font-size: 1.5em;
+    }
+    .utility-label {
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+    
     /* 사용자 프로필 영역 */
     .user-profile-section {
-        padding: 20px 10px;
-        margin-bottom: 10px;
+        padding: 10px 15px;
+        margin-bottom: 15px;
     }
     .user-profile-section p {
         color: #8b95a1;
@@ -35,73 +63,86 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     }
     .user-profile-section h3 {
         color: #191f28;
-        font-size: 1.25em;
+        font-size: 1.3em;
         font-weight: 700;
         margin: 4px 0 0 0;
     }
     
     /* 섹션 타이틀 */
     .section-title {
-        font-size: 0.8em;
+        font-size: 0.85em;
         font-weight: 600;
         color: #8b95a1;
-        margin: 25px 0 10px 10px;
+        margin: 25px 0 10px 15px;
     }
     
-    /* 버튼 스타일 (토스 스타일) */
+    /* 메뉴 버튼 스타일 (토스 스타일: 아이콘 + 텍스트 + 화살표) */
     .stButton > button {
         width: 100%;
         border: none !important;
         background-color: transparent !important;
-        color: #4e5968 !important;
-        padding: 12px 15px !important;
+        color: #333d4b !important;
+        padding: 14px 15px !important;
         text-align: left !important;
-        font-size: 1em !important;
+        font-size: 1.05em !important;
         font-weight: 500 !important;
-        border-radius: 12px !important;
-        transition: background-color 0.2s ease !important;
+        border-radius: 0 !important;
+        transition: background-color 0.15s ease !important;
         display: flex !important;
+        justify-content: space-between !important;
         align-items: center !important;
-        gap: 12px !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 0 !important;
     }
     
     .stButton > button:hover {
-        background-color: #f2f4f6 !important;
-        color: #191f28 !important;
+        background-color: #f9fafb !important;
     }
     
-    /* 강조 버튼 (내 정보 등) */
-    .stButton > button[kind="primary"] {
-        background-color: #f2f4f6 !important;
-        color: #3182f6 !important;
-        font-weight: 600 !important;
+    /* 버튼 내부 텍스트와 아이콘 정렬 */
+    .button-content {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
-    
-    /* 로그아웃 버튼 전용 */
-    div[data-testid="stSidebar"] .stButton:last-child > button {
-        margin-top: 30px !important;
-        color: #f04452 !important;
-        opacity: 0.8;
+    .arrow-icon {
+        color: #cccfd8;
+        font-size: 0.9em;
     }
     
     /* 구분선 */
     .divider {
-        height: 1px;
+        height: 8px;
         background-color: #f2f4f6;
-        margin: 15px 10px;
+        margin: 10px 0;
     }
 
-    /* 사이드바 내부 여백 조절 */
+    /* 사이드바 내부 여백 제거 */
     [data-testid="stSidebarContent"] {
-        padding-top: 1rem !important;
+        padding-top: 0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # 사용자 프로필 (토스 스타일: 깔끔한 텍스트 중심)
-    user_type_kr = "부모님" if user_type == 'parent' else "어린이"
+    # 상단 유틸리티 행 (알림, 설정, 고객센터 느낌)
+    st.sidebar.markdown(f"""
+    <div class="top-utility-row">
+        <div class="utility-item" onclick="window.location.reload();">
+            <span class="utility-icon">🔔</span>
+            <span class="utility-label">알림</span>
+        </div>
+        <div class="utility-item" onclick="document.querySelector('button[key=user_info_button]').click();">
+            <span class="utility-icon">⚙️</span>
+            <span class="utility-label">설정</span>
+        </div>
+        <div class="utility-item" onclick="alert('고객센터 준비 중입니다.');">
+            <span class="utility-icon">🎧</span>
+            <span class="utility-label">고객센터</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
+    # 사용자 프로필
+    user_type_kr = "부모님" if user_type == 'parent' else "어린이"
     st.sidebar.markdown(f"""
     <div class="user-profile-section">
         <p>{user_type_kr} 회원</p>
@@ -109,8 +150,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     </div>
     """, unsafe_allow_html=True)
     
-    # 내 정보 버튼 (토스 스타일의 연한 회색 버튼)
-    if st.sidebar.button("👤 내 정보 관리", key="user_info_button", use_container_width=True, type="primary"):
+    # 내 정보 관리 버튼 (숨겨진 트리거용 및 실제 버튼)
+    if st.sidebar.button("👤 내 정보 관리", key="user_info_button", use_container_width=True):
         st.switch_page("pages/4_👤_내정보.py")
     
     st.sidebar.markdown('<div class="divider"></div>', unsafe_allow_html=True)
@@ -141,24 +182,21 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
     
-    # 메뉴 버튼 렌더링
+    # 메뉴 버튼 렌더링 (토스 스타일: 우측 화살표 추가)
     for icon, name, page_path in menu_items:
+        # Streamlit 버튼은 내부 HTML 수정이 어려우므로 CSS로 화살표 느낌을 흉내내거나 
+        # 버튼 텍스트에 화살표를 포함시킵니다.
         if st.sidebar.button(
-            f"{icon} {name}",
+            f"{icon} {name} 〉", # 〉 문자로 토스 스타일 화살표 재현
             key=f"menu_{page_path}",
             use_container_width=True
         ):
             st.switch_page(page_path)
     
     st.sidebar.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.sidebar.markdown('<div class="section-title">설정 및 도구</div>', unsafe_allow_html=True)
     
-    # 새로고침 버튼
-    if st.sidebar.button("🔄 화면 새로고침", use_container_width=True, key="refresh_button"):
-        st.rerun()
-    
-    # 로그아웃 버튼
-    if st.sidebar.button("🚪 로그아웃", use_container_width=True):
+    # 로그아웃 및 기타
+    if st.sidebar.button("🚪 로그아웃 〉", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.user_id = None
         st.session_state.user_name = None
