@@ -886,6 +886,15 @@ def main_page():
 
 def parent_dashboard(user_name):
     """부모용 대시보드 - Style B (전문적인 분석형)"""
+    # 자녀 정보 가져오기
+    user = db.get_user_by_id(st.session_state.user_id)
+    children = db.get_users_by_parent_code(user['parent_code']) if user else []
+    
+    # 저축 데이터 (예시 데이터 또는 실제 데이터 계산)
+    # 실제 구현 시에는 behaviors 테이블에서 이번 달 데이터를 합산해야 함
+    monthly_savings = [120, 150, 110, 180, 220, 250] # 최근 6개월 예시
+    months = ["1월", "2월", "3월", "4월", "5월", "6월"]
+    
     st.markdown("""
     <style>
     .main { background-color: #f0f2f6 !important; }
@@ -941,6 +950,30 @@ def parent_dashboard(user_name):
         color: #4a5568;
         border-left: 4px solid #6366f1;
     }
+    
+    /* 그래프 스타일 */
+    .chart-container {
+        height: 150px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        padding: 10px 0;
+        gap: 5px;
+    }
+    .chart-bar {
+        background: #6366f1;
+        width: 30px;
+        border-radius: 5px 5px 0 0;
+        position: relative;
+        transition: height 0.5s ease;
+    }
+    .chart-bar:hover { background: #4f46e5; }
+    .chart-label {
+        font-size: 10px;
+        color: #a0aec0;
+        text-align: center;
+        margin-top: 5px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -954,11 +987,23 @@ def parent_dashboard(user_name):
     col1, col2, col3 = st.columns([1.2, 1, 0.8])
     
     with col1:
-        st.markdown("""
+        # 저축 그래프 생성
+        bars_html = ""
+        labels_html = ""
+        max_val = max(monthly_savings) if monthly_savings else 1
+        for m, v in zip(months, monthly_savings):
+            height = (v / max_val) * 100
+            bars_html += f'<div class="chart-bar" style="height: {height}%;" title="{v},000원"></div>'
+            labels_html += f'<div style="width: 30px; text-align: center;">{m}</div>'
+
+        st.markdown(f"""
         <div class="parent-card">
             <div class="card-label">📈 이번 달 가족 저축액 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">자세히 보기</span></div>
-            <div style="height: 150px; display:flex; align-items:center; justify-content:center; background:#f8faff; border-radius:15px; margin-bottom:15px;">
-                <span style="color:#a0aec0;">[저축 그래프 영역]</span>
+            <div class="chart-container">
+                {bars_html}
+            </div>
+            <div style="display: flex; justify-content: space-around; font-size: 10px; color: #a0aec0; margin-bottom: 15px;">
+                {labels_html}
             </div>
             <div class="stat-row">
                 <div class="stat-item"><div class="stat-val">450,000원</div><div class="stat-lbl">목표 달성액</div></div>
@@ -969,19 +1014,29 @@ def parent_dashboard(user_name):
         """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("""
+        children_html = ""
+        if not children:
+            children_html = """
+            <div style="text-align:center; padding: 40px 0; color: #a0aec0;">
+                <div style="font-size: 40px; margin-bottom: 10px;">👶</div>
+                등록된 자녀가 없습니다.<br>자녀 계정으로 가입 시<br>부모 코드를 입력해주세요!
+            </div>
+            """
+        else:
+            for child in children:
+                # 실제 데이터 연결 시 child['id']로 behaviors 합산 필요
+                children_html += f"""
+                <div class="child-item">
+                    <div class="child-avatar">{"👦" if child.get('age', 0) > 7 else "👶"}</div>
+                    <div class="child-info"><div class="child-name">{child['name']}</div></div>
+                    <div class="child-amount">0원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">활동 내역 없음</span></div>
+                </div>
+                """
+        
+        st.markdown(f"""
         <div class="parent-card">
             <div class="card-label">👦 자녀 용돈 현황</div>
-            <div class="child-item">
-                <div class="child-avatar">👦</div>
-                <div class="child-info"><div class="child-name">재원</div></div>
-                <div class="child-amount">450,000원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">30개 활동 완료</span></div>
-            </div>
-            <div class="child-item">
-                <div class="child-avatar">👧</div>
-                <div class="child-info"><div class="child-name">제이</div></div>
-                <div class="child-amount">200,000원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">14개 활동 완료</span></div>
-            </div>
+            {children_html}
             <div style="margin-top:20px;">
                 <button style="width:100%; padding:10px; border-radius:10px; border:1px solid #edf2f7; background:white; color:#4a5568; font-weight:700; cursor:pointer;">총 용돈 보기</button>
             </div>
