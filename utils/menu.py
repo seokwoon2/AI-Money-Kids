@@ -11,6 +11,37 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
     
+    /* 사이드바 토글 버튼 커스텀 (전체메뉴 명시) */
+    [data-testid="stSidebarCollapseIcon"] {
+        background-color: #6366f1 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 5px !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    /* 사이드바가 닫혀있을 때 나타나는 열기 버튼 커스텀 */
+    section[data-testid="stSidebar"] + div button {
+        background-color: #6366f1 !important;
+        color: white !important;
+        border-radius: 0 10px 10px 0 !important;
+        padding: 10px 15px !important;
+        width: auto !important;
+        height: auto !important;
+        left: 0 !important;
+        top: 20px !important;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* 열기 버튼에 '메뉴' 텍스트 추가 효과 (가상 요소) */
+    section[data-testid="stSidebar"] + div button::after {
+        content: " 전체메뉴";
+        font-size: 14px;
+        font-weight: 700;
+        margin-left: 5px;
+    }
+    
     /* 사이드바 배경 및 패딩 */
     .stSidebar {
         background-color: #f9f9fb !important;

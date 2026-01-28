@@ -86,10 +86,87 @@ def login_page():
     
     # 타이틀 섹션 (글자 크기 축소 및 줄바꿈 최적화)
     st.markdown("""
-        <h1 style='text-align: left; font-size: 2.2rem; line-height: 1.2; margin-bottom: 0; color: #1a202c;'>
-            💰 AI Money Friends
-        </h1>
-        <div style='height: 3px; background: linear-gradient(90deg, #667eea, transparent); margin-bottom: 30px;'></div>
+        <style>
+        /* 로그인 페이지 배경 및 카드 스타일 */
+        .stApp {
+            background: linear-gradient(135deg, #f6f8ff 0%, #f1f4ff 100%);
+        }
+        
+        div[data-testid="stExpander"] {
+            border: none !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+            background-color: white !important;
+            border-radius: 20px !important;
+        }
+        
+        /* 탭 스타일 커스텀 */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 10px;
+            background-color: transparent;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            border-radius: 10px 10px 0 0;
+            gap: 1px;
+            padding: 10px 20px;
+            font-weight: 700;
+            color: #718096;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background-color: white !important;
+            color: #6366f1 !important;
+            border-bottom: 3px solid #6366f1 !important;
+        }
+
+        /* 입력 필드 둥글게 */
+        .stTextInput input {
+            border-radius: 12px !important;
+            padding: 12px 15px !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        
+        /* 버튼 스타일 */
+        .stButton > button {
+            border-radius: 15px !important;
+            padding: 10px 24px !important;
+            font-weight: 700 !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* 메인 타이틀 디자인 */
+        .login-header {
+            text-align: center;
+            padding: 40px 0 20px 0;
+        }
+        .login-logo {
+            font-size: 60px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .login-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+        .login-subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        </style>
+        
+        <div class="login-header">
+            <span class="login-logo">💰</span>
+            <h1 class="login-title">AI Money Friends</h1>
+            <p class="login-subtitle">아이와 함께 성장하는 똑똑한 금융 친구</p>
+        </div>
     """, unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["🔐 로그인", "📝 회원가입"])
