@@ -6,7 +6,14 @@ class GeminiService:
     """Google Gemini API 서비스 클래스"""
     
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or Config.GEMINI_API_KEY
+        # Config에서 동적으로 API 키 가져오기
+        if api_key:
+            self.api_key = api_key
+        else:
+            # Config 인스턴스 생성하여 동적으로 읽기
+            config = Config()
+            self.api_key = config.GEMINI_API_KEY
+        
         if not self.api_key:
             error_msg = "Gemini API 키가 설정되지 않았습니다. "
             try:
