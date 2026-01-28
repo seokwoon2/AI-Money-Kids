@@ -29,6 +29,16 @@ if 'user_id' not in st.session_state:
     st.session_state.user_id = None
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
+if 'show_password_reset' not in st.session_state:
+    st.session_state.show_password_reset = False
+if 'show_username_find' not in st.session_state:
+    st.session_state.show_username_find = False
+if 'show_found_usernames' not in st.session_state:
+    st.session_state.show_found_usernames = False
+if 'found_usernames' not in st.session_state:
+    st.session_state.found_usernames = []
+if 'verified_user_id' not in st.session_state:
+    st.session_state.verified_user_id = None
 
 db = DatabaseManager()
 
@@ -62,6 +72,7 @@ def login_page():
         username = st.text_input("사용자명", key="login_username")
         password = st.text_input("비밀번호", type="password", key="login_password")
         
+        # 로그인 버튼과 비밀번호 찾기
         if st.button("로그인", type="primary", use_container_width=True):
             if username and password:
                 user = db.get_user_by_username(username)
@@ -74,6 +85,155 @@ def login_page():
                     st.error("사용자명 또는 비밀번호가 올바르지 않습니다.")
             else:
                 st.warning("사용자명과 비밀번호를 입력해주세요.")
+        
+        # 아이디 찾기 및 비밀번호 찾기 링크
+        col_find1, col_find2 = st.columns(2)
+        with col_find1:
+            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username"):
+                st.session_state.show_username_find = True
+                st.session_state.show_password_reset = False
+                st.rerun()
+        with col_find2:
+            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password"):
+                st.session_state.show_password_reset = True
+                st.session_state.show_username_find = False
+                st.rerun()
+        
+        # 아이디 찾기 섹션
+        if st.session_state.get('show_username_find', False):
+            st.markdown("---")
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 20px; border-radius: 12px; color: white; margin-bottom: 20px;'>
+                <h3 style='color: white; margin-top: 0;'>🔍 아이디 찾기</h3>
+                <p style='color: white; opacity: 0.9; margin: 0;'>이름과 부모 코드로 사용자명을 찾을 수 있습니다.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            find_name = st.text_input("이름 (닉네임)", key="find_name", placeholder="가입 시 사용한 이름 입력")
+            find_parent_code = st.text_input("부모 코드 (8자리)", key="find_parent_code", 
+                                            placeholder="회원가입 시 사용한 부모 코드 입력",
+                                            help="회원가입 시 사용한 부모 코드를 입력하세요")
+            
+            col_find_btn1, col_find_btn2 = st.columns(2)
+            
+            with col_find_btn1:
+                if st.button("🔍 아이디 찾기", type="primary", use_container_width=True, key="search_username"):
+                    if find_name and find_parent_code:
+                        # 부모 코드로 연결된 모든 사용자 찾기 (부모 포함)
+                        users = db.get_users_by_parent_code_all(find_parent_code)
+                        # 이름으로 필터링
+                        matching_users = [u for u in users if u.get('name') == find_name]
+                        
+                        if matching_users:
+                            st.session_state.found_usernames = [u['username'] for u in matching_users]
+                            st.session_state.show_found_usernames = True
+                        else:
+                            st.error("❌ 이름 또는 부모 코드가 일치하는 사용자를 찾을 수 없습니다.")
+                    else:
+                        st.warning("⚠️ 이름과 부모 코드를 입력해주세요.")
+            
+            with col_find_btn2:
+                if st.button("❌ 취소", use_container_width=True, key="cancel_find_username"):
+                    st.session_state.show_username_find = False
+                    st.session_state.show_found_usernames = False
+                    st.rerun()
+            
+            # 찾은 아이디 표시
+            if st.session_state.get('show_found_usernames', False):
+                st.markdown("---")
+                st.markdown("""
+                <div style='background: #f8f9fa; padding: 20px; border-radius: 12px; 
+                            border-left: 4px solid #667eea; margin-bottom: 20px;'>
+                    <h3 style='color: #667eea; margin-top: 0;'>✅ 찾은 아이디</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                found_usernames = st.session_state.get('found_usernames', [])
+                if found_usernames:
+                    for idx, username in enumerate(found_usernames):
+                        st.markdown(f"""
+                        <div style='background: white; padding: 15px; border-radius: 8px; 
+                                    margin-bottom: 10px; border: 1px solid #e9ecef;'>
+                            <strong style='color: #667eea; font-size: 1.1em;'>사용자명 {idx+1}:</strong>
+                            <p style='font-size: 1.2em; margin: 5px 0; color: #262730;'>{username}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    st.success("✅ 아이디를 찾았습니다! 위의 사용자명으로 로그인하세요.")
+                else:
+                    st.info("ℹ️ 일치하는 사용자를 찾을 수 없습니다.")
+        
+        # 비밀번호 찾기 섹션
+        if st.session_state.get('show_password_reset', False):
+            st.markdown("---")
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 20px; border-radius: 12px; color: white; margin-bottom: 20px;'>
+                <h3 style='color: white; margin-top: 0;'>🔑 비밀번호 찾기</h3>
+                <p style='color: white; opacity: 0.9; margin: 0;'>사용자명과 부모 코드로 본인 확인 후 비밀번호를 재설정할 수 있습니다.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            reset_username = st.text_input("사용자명", key="reset_username", placeholder="비밀번호를 찾을 사용자명 입력")
+            reset_parent_code = st.text_input("부모 코드 (8자리)", key="reset_parent_code", 
+                                             placeholder="회원가입 시 사용한 부모 코드 입력",
+                                             help="회원가입 시 사용한 부모 코드를 입력하세요")
+            
+            col_reset1, col_reset2 = st.columns(2)
+            
+            with col_reset1:
+                if st.button("✅ 본인 확인", type="primary", use_container_width=True, key="verify_identity"):
+                    if reset_username and reset_parent_code:
+                        user = db.get_user_by_username(reset_username)
+                        if user and user.get('parent_code') == reset_parent_code:
+                            st.session_state.verified_user_id = user['id']
+                            st.session_state.verified_username = reset_username
+                            st.success("✅ 본인 확인이 완료되었습니다!")
+                        else:
+                            st.error("❌ 사용자명 또는 부모 코드가 일치하지 않습니다.")
+                    else:
+                        st.warning("⚠️ 사용자명과 부모 코드를 입력해주세요.")
+            
+            with col_reset2:
+                if st.button("❌ 취소", use_container_width=True, key="cancel_reset"):
+                    st.session_state.show_password_reset = False
+                    st.session_state.verified_user_id = None
+                    st.rerun()
+            
+            # 본인 확인 후 비밀번호 재설정
+            if st.session_state.get('verified_user_id'):
+                st.markdown("---")
+                st.markdown("""
+                <div style='background: #f8f9fa; padding: 20px; border-radius: 12px; 
+                            border-left: 4px solid #667eea; margin-bottom: 20px;'>
+                    <h3 style='color: #667eea; margin-top: 0;'>🔐 새 비밀번호 설정</h3>
+                    <p style='color: #6c757d; margin: 0;'>새로운 비밀번호를 입력해주세요.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                new_password_reset = st.text_input("새 비밀번호", type="password", key="new_password_reset",
+                                                   placeholder="새 비밀번호를 입력하세요")
+                confirm_password_reset = st.text_input("새 비밀번호 확인", type="password", key="confirm_password_reset",
+                                                       placeholder="새 비밀번호를 다시 입력하세요")
+                
+                if st.button("💾 비밀번호 재설정", type="primary", use_container_width=True, key="reset_password"):
+                    if not new_password_reset:
+                        st.warning("⚠️ 새 비밀번호를 입력해주세요.")
+                    elif new_password_reset != confirm_password_reset:
+                        st.error("❌ 새 비밀번호가 일치하지 않습니다.")
+                    elif len(new_password_reset) < 4:
+                        st.error("❌ 비밀번호는 최소 4자 이상이어야 합니다.")
+                    else:
+                        user_id = st.session_state.verified_user_id
+                        if db.update_user_password(user_id, new_password_reset):
+                            st.success("✅ 비밀번호가 재설정되었습니다! 로그인해주세요.")
+                            st.session_state.show_password_reset = False
+                            st.session_state.verified_user_id = None
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.error("❌ 비밀번호 재설정에 실패했습니다.")
     
     with tab2:
         st.subheader("회원가입")

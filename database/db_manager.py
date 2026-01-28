@@ -98,6 +98,17 @@ class DatabaseManager:
         finally:
             conn.close()
     
+    def get_users_by_parent_code_all(self, parent_code: str) -> List[Dict]:
+        """부모 코드로 연결된 모든 사용자 조회 (부모 포함)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM users WHERE parent_code = ? ORDER BY name", (parent_code,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    
     def get_parent_by_code(self, parent_code: str) -> Optional[Dict]:
         """부모 코드로 부모 사용자 조회"""
         conn = self._get_connection()
