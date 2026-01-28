@@ -23,49 +23,26 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background-color: #ffffff !important;
     }
     
-    /* 상단 유틸리티 아이콘 행 */
-    .top-utility-row {
-        display: flex;
-        justify-content: space-around;
-        padding: 10px 5px;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #f2f4f6;
+    /* 사이드바 전체 여백 조정 */
+    [data-testid="stSidebarContent"] {
+        padding: 0 !important;
     }
-    .utility-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        cursor: pointer;
-        text-decoration: none;
-        color: #4e5968;
-    }
-    .utility-item:hover {
-        color: #191f28;
-    }
-    .utility-icon {
-        font-size: 1.5em;
-    }
-    .utility-label {
-        font-size: 0.75em;
-        font-weight: 500;
-    }
-    
+
     /* 사용자 프로필 영역 */
     .user-profile-section {
-        padding: 10px 15px;
-        margin-bottom: 15px;
+        padding: 30px 20px 10px 20px;
     }
     .user-profile-section p {
         color: #8b95a1;
-        font-size: 0.85em;
+        font-size: 0.9em;
         margin: 0;
+        font-weight: 500;
     }
     .user-profile-section h3 {
         color: #191f28;
-        font-size: 1.3em;
+        font-size: 1.5em;
         font-weight: 700;
-        margin: 4px 0 0 0;
+        margin: 5px 0 0 0;
     }
     
     /* 섹션 타이틀 */
@@ -73,72 +50,64 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         font-size: 0.85em;
         font-weight: 600;
         color: #8b95a1;
-        margin: 25px 0 10px 15px;
+        margin: 30px 0 10px 20px;
     }
     
-    /* 메뉴 버튼 스타일 (토스 스타일: 아이콘 + 텍스트 + 화살표) */
+    /* 버튼 스타일 (토스 스타일: 왼쪽 정렬 강조) */
     .stButton > button {
-        width: 100%;
+        width: 100% !important;
         border: none !important;
         background-color: transparent !important;
         color: #333d4b !important;
-        padding: 14px 15px !important;
+        padding: 12px 20px !important;
         text-align: left !important;
-        font-size: 1.05em !important;
+        font-size: 1.1em !important;
         font-weight: 500 !important;
         border-radius: 0 !important;
-        transition: background-color 0.15s ease !important;
+        transition: all 0.1s ease !important;
+        display: flex !important;
+        justify-content: flex-start !important; /* 왼쪽 정렬 강제 */
+        align-items: center !important;
+        margin: 0 !important;
+    }
+    
+    /* 버튼 내부 텍스트 정렬 */
+    .stButton > button div[data-testid="stMarkdownContainer"] p {
+        text-align: left !important;
+        width: 100% !important;
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        margin-bottom: 0 !important;
     }
     
     .stButton > button:hover {
         background-color: #f9fafb !important;
+        color: #3182f6 !important;
     }
     
-    /* 버튼 내부 텍스트와 아이콘 정렬 */
-    .button-content {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    .arrow-icon {
-        color: #cccfd8;
-        font-size: 0.9em;
-    }
-    
-    /* 구분선 */
+    /* 구분선 (얇고 깔끔하게) */
     .divider {
-        height: 8px;
+        height: 1px;
         background-color: #f2f4f6;
-        margin: 10px 0;
+        margin: 10px 20px;
+    }
+    
+    /* 두꺼운 구분선 (섹션 분리용) */
+    .thick-divider {
+        height: 10px;
+        background-color: #f2f4f6;
+        margin: 20px 0;
     }
 
-    /* 사이드바 내부 여백 제거 */
-    [data-testid="stSidebarContent"] {
-        padding-top: 0 !important;
+    /* 로그아웃 버튼 (하단 배치 및 색상 변경) */
+    .logout-box {
+        margin-top: 20px;
+    }
+    .logout-box button {
+        color: #8b95a1 !important;
+        font-size: 0.95em !important;
     }
     </style>
-    """, unsafe_allow_html=True)
-    
-    # 상단 유틸리티 행 (알림, 설정, 고객센터 느낌)
-    st.sidebar.markdown(f"""
-    <div class="top-utility-row">
-        <div class="utility-item" onclick="window.location.reload();">
-            <span class="utility-icon">🔔</span>
-            <span class="utility-label">알림</span>
-        </div>
-        <div class="utility-item" onclick="document.querySelector('button[key=user_info_button]').click();">
-            <span class="utility-icon">⚙️</span>
-            <span class="utility-label">설정</span>
-        </div>
-        <div class="utility-item" onclick="alert('고객센터 준비 중입니다.');">
-            <span class="utility-icon">🎧</span>
-            <span class="utility-label">고객센터</span>
-        </div>
-    </div>
     """, unsafe_allow_html=True)
     
     # 사용자 프로필
@@ -150,11 +119,11 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     </div>
     """, unsafe_allow_html=True)
     
-    # 내 정보 관리 버튼 (숨겨진 트리거용 및 실제 버튼)
+    # 내 정보 관리 (프로필 바로 아래 배치)
     if st.sidebar.button("👤 내 정보 관리", key="user_info_button", use_container_width=True):
         st.switch_page("pages/4_👤_내정보.py")
     
-    st.sidebar.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="thick-divider"></div>', unsafe_allow_html=True)
     
     # 메뉴 섹션
     st.sidebar.markdown('<div class="section-title">서비스</div>', unsafe_allow_html=True)
@@ -182,21 +151,23 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
     
-    # 메뉴 버튼 렌더링 (토스 스타일: 우측 화살표 추가)
+    # 메뉴 버튼 렌더링 (왼쪽 정렬 및 우측 화살표)
     for icon, name, page_path in menu_items:
-        # Streamlit 버튼은 내부 HTML 수정이 어려우므로 CSS로 화살표 느낌을 흉내내거나 
-        # 버튼 텍스트에 화살표를 포함시킵니다.
         if st.sidebar.button(
-            f"{icon} {name} 〉", # 〉 문자로 토스 스타일 화살표 재현
+            f"{icon} {name}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   〉", 
             key=f"menu_{page_path}",
             use_container_width=True
         ):
             st.switch_page(page_path)
     
-    st.sidebar.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="thick-divider"></div>', unsafe_allow_html=True)
     
-    # 로그아웃 및 기타
-    if st.sidebar.button("🚪 로그아웃 〉", use_container_width=True):
+    # 하단 도구 (새로고침, 로그아웃)
+    if st.sidebar.button("🔄 화면 새로고침", use_container_width=True, key="refresh_button"):
+        st.rerun()
+    
+    st.sidebar.markdown('<div class="logout-box">', unsafe_allow_html=True)
+    if st.sidebar.button("🚪 로그아웃", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.user_id = None
         st.session_state.user_name = None
@@ -204,6 +175,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.session_state.conversation_id = None
         st.session_state.show_login_success = False
         st.switch_page("app.py")
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
