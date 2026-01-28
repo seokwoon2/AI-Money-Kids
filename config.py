@@ -11,21 +11,31 @@ def get_gemini_api_key():
         import streamlit as st
         if hasattr(st, 'secrets'):
             try:
-                # Streamlit Cloud Secrets에서 가져오기
-                if hasattr(st.secrets, 'GEMINI_API_KEY'):
+                # Streamlit Cloud Secrets에서 가져오기 (GOOGLE_API_KEY 우선, GEMINI_API_KEY는 호환성 유지)
+                if hasattr(st.secrets, 'GOOGLE_API_KEY'):
+                    return st.secrets.GOOGLE_API_KEY
+                elif hasattr(st.secrets, 'GEMINI_API_KEY'):
                     return st.secrets.GEMINI_API_KEY
+            except Exception:
+                pass
+            
+            try:
+                if 'GOOGLE_API_KEY' in st.secrets:
+                    return st.secrets['GOOGLE_API_KEY']
                 elif 'GEMINI_API_KEY' in st.secrets:
                     return st.secrets['GEMINI_API_KEY']
-            except (AttributeError, KeyError, TypeError):
+            except Exception:
                 pass
     except (ImportError, RuntimeError):
         pass
+    except Exception:
+        pass
     
-    # 환경 변수에서 가져오기 (.env 파일 또는 시스템 환경 변수)
-    return os.getenv("GEMINI_API_KEY", "")
+    # 환경 변수에서 가져오기 (.env 파일 또는 시스템 환경 변수) - GOOGLE_API_KEY 우선
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
 
 class Config:
-    """애플리케이션 설정"""
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "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"
     
     @staticmethod
     def get_gemini_api_key():
@@ -38,9 +48,3 @@ class Config:
         return get_gemini_api_key()
     
     DATABASE_PATH = "data/money_kids.db"
-    MODEL = "models/gemini-2.5-flash"  # Gemini 2.5 Flash 모델 (사용자가 요청한 모델)
-    
-    # 데이터 디렉토리 생성
-    DATA_DIR = "data"
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)

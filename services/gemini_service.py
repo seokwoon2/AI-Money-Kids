@@ -1,45 +1,33 @@
-import google.generativeai as genai
+from google import genai
 from typing import List, Dict
 from config import Config
 
 class GeminiService:
-    """Google Gemini API 서비스 클래스"""
+    """Google Gemini API 서비스 클래스 (최신 google.genai 사용)"""
     
     def __init__(self, api_key: str = None):
-        # Config에서 동적으로 API 키 가져오기
-        if api_key:
-            self.api_key = api_key
-        else:
-            # Config 인스턴스 생성하여 동적으로 읽기
-            config = Config()
-            self.api_key = config.GEMINI_API_KEY
+        # Config 인스턴스 생성하여 동적으로 읽기 (Streamlit Cloud Secrets 지원)
+        config = Config()
+        self.api_key = api_key or config.GEMINI_API_KEY
         
         if not self.api_key:
             error_msg = "Gemini API 키가 설정되지 않았습니다. "
             try:
                 import streamlit as st
                 if hasattr(st, 'secrets'):
-                    error_msg += "Streamlit Cloud의 Secrets에서 GEMINI_API_KEY를 설정해주세요."
+                    error_msg += "Streamlit Cloud의 Secrets에서 GOOGLE_API_KEY 또는 GEMINI_API_KEY를 설정해주세요."
                 else:
-                    error_msg += ".env 파일 또는 환경 변수를 확인하세요."
+                    error_msg += ".env 파일에서 GOOGLE_API_KEY 또는 환경 변수를 확인하세요."
             except:
-                error_msg += ".env 파일 또는 환경 변수를 확인하세요."
+                error_msg += ".env 파일에서 GOOGLE_API_KEY 또는 환경 변수를 확인하세요."
             raise ValueError(error_msg)
         
-        # API 키 형식 확인
-        if not self.api_key.startswith("AIza"):
-            raise ValueError(f"잘못된 API 키 형식입니다. Gemini API 키는 'AIza...'로 시작해야 합니다. (현재: {self.api_key[:10]}...)")
-        
-        genai.configure(api_key=self.api_key)
-        
-        # 사용 가능한 모델 확인 및 설정
-        # google-generativeai 패키지에서는 모델 이름에 'models/' 접두사 없이 사용
-        self.model_name = Config.MODEL
+        self.client = genai.Client(api_key=self.api_key)
+        self.model_name = "gemini-1.5-flash"
     
     def _get_system_prompt(self, user_name: str = None, user_age: int = None, user_type: str = 'child') -> str:
         """사용자 타입에 맞는 시스템 프롬프트 생성"""
         if user_type == 'parent':
-            # 부모용 프롬프트
             name_context = f"{user_name}님, " if user_name else ""
             return f"""당신은 부모의 자녀 금융 교육을 돕는 전문 AI 상담사입니다.
 
@@ -55,7 +43,6 @@ class GeminiService:
 
 부모가 자녀의 금융습관, 교육 방법, 문제 해결 등에 대해 질문하면 구체적이고 실용적인 답변을 제공하세요."""
         else:
-            # 아이용 프롬프트
             age_context = ""
             if user_age:
                 if user_age < 8:
@@ -91,43 +78,31 @@ class GeminiService:
         """컨텍스트를 포함한 대화 생성"""
         system_prompt = self._get_system_prompt(user_name, user_age, user_type)
         
+        # 마지막 사용자 메시지 추출
+        if not messages or len(messages) == 0:
+            last_user_message = "안녕하세요!"
+        else:
+            last_user_message = messages[-1].get("content", "안녕하세요!")
+        
+        # 사용자 메시지에 초등학생용 설명 지시사항 추가
+        user_content = f"{last_user_message}\n\n초등학생도 이해할 수 있는 자연스러운 한국어로 설명해줘."
+        
         try:
-            # 시스템 프롬프트와 함께 모델 생성
-            model = genai.GenerativeModel(
-                self.model_name,
-                system_instruction=system_prompt
+            # 최신 google.genai API 사용
+            prompt = f"{system_prompt}\n\n{user_content}"
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
             )
-            
-            # 채팅 히스토리 구성
-            chat_history = []
-            for msg in messages:
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
-                
-                if role == "user":
-                    chat_history.append({"role": "user", "parts": [content]})
-                elif role == "assistant":
-                    chat_history.append({"role": "model", "parts": [content]})
-            
-            # 채팅 세션 시작
-            chat = model.start_chat(history=chat_history[:-1] if len(chat_history) > 1 else [])
-            
-            # 마지막 사용자 메시지 전송
-            last_user_message = None
-            for msg in reversed(messages):
-                if msg.get("role") == "user":
-                    last_user_message = msg.get("content", "")
-                    break
-            
-            if last_user_message:
-                response = chat.send_message(last_user_message)
-            else:
-                # 사용자 메시지가 없으면 첫 인사
-                response = chat.send_message("안녕하세요!")
-            
             return response.text.strip()
         except Exception as e:
-            return f"죄송해요, 오류가 발생했어요. 다시 시도해주세요. (오류: {str(e)})"
+            error_msg = str(e)
+            if "Connection" in error_msg or "network" in error_msg.lower():
+                return "죄송해요, 인터넷 연결에 문제가 있어요. 네트워크 연결을 확인하고 다시 시도해주세요."
+            elif "API key" in error_msg.lower() or "401" in error_msg or "403" in error_msg:
+                return "죄송해요, API 인증에 문제가 있어요. API 키를 확인해주세요."
+            else:
+                return f"죄송해요, 오류가 발생했어요: {error_msg[:200]}"
     
     def generate_parent_coaching(
         self,
@@ -172,15 +147,14 @@ class GeminiService:
 친절하고 실용적인 톤으로 작성하되, 자녀를 격려하는 방향으로 제시하세요."""
 
         try:
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    max_output_tokens=800,
-                )
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
             )
-            
             return response.text.strip()
         except Exception as e:
-            return f"코칭 메시지를 생성하는 중 오류가 발생했습니다: {str(e)}"
+            error_msg = str(e)
+            if "Connection" in error_msg or "network" in error_msg.lower():
+                return "죄송해요, 인터넷 연결에 문제가 있어요. 네트워크 연결을 확인하고 다시 시도해주세요."
+            else:
+                return f"코칭 메시지 생성 중 오류가 발생했습니다: {error_msg[:200]}"
