@@ -91,7 +91,7 @@ class GeminiService:
             # 최신 google.genai API 사용
             prompt = f"{system_prompt}\n\n{user_content}"
             response = self.client.models.generate_content(
-                model=self.model_name,
+                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
                 contents=prompt
             )
             return response.text.strip()
@@ -148,7 +148,7 @@ class GeminiService:
 
         try:
             response = self.client.models.generate_content(
-                model=self.model_name,
+                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
                 contents=prompt
             )
             return response.text.strip()

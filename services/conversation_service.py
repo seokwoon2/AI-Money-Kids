@@ -148,7 +148,7 @@ class ConversationService:
             
             # Gemini API 호출 (최신 google.genai 사용)
             response = self.gemini_service.client.models.generate_content(
-                model=self.gemini_service.model_name,
+                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
                 contents=prompt
             )
             return response.text.strip()
