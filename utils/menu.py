@@ -1,164 +1,123 @@
-"""공통 메뉴 유틸리티"""
+"""공통 메뉴 유틸리티 - 아이 친화적 스타일 A 컨셉"""
 import streamlit as st
 from database.db_manager import DatabaseManager
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
-    """사이드바 메뉴 렌더링 - 깔끔한 앱 스타일"""
+    """사이드바 메뉴 렌더링 - 파스텔 카드 & 귀여운 마스코트 스타일"""
     
-    # CSS 주입: 정렬 및 간격 최적화
+    # CSS 주입: 이미지의 디자인 규격 적용
     st.sidebar.markdown("""
     <style>
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
     
-    /* 사이드바 배경색 */
+    /* 사이드바 배경 및 패딩 */
     .stSidebar {
-        background-color: #ffffff !important;
-        border-right: 1px solid #f0f2f6;
+        background-color: #f9f9fb !important;
+        border-right: 1px solid #eee;
     }
-    
-    /* 전체 컨테이너 여백 조정 */
     [data-testid="stSidebarContent"] {
-        padding: 0 !important;
+        padding: 24px 16px !important; /* 상단 24px 패딩 적용 */
     }
 
-    /* 상단 로고/프로필 영역 */
-    .sidebar-header {
-        padding: 30px 20px 20px 20px;
-        background-color: #f8faff;
-        border-bottom: 1px solid #edf2f7;
+    /* 사이드바 로고/마스코트 영역 */
+    .sidebar-mascot {
+        text-align: center;
+        margin-bottom: 24px;
     }
-    .user-badge {
-        background-color: #eef2ff;
-        color: #6366f1;
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        display: inline-block;
-        margin-bottom: 8px;
+    .sidebar-mascot img {
+        width: 60px;
+        height: 60px;
     }
-    .user-name-title {
-        color: #1a202c;
-        font-size: 20px;
-        font-weight: 700;
-        margin: 0;
+
+    /* 메뉴 아이템 스타일 (16px 간격) */
+    .menu-item-container {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
+        gap: 16px; /* 항목 간격 16px 적용 */
     }
 
-    /* 메뉴 섹션 타이틀 */
-    .menu-group-title {
-        color: #a0aec0;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 25px 20px 10px 20px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* 버튼 스타일 최적화 */
+    /* 커스텀 버튼 디자인 (이미지의 둥근 스타일) */
     .stButton > button {
         width: 100% !important;
         border: none !important;
-        background-color: transparent !important;
-        color: #4a5568 !important;
-        padding: 10px 20px !important;
+        padding: 12px 20px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        border-radius: 30px !important; /* 대형 터치 친화적 둥근 버튼 */
         text-align: left !important;
-        font-size: 15px !important;
-        font-weight: 500 !important;
-        border-radius: 12px !important;
-        margin: 2px 0 !important;
         display: flex !important;
         align-items: center !important;
+        gap: 10px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         transition: all 0.2s ease !important;
     }
     
     .stButton > button:hover {
-        background-color: #f7fafc !important;
-        color: #6366f1 !important;
-        transform: translateX(4px);
+        transform: scale(1.03);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
     }
 
-    /* 아이콘과 텍스트 정렬 */
-    .stButton > button div[data-testid="stMarkdownContainer"] p {
-        margin: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 12px !important;
-    }
+    /* 메뉴별 파스텔 색상 적용 */
+    /* 내 저축함 (노랑) */
+    button[key*="side_pages/9_💵_용돈_관리.py"] { background-color: #FFE5A5 !important; color: #7F6000 !important; }
+    /* AI 선생님 (민트) */
+    button[key*="side_pages/1_💬_아이_채팅.py"] { background-color: #C1F0D5 !important; color: #1E4D2B !important; }
+    /* 오늘의 퀴즈 (코랄) */
+    button[key*="side_pages/7_🎯_금융_미션.py"] { background-color: #FFB3B3 !important; color: #661A1A !important; }
+    /* 부모 상담실 (라벤더) */
+    button[key*="side_pages/3_💼_부모_상담실.py"] { background-color: #D9D1F2 !important; color: #3D2B66 !important; }
+    /* 기본 (화이트) */
+    .stButton > button[kind="secondary"] { background-color: white !important; color: #444 !important; }
 
-    /* 하단 로그아웃 영역 */
-    .sidebar-footer {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding: 20px;
-        background-color: #ffffff;
-        border-top: 1px solid #edf2f7;
+    /* 하단 구분선 */
+    .side-divider {
+        margin: 20px 0;
+        border-top: 1px dashed #ddd;
     }
     </style>
-    """, unsafe_allow_html=True)
-
-    # 1. 상단 프로필 헤더
-    user_type_kr = "부모님 모드" if user_type == 'parent' else "어린이 모드"
-    user_icon = "👨‍👩‍👧" if user_type == 'parent' else "🐣"
     
-    st.sidebar.markdown(f"""
-    <div class="sidebar-header">
-        <div class="user-badge">{user_type_kr}</div>
-        <h3 class="user-name-title">{user_icon} {user_name}님</h3>
+    <div class="sidebar-mascot">
+        <div style="font-size: 50px;">🐷</div>
+        <div style="font-weight: 800; font-size: 18px; color: #444; margin-top: 10px;">AI Money Friends</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. 계정 관리 섹션
-    st.sidebar.markdown('<div class="menu-group-title">계정 관리</div>', unsafe_allow_html=True)
-    if st.sidebar.button("👤 내 정보 수정", key="side_user_info"):
-        st.switch_page("pages/4_👤_내정보.py")
-
-    # 3. 서비스 메뉴 섹션
-    st.sidebar.markdown('<div class="menu-group-title">금융 교육 서비스</div>', unsafe_allow_html=True)
-    
-    if st.sidebar.button("🏠 홈으로 가기", key="side_home"):
+    # 홈으로 가기 (기본 버튼)
+    if st.sidebar.button("🏠 홈으로", key="side_home", use_container_width=True):
         st.switch_page("app.py")
 
+    # 서비스 메뉴
     if user_type == 'parent':
         menu_items = [
             ("💼", "부모 상담실", "pages/3_💼_부모_상담실.py"),
             ("📊", "자녀 대시보드", "pages/2_📊_부모_대시보드.py"),
             ("💰", "용돈 추천기", "pages/5_💰_용돈_추천.py"),
             ("📚", "교육 가이드", "pages/6_📚_금융_교육_가이드.py"),
-            ("📝", "대화 히스토리", "pages/10_📝_대화_기록.py")
+            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
     else:
         menu_items = [
-            ("💬", "AI 친구와 채팅", "pages/1_💬_아이_채팅.py"),
-            ("🎯", "오늘의 미션", "pages/7_🎯_금융_미션.py"),
+            ("💬", "AI 선생님", "pages/1_💬_아이_채팅.py"),
+            ("🎯", "오늘의 퀴즈", "pages/7_🎯_금융_미션.py"),
             ("📖", "금융 스토리", "pages/8_📖_금융_스토리.py"),
-            ("💵", "용돈 기입장", "pages/9_💵_용돈_관리.py"),
-            ("📝", "나의 대화 기록", "pages/10_📝_대화_기록.py")
+            ("💵", "내 저축함", "pages/9_💵_용돈_관리.py"),
+            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
 
     for icon, name, path in menu_items:
-        if st.sidebar.button(f"{icon} {name}", key=f"side_{path}"):
+        if st.sidebar.button(f"{icon} {name}", key=f"side_{path}", use_container_width=True):
             st.switch_page(path)
 
-    # 4. 하단 설정 섹션
-    st.sidebar.markdown('<div class="menu-group-title">시스템</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="side-divider"></div>', unsafe_allow_html=True)
     
-    if st.sidebar.button("🔄 화면 새로고침", key="side_refresh"):
-        st.rerun()
+    # 설정 및 계정
+    if st.sidebar.button("👤 내 정보", key="side_info", use_container_width=True):
+        st.switch_page("pages/4_👤_내정보.py")
         
-    if st.sidebar.button("🚪 로그아웃", key="side_logout"):
+    if st.sidebar.button("🚪 로그아웃", key="side_logout", use_container_width=True):
         st.session_state.logged_in = False
-        st.session_state.user_id = None
-        st.session_state.user_name = None
-        st.session_state.messages = []
-        st.session_state.conversation_id = None
-        st.session_state.show_login_success = False
-        st.switch_page("app.py")
+        st.rerun()
 
 def hide_sidebar_navigation():
-    """기본 네비게이션 숨기기"""
     st.markdown("<style>[data-testid='stSidebarNav'] {display: none !important;}</style>", unsafe_allow_html=True)
