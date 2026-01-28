@@ -1,16 +1,16 @@
-"""공통 메뉴 유틸리티 - 아이 친화적 스타일 A 컨셉"""
+"""공통 메뉴 유틸리티 - 토스 스타일 UI 개편 (최종 수정본)"""
 import streamlit as st
 from database.db_manager import DatabaseManager
 
 def add_to_recent(name, path, icon):
-    """최근 접근한 메뉴 추가"""
+    """최근 접근한 메뉴 추가 (세션 상태에 저장)"""
     if 'recent_menus' not in st.session_state:
         st.session_state.recent_menus = []
     
-    # 중복 제거 후 맨 앞에 추가
     menu_item = {"name": name, "path": path, "icon": icon}
-    st.session_state.recent_menus = [m for u, m in enumerate([menu_item] + st.session_state.recent_menus) 
-                                     if m not in st.session_state.recent_menus[:u]][:5] # 최근 5개만 유지
+    # 기존 목록에서 중복 제거 후 맨 앞에 추가
+    filtered_menus = [m for m in st.session_state.recent_menus if m['path'] != path]
+    st.session_state.recent_menus = ([menu_item] + filtered_menus)[:5]
 
 def toggle_favorite(name, path, icon):
     """즐겨찾기 토글"""
@@ -18,13 +18,13 @@ def toggle_favorite(name, path, icon):
         st.session_state.favorites = []
     
     menu_item = {"name": name, "path": path, "icon": icon}
-    if menu_item in st.session_state.favorites:
-        st.session_state.favorites.remove(menu_item)
+    if any(f['path'] == path for f in st.session_state.favorites):
+        st.session_state.favorites = [f for f in st.session_state.favorites if f['path'] != path]
     else:
         st.session_state.favorites.append(menu_item)
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
-    """사이드바 메뉴 렌더링 - 파스텔 카드 & 귀여운 마스코트 스타일"""
+    """사이드바 메뉴 렌더링 - 토스 스타일 및 헤더 버튼 오류 해결"""
     
     # 세션 상태 초기화
     if 'favorites' not in st.session_state:
@@ -32,125 +32,154 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     if 'recent_menus' not in st.session_state:
         st.session_state.recent_menus = []
 
-    # CSS 주입: 이미지의 디자인 규격 적용
-    st.sidebar.markdown("""
+    # CSS 주입: 오직 헤더의 첫 번째 버튼(메뉴)에만 '전체메뉴' 텍스트 추가
+    st.markdown("""
     <style>
-    /* 기본 네비게이션 제거 */
+    /* 1. 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
     
-    /* 사이드바가 닫혀있을 때 나타나는 열기 버튼 커스텀 - 딱 하나만! */
-    section[data-testid="stSidebar"] + div button {
+    /* 2. 상단 헤더 '전체메뉴' 버튼 딱 하나만 적용 */
+    /* Streamlit의 사이드바 버튼을 정확히 타겟팅 */
+    header[data-testid="stHeader"] button[title="Open sidebar"]::after {
+        content: " 전체메뉴" !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        margin-left: 5px !important;
+    }
+    header[data-testid="stHeader"] button[title="Open sidebar"] {
         background-color: #6366f1 !important;
         color: white !important;
-        border-radius: 0 10px 10px 0 !important;
-        padding: 10px 15px !important;
+        border-radius: 8px !important;
+        padding: 0 12px !important;
         width: auto !important;
-        height: auto !important;
-        left: 0 !important;
-        top: 20px !important;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1) !important;
-        z-index: 999999;
-    }
-    
-    /* 열기 버튼에 '전체메뉴' 텍스트 추가 (정확히 열기 버튼에만) */
-    section[data-testid="stSidebar"] + div button::after {
-        content: " 전체메뉴";
-        font-size: 14px;
-        font-weight: 700;
-        margin-left: 5px;
-    }
-    
-    /* 사이드바 배경 및 패딩 */
-    .stSidebar {
-        background-color: #f9f9fb !important;
-        border-right: 1px solid #eee;
-    }
-    [data-testid="stSidebarContent"] {
-        padding: 24px 16px !important;
-    }
-
-    /* 사이드바 로고/마스코트 영역 */
-    .sidebar-mascot {
-        text-align: center;
-        margin-bottom: 24px;
-    }
-
-    /* 메뉴 섹션 타이틀 */
-    .menu-section-title {
-        font-size: 13px;
-        font-weight: 800;
-        color: #a0aec0;
-        margin: 20px 0 10px 5px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* 커스텀 버튼 디자인 (이미지의 둥근 스타일) */
-    .stButton > button {
-        width: 100% !important;
-        border: none !important;
-        padding: 10px 15px !important;
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        border-radius: 20px !important;
-        text-align: left !important;
+        height: 35px !important;
+        margin-left: 10px !important;
         display: flex !important;
         align-items: center !important;
-        gap: 8px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+    }
+    
+    /* 다른 헤더 버튼(Share, Star 등)에는 글자가 붙지 않도록 초기화 */
+    header[data-testid="stHeader"] button:not([title="Open sidebar"])::after {
+        content: "" !important;
+    }
+
+    /* 3. 사이드바 스타일 (토스 리스트 스타일) */
+    .stSidebar {
+        background-color: #ffffff !important;
+        border-right: 1px solid #f0f2f6;
+    }
+    [data-testid="stSidebarContent"] {
+        padding-top: 0 !important;
+    }
+
+    /* 사이드바 헤더 (사용자 정보) */
+    .sb-header {
+        padding: 40px 20px 20px 20px;
+        background-color: #f8faff;
+        border-bottom: 1px solid #edf2f7;
+        margin-bottom: 10px;
+    }
+    .sb-badge {
+        background-color: #eef2ff;
+        color: #6366f1;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+    .sb-name {
+        color: #1a202c;
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    /* 섹션 타이틀 */
+    .sb-group-title {
+        color: #a0aec0;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 25px 20px 8px 20px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* 토스 스타일 리스트 메뉴 버튼 */
+    .stSidebar .stButton > button {
+        width: 100% !important;
+        border: none !important;
+        background-color: transparent !important;
+        color: #4a5568 !important;
+        padding: 10px 20px !important;
+        text-align: left !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        border-radius: 12px !important;
+        margin: 2px 0 !important;
+        display: flex !important;
+        align-items: center !important;
         transition: all 0.2s ease !important;
-        margin-bottom: 4px !important;
     }
     
-    .stButton > button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important;
+    .stSidebar .stButton > button:hover {
+        background-color: #f7fafc !important;
+        color: #6366f1 !important;
+        transform: translateX(4px);
     }
 
-    /* 메뉴별 파스텔 색상 적용 - 사이드바 내부 버튼만 */
-    .stSidebar .stButton > button[key*="side_"] { background-color: white; color: #4a5568; border: 1px solid #edf2f7 !important; }
-    
-    /* 활성 메뉴 스타일 */
-    .active-menu { background-color: #eef2ff !important; color: #6366f1 !important; border: 1px solid #c7d2fe !important; }
+    /* 아이콘과 텍스트 정렬 */
+    .stSidebar .stButton > button div[data-testid="stMarkdownContainer"] p {
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+    }
 
-    /* 하단 구분선 */
-    .side-divider {
-        margin: 15px 0;
-        border-top: 1px dashed #ddd;
+    /* 즐겨찾기 별 버튼 특수 스타일 */
+    div.star-col .stButton > button {
+        padding: 10px 5px !important;
+        justify-content: center !important;
+    }
+    
+    .sb-divider {
+        margin: 15px 20px;
+        border-top: 1px solid #f0f2f6;
     }
     </style>
-    
-    <div class="sidebar-mascot">
-        <div style="font-size: 40px;">🐷</div>
-        <div style="font-weight: 800; font-size: 16px; color: #444; margin-top: 5px;">AI Money Friends</div>
+    """, unsafe_allow_html=True)
+
+    # 사이드바 프로필
+    user_type_kr = "부모님 모드" if user_type == 'parent' else "어린이 모드"
+    st.sidebar.markdown(f"""
+    <div class="sb-header">
+        <div class="sb-badge">{user_type_kr}</div>
+        <div class="sb-name">{"👨‍👩‍👧" if user_type == 'parent' else "🐣"} {user_name}님</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 1. 즐겨찾기 영역
+    # 1. ⭐ 즐겨찾기
     if st.session_state.favorites:
-        st.sidebar.markdown('<div class="menu-section-title">⭐ 즐겨찾기</div>', unsafe_allow_html=True)
+        st.sidebar.markdown('<div class="sb-group-title">⭐ 즐겨찾기</div>', unsafe_allow_html=True)
         for fav in st.session_state.favorites:
-            if st.sidebar.button(f"{fav['icon']} {fav['name']}", key=f"fav_{fav['path']}", use_container_width=True):
+            if st.sidebar.button(f"{fav['icon']} {fav['name']}", key=f"fav_{fav['path']}"):
                 add_to_recent(fav['name'], fav['path'], fav['icon'])
                 st.switch_page(fav['path'])
 
-    # 2. 최근 방문 메뉴
+    # 2. 🕒 최근 방문
     if st.session_state.recent_menus:
-        st.sidebar.markdown('<div class="menu-section-title">🕒 최근 방문</div>', unsafe_allow_html=True)
+        st.sidebar.markdown('<div class="sb-group-title">🕒 최근 방문</div>', unsafe_allow_html=True)
         for recent in st.session_state.recent_menus:
-            if st.sidebar.button(f"{recent['icon']} {recent['name']}", key=f"recent_{recent['path']}", use_container_width=True):
+            if st.sidebar.button(f"{recent['icon']} {recent['name']}", key=f"recent_{recent['path']}"):
                 st.switch_page(recent['path'])
 
-    st.sidebar.markdown('<div class="side-divider"></div>', unsafe_allow_html=True)
-    st.sidebar.markdown('<div class="menu-section-title">📂 전체 메뉴</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="sb-group-title">📂 전체 메뉴</div>', unsafe_allow_html=True)
 
-    # 홈으로 가기 (기본 버튼)
-    if st.sidebar.button("🏠 홈으로", key="side_home", use_container_width=True):
-        st.switch_page("app.py")
-
-    # 서비스 메뉴 정의
+    # 전체 메뉴 리스트 정의
     if user_type == 'parent':
         menu_items = [
+            ("🏠", "홈으로 가기", "app.py"),
             ("💼", "부모 상담실", "pages/3_💼_부모_상담실.py"),
             ("📊", "자녀 대시보드", "pages/2_📊_부모_대시보드.py"),
             ("💰", "용돈 추천기", "pages/5_💰_용돈_추천.py"),
@@ -159,6 +188,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         ]
     else:
         menu_items = [
+            ("🏠", "홈으로 가기", "app.py"),
             ("💬", "AI 선생님", "pages/1_💬_아이_채팅.py"),
             ("🎯", "오늘의 퀴즈", "pages/7_🎯_금융_미션.py"),
             ("📖", "금융 스토리", "pages/8_📖_금융_스토리.py"),
@@ -166,29 +196,30 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
 
-    # 전체 메뉴 리스트 렌더링
+    # 전체 메뉴 렌더링 (즐겨찾기 버튼 포함)
     for icon, name, path in menu_items:
-        col_m, col_f = st.sidebar.columns([0.85, 0.15])
+        col_m, col_s = st.sidebar.columns([0.8, 0.2])
         with col_m:
-            if st.button(f"{icon} {name}", key=f"side_{path}", use_container_width=True):
-                add_to_recent(name, path, icon)
+            if st.button(f"{icon} {name}", key=f"side_{path}"):
+                if path != "app.py":
+                    add_to_recent(name, path, icon)
                 st.switch_page(path)
-        with col_f:
-            # 즐겨찾기 별 버튼
-            is_fav = any(f['path'] == path for f in st.session_state.favorites)
-            star = "⭐" if is_fav else "☆"
-            if st.button(star, key=f"star_{path}", help="즐겨찾기 토글"):
-                toggle_favorite(name, path, icon)
-                st.rerun()
+        with col_s:
+            if path != "app.py":
+                st.markdown('<div class="star-col">', unsafe_allow_html=True)
+                is_fav = any(f['path'] == path for f in st.session_state.favorites)
+                if st.button("⭐" if is_fav else "☆", key=f"star_{path}"):
+                    toggle_favorite(name, path, icon)
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
-    st.sidebar.markdown('<div class="side-divider"></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
     
-    # 설정 및 계정
-    if st.sidebar.button("👤 내 정보", key="side_info", use_container_width=True):
-        add_to_recent("내 정보", "pages/4_👤_내정보.py", "👤")
+    if st.sidebar.button("👤 내 정보 수정", key="side_info"):
+        add_to_recent("내 정보 수정", "pages/4_👤_내정보.py", "👤")
         st.switch_page("pages/4_👤_내정보.py")
         
-    if st.sidebar.button("🚪 로그아웃", key="side_logout", use_container_width=True):
+    if st.sidebar.button("🚪 로그아웃", key="side_logout"):
         st.session_state.logged_in = False
         st.rerun()
 
