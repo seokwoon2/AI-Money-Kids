@@ -2,6 +2,7 @@ from database.db_manager import DatabaseManager
 from services.gemini_service import GeminiService
 from typing import List, Dict
 import re
+import google.generativeai as genai
 
 class ConversationService:
     """대화 관리 서비스"""
@@ -113,4 +114,47 @@ class ConversationService:
     
     def get_all_messages(self, conversation_id: int) -> List[Dict]:
         """대화의 모든 메시지 조회"""
-        return self.db.get_conversation_messages(conversation_id, limit=1000)
+        return self.db.get_all_messages_by_conversation(conversation_id)
+    
+    def get_user_conversations_by_date(self, user_id: int) -> List[Dict]:
+        """사용자의 날짜별 대화 목록 조회"""
+        return self.db.get_user_conversations_by_date(user_id)
+    
+    def summarize_conversation(self, conversation_id: int) -> str:
+        """대화 내용을 요약"""
+        messages = self.db.get_all_messages_by_conversation(conversation_id)
+        
+        if not messages:
+            return "대화 내용이 없습니다."
+        
+        # 대화 내용을 텍스트로 변환 (너무 길면 잘라내기)
+        conversation_text = ""
+        for msg in messages[:20]:  # 최대 20개 메시지만 사용
+            role_kr = "사용자" if msg['role'] == 'user' else "AI"
+            content = msg['content'][:500]  # 메시지당 최대 500자
+            conversation_text += f"{role_kr}: {content}\n\n"
+        
+        if len(messages) > 20:
+            conversation_text += f"\n... (총 {len(messages)}개 메시지 중 일부만 표시)"
+        
+        # Gemini API로 요약 생성
+        try:
+            prompt = f"""다음 대화 내용을 간단하게 요약해주세요. 주요 질문과 답변의 핵심 내용을 2-3문장으로 요약해주세요.
+
+대화 내용:
+{conversation_text}
+
+요약:"""
+            
+            # Gemini API 호출 (최신 google.genai 사용)
+            response = self.gemini_service.client.models.generate_content(
+                model=self.gemini_service.model_name,
+                contents=prompt
+            )
+            return response.text.strip()
+        except Exception as e:
+            error_msg = str(e)
+            if "Connection" in error_msg or "network" in error_msg.lower():
+                return "요약 생성 중 네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인해주세요."
+            else:
+                return f"요약 생성 중 오류가 발생했습니다: {error_msg[:100]}"
