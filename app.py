@@ -616,12 +616,6 @@ def login_page():
                     if not find_parent_code_clean:
                         st.warning("⚠️ 부모 코드를 입력해주세요.")
             
-            with col_find_btn2:
-                if st.button("❌ 취소", use_container_width=True, key="cancel_find_username"):
-                    st.session_state.show_username_find = False
-                    st.session_state.show_found_usernames = False
-                    st.rerun()
-            
             # 찾은 아이디 표시
             if st.session_state.get('show_found_usernames', False):
                 st.markdown("---")
@@ -872,7 +866,7 @@ def login_page():
                     st.error(f"회원가입 중 오류가 발생했습니다: {str(e)}")
 
 def main_page():
-    """로그인 후 메인 대시보드 페이지 - 스타일 A 컨셉"""
+    """로그인 후 메인 대시보드 페이지 - 유형별 분기"""
     from utils.menu import render_sidebar_menu, hide_sidebar_navigation
     hide_sidebar_navigation()
     
@@ -880,7 +874,181 @@ def main_page():
     user_type = user.get('user_type', 'child') if user else 'child'
     render_sidebar_menu(st.session_state.user_id, st.session_state.user_name, user_type)
     
-    # 스타일 A 전용 CSS
+    if user_type == 'parent':
+        parent_dashboard(st.session_state.user_name)
+    else:
+        child_dashboard(st.session_state.user_name)
+
+    # 로그인 성공 풍선 (처음 한 번만)
+    if st.session_state.get('show_login_success', False):
+        st.balloons()
+        st.session_state.show_login_success = False
+
+def parent_dashboard(user_name):
+    """부모용 대시보드 - Style B (전문적인 분석형)"""
+    st.markdown("""
+    <style>
+    .main { background-color: #f0f2f6 !important; }
+    .parent-header { padding: 20px 0; margin-bottom: 20px; }
+    .parent-header h1 { font-size: 28px; font-weight: 700; color: #1a202c; }
+    
+    /* 카드 컨테이너 */
+    .parent-card {
+        background-color: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        height: 100%;
+        border: 1px solid #edf2f7;
+    }
+    .card-label { font-size: 18px; font-weight: 700; color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    
+    /* 자녀 리스트 아이템 */
+    .child-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f7fafc;
+    }
+    .child-avatar {
+        width: 45px;
+        height: 45px;
+        background-color: #edf2ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 15px;
+    }
+    .child-info { flex: 1; }
+    .child-name { font-weight: 700; color: #4a5568; }
+    .child-amount { font-weight: 800; color: #1a202c; text-align: right; }
+    
+    /* 통계 수치 */
+    .stat-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f4ff; }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-val { font-size: 18px; font-weight: 800; color: #1a202c; }
+    .stat-lbl { font-size: 12px; color: #a0aec0; margin-top: 4px; }
+    
+    /* 팁 박스 */
+    .tip-item {
+        background-color: #f8faff;
+        border-radius: 12px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #4a5568;
+        border-left: 4px solid #6366f1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="parent-header">
+        <h1>안녕하세요, {user_name}님 👋</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 1행: 3열
+    col1, col2, col3 = st.columns([1.2, 1, 0.8])
+    
+    with col1:
+        st.markdown("""
+        <div class="parent-card">
+            <div class="card-label">📈 이번 달 가족 저축액 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">자세히 보기</span></div>
+            <div style="height: 150px; display:flex; align-items:center; justify-content:center; background:#f8faff; border-radius:15px; margin-bottom:15px;">
+                <span style="color:#a0aec0;">[저축 그래프 영역]</span>
+            </div>
+            <div class="stat-row">
+                <div class="stat-item"><div class="stat-val">450,000원</div><div class="stat-lbl">목표 달성액</div></div>
+                <div class="stat-item"><div class="stat-val">17,000원</div><div class="stat-lbl">어제 저축</div></div>
+                <div class="stat-item"><div class="stat-val">150,000원</div><div class="stat-lbl">이번달 잔액</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="parent-card">
+            <div class="card-label">👦 자녀 용돈 현황</div>
+            <div class="child-item">
+                <div class="child-avatar">👦</div>
+                <div class="child-info"><div class="child-name">재원</div></div>
+                <div class="child-amount">450,000원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">30개 활동 완료</span></div>
+            </div>
+            <div class="child-item">
+                <div class="child-avatar">👧</div>
+                <div class="child-info"><div class="child-name">제이</div></div>
+                <div class="child-amount">200,000원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">14개 활동 완료</span></div>
+            </div>
+            <div style="margin-top:20px;">
+                <button style="width:100%; padding:10px; border-radius:10px; border:1px solid #edf2f7; background:white; color:#4a5568; font-weight:700; cursor:pointer;">총 용돈 보기</button>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class="parent-card" style="text-align:center;">
+            <div class="card-label">🏆 AI 금융 퀴즈 & 미션</div>
+            <div style="margin: 20px auto; width:100px; height:100px; border-radius:50%; border:8px solid #eef2ff; border-top:8px solid #6366f1; display:flex; align-items:center; justify-content:center; font-size:30px;">
+                ⭐
+            </div>
+            <div style="font-weight:700; color:#4a5568; margin-bottom:5px;">이번 주 80% 완료</div>
+            <div style="width:100%; height:8px; background:#eef2ff; border-radius:4px; overflow:hidden;">
+                <div style="width:80%; height:100%; background:#6366f1;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 2행: 3열
+    col4, col5, col6 = st.columns([1.2, 1, 0.8])
+
+    with col4:
+        st.markdown("""
+        <div class="parent-card">
+            <div class="card-label">📊 금융 성장 리포트 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">리포트 보기</span></div>
+            <div style="height: 150px; display:flex; align-items:flex-end; gap:10px; padding:10px;">
+                <div style="flex:1; background:#eef2ff; height:40%; border-radius:5px 5px 0 0;"></div>
+                <div style="flex:1; background:#eef2ff; height:60%; border-radius:5px 5px 0 0;"></div>
+                <div style="flex:1; background:#eef2ff; height:30%; border-radius:5px 5px 0 0;"></div>
+                <div style="flex:1; background:#6366f1; height:90%; border-radius:5px 5px 0 0;"></div>
+                <div style="flex:1; background:#eef2ff; height:50%; border-radius:5px 5px 0 0;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-around; margin-top:10px;">
+                <div style="text-align:center;"><div style="font-size:20px;">🥇</div><div style="font-size:10px; color:#a0aec0;">저축왕</div></div>
+                <div style="text-align:center;"><div style="font-size:20px;">🥈</div><div style="font-size:10px; color:#a0aec0;">계획왕</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col5:
+        st.markdown("""
+        <div class="parent-card">
+            <div class="card-label">💡 부모님 코칭 팁</div>
+            <div class="tip-item">부모님 코칭팁은 아이의 소비 습관을 분석하여 제공됩니다.</div>
+            <div class="tip-item">이번 주에는 '기다림의 가치'에 대해 대화해보는 건 어떨까요?</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col6:
+        st.markdown("""
+        <div class="parent-card">
+            <div class="card-label">⚙️ 설정 및 알림</div>
+            <div style="font-size:14px; color:#4a5568; margin-bottom:20px;">
+                알림 설정: 켜짐<br>
+                주간 리포트: 매주 월요일
+            </div>
+            <button style="width:100%; padding:12px; border-radius:12px; border:none; background:#6366f1; color:white; font-weight:700; cursor:pointer;">코칭하기</button>
+        </div>
+        """, unsafe_allow_html=True)
+
+def child_dashboard(user_name):
+    """아이용 대시보드 - Style A (친근하고 귀여운 카드형)"""
+    # 기존 child_dashboard CSS 및 내용
     st.markdown("""
     <style>
     /* 메인 배경색 */
@@ -969,12 +1137,6 @@ def main_page():
         border-radius: 15px;
         transition: width 1s ease-in-out;
     }
-    .progress-text {
-        font-size: 13px;
-        font-weight: 700;
-        text-align: right;
-        margin-bottom: 15px;
-    }
     .badge-label {
         background: white;
         padding: 4px 12px;
@@ -1011,24 +1173,23 @@ def main_page():
     <div class="dashboard-header">
         <div class="mascot-piggy">🐷</div>
         <div class="welcome-msg">
-            <h1>안녕, {st.session_state.user_name}아! 👋</h1>
+            <h1>안녕, {user_name}아! 👋</h1>
             <p style="font-size: 17px; color: #555; font-weight: 600; margin-top:5px;">오늘도 재미있게 돈 공부 해볼까? ✨</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. 카드 레이아웃 (반응형 그리드 사용)
-    # 내 저축함 & 오늘의 학습
+    # 2. 카드 레이아웃
     col1, col2 = st.columns(2)
     
     with col1:
-        # 내 저축함 카드 (정보 보강)
+        # 내 저축함 카드
         st.markdown("""
         <div class="dash-card card-mint">
             <div class="card-title">💰 내 저축함</div>
             <div class="badge-label" style="background:#fff385; color:#7F6000; position:absolute; top:25px; right:25px;">저축왕 진행 중! 👑</div>
             <div style="margin-top:20px;">
-                <div class="card-subtitle">저축 성취도 (75%)</div>
+                <div class="card-subtitle">저축왕 성취도 (75%)</div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 75%;"></div></div>
                 <h2 style="margin:5px 0; font-size: 34px; font-weight:900;">45,000원</h2>
                 <p style="margin:0; font-size:14px; font-weight:700; opacity:0.8;">🌱 목표: 60,000원</p>
@@ -1096,11 +1257,6 @@ def main_page():
             from utils.menu import add_to_recent
             add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
             st.switch_page("pages/9_💵_용돈_관리.py")
-
-    # 로그인 성공 풍선 (처음 한 번만)
-    if st.session_state.get('show_login_success', False):
-        st.balloons()
-        st.session_state.show_login_success = False
 
 # 메인 로직
 if st.session_state.logged_in:
