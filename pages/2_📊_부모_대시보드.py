@@ -56,8 +56,16 @@ st.markdown("---")
 # 자녀 목록 가져오기
 children = db.get_users_by_parent_code(parent_code)
 
+# 사이드바 메뉴 렌더링 (자녀 유무와 상관없이 항상 표시되도록 위로 이동)
+render_sidebar_menu(user_id, st.session_state.user_name, user_type)
+
 if not children:
     st.info("아직 등록된 자녀가 없습니다. 자녀가 회원가입하면 여기에 표시됩니다.")
+    
+    # 사이드바 통계 (자녀가 없을 때는 간단한 정보만)
+    with st.sidebar:
+        st.markdown("---")
+        st.caption(f"**부모 코드**: `{parent_code}`")
     st.stop()
 
 # 자녀 선택
@@ -265,10 +273,7 @@ if behaviors:
 else:
     st.info("아직 기록된 행동이 없습니다.")
 
-# 사이드바 메뉴 렌더링
-render_sidebar_menu(user_id, st.session_state.user_name, user_type)
-
-# 사이드바 통계
+# 사이드바 통계 (render_sidebar_menu는 위에서 이미 호출됨)
 with st.sidebar:
     st.markdown("---")
     st.markdown("### 📊 빠른 통계")

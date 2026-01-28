@@ -2,7 +2,6 @@ from database.db_manager import DatabaseManager
 from services.gemini_service import GeminiService
 from typing import List, Dict
 import re
-import google.generativeai as genai
 
 class ConversationService:
     """대화 관리 서비스"""
@@ -146,11 +145,10 @@ class ConversationService:
 
 요약:"""
             
-            # Gemini API 호출 (최신 google.genai 사용)
-            response = self.gemini_service.client.models.generate_content(
-                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
-                contents=prompt
-            )
+            # Gemini API 호출 (안정적인 google-generativeai 사용)
+            import google.generativeai as genai
+            model = genai.GenerativeModel(self.gemini_service.model_name)
+            response = model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
             error_msg = str(e)
