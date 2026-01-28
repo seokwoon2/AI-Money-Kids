@@ -652,25 +652,54 @@ def login_page():
                         <div style='font-size: 2em; font-weight: bold; margin: 10px 0; font-family: monospace; letter-spacing: 3px;'>
                             {generated_code}
                         </div>
-                        <button onclick="copyToClipboard('{generated_code}')" 
-                                style='background: rgba(255,255,255,0.2); border: 1px solid white; color: white; 
-                                       padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;'>
-                            📋 클립보드에 복사
-                        </button>
+                        <div style='display: flex; justify-content: center; gap: 10px;'>
+                            <button id='copy-btn-{generated_code}'
+                                    style='background: rgba(255,255,255,0.2); border: 1px solid white; color: white; 
+                                           padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;'>
+                                📋 클립보드에 복사
+                            </button>
+                        </div>
                         <p style='font-size: 0.9em; margin-top: 10px; opacity: 0.9;'>
                             ✨ 코드가 아래 입력란에 자동으로 입력되었습니다.
                         </p>
                     </div>
                     <script>
-                    function copyToClipboard(text) {{
-                        const textArea = document.createElement("textarea");
-                        textArea.value = text;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand("copy");
-                        document.body.removeChild(textArea);
-                        alert("코드가 복사되었습니다: " + text);
-                    }}
+                    (function() {{
+                        const btn = document.getElementById('copy-btn-{generated_code}');
+                        if (btn) {{
+                            btn.onclick = function() {{
+                                const text = '{generated_code}';
+                                // 최신 Clipboard API 시도
+                                if (navigator.clipboard && navigator.clipboard.writeText) {{
+                                    navigator.clipboard.writeText(text).then(function() {{
+                                        alert("코드가 클립보드에 복사되었습니다: " + text);
+                                    }}).catch(function(err) {{
+                                        fallbackCopy(text);
+                                    }});
+                                }} else {{
+                                    fallbackCopy(text);
+                                }}
+                            }};
+                        }}
+                        
+                        function fallbackCopy(text) {{
+                            const textArea = document.createElement("textarea");
+                            textArea.value = text;
+                            textArea.style.position = "fixed";
+                            textArea.style.left = "-9999px";
+                            textArea.style.top = "0";
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            try {{
+                                document.execCommand("copy");
+                                alert("코드가 클립보드에 복사되었습니다 (fallback): " + text);
+                            }} catch (err) {{
+                                console.error("복사 실패", err);
+                            }}
+                            document.body.removeChild(textArea);
+                        }}
+                    }})();
                     </script>
                     """, unsafe_allow_html=True)
 
