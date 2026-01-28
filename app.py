@@ -666,42 +666,28 @@ def login_page():
                     <script>
                     (function() {{
                         const btn = document.getElementById('copy-btn-{generated_code}');
-                        if (btn) {{
-                            btn.onclick = function() {{
-                                const text = '{generated_code}';
-                                // 최신 Clipboard API 시도
-                                if (navigator.clipboard && navigator.clipboard.writeText) {{
-                                    navigator.clipboard.writeText(text).then(function() {{
-                                        alert("코드가 클립보드에 복사되었습니다: " + text);
-                                    }}).catch(function(err) {{
-                                        fallbackCopy(text);
-                                    }});
-                                }} else {{
-                                    fallbackCopy(text);
-                                }}
-                            }};
-                        }}
-                        
-                        function fallbackCopy(text) {{
-                            const textArea = document.createElement("textarea");
-                            textArea.value = text;
-                            textArea.style.position = "fixed";
-                            textArea.style.left = "-9999px";
-                            textArea.style.top = "0";
-                            document.body.appendChild(textArea);
-                            textArea.focus();
-                            textArea.select();
-                            try {{
-                                document.execCommand("copy");
-                                alert("코드가 클립보드에 복사되었습니다 (fallback): " + text);
-                            }} catch (err) {{
-                                console.error("복사 실패", err);
+                        if (!btn) return;
+                        btn.onclick = function() {{
+                            const text = '{generated_code}';
+                            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                                navigator.clipboard.writeText(text).then(() => alert("복사 완료: " + text))
+                                .catch(() => fallbackCopy(text));
+                            }} else {{
+                                fallbackCopy(text);
                             }}
-                            document.body.removeChild(textArea);
+                        }};
+                        function fallbackCopy(text) {{
+                            const ta = document.createElement("textarea");
+                            ta.value = text;
+                            ta.style.position = "fixed";
+                            ta.style.opacity = "0";
+                            document.body.appendChild(ta);
+                            ta.select();
+                            try {{ document.execCommand("copy"); alert("복사 완료: " + text); }}
+                            catch (e) {{ console.error(e); }}
+                            document.body.removeChild(ta);
                         }}
-                    }})();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    }})();</script>""", unsafe_allow_html=True)
 
                 # 부모 코드 입력란 (key를 'signup_parent_code'로 설정하여 세션 상태와 직접 연동)
                 parent_code = st.text_input(
