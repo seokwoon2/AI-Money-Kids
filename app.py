@@ -666,29 +666,116 @@ def login_page():
                                 padding: 20px; border-radius: 12px; color: white; margin: 15px 0;'>
                         <h4 style='color: white; margin: 0 0 10px 0;'>✅ 생성된 부모 코드</h4>
                         <div style='display: flex; align-items: center; gap: 10px; margin: 10px 0;'>
-                            <p id='parent-code-display' 
+                            <p id='parent-code-display-{generated_code}' 
                                style='font-size: 1.5em; font-weight: bold; color: white; margin: 0; 
                                       font-family: monospace; letter-spacing: 2px; cursor: pointer;
                                       padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px;
-                                      user-select: all;'
-                               onclick="navigator.clipboard.writeText('{generated_code}').then(() => {{
-                                   document.getElementById('parent-code-display').style.background = 'rgba(255,255,255,0.4)';
-                                   setTimeout(() => {{
-                                       document.getElementById('parent-code-display').style.background = 'rgba(255,255,255,0.2)';
-                                   }}, 500);
-                               }});"
-                               title='클릭하여 복사'>{generated_code}</p>
-                            <button onclick="navigator.clipboard.writeText('{generated_code}').then(() => alert('✅ 복사되었습니다!'))" 
+                                      user-select: all; transition: background 0.3s;'
+                               onclick="copyParentCodeAndPaste('{generated_code}')"
+                               onmouseover="this.style.background='rgba(255,255,255,0.4)'"
+                               onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+                               title='클릭하여 복사 및 붙여넣기'>{generated_code}</p>
+                            <button onclick="copyParentCodeAndPaste('{generated_code}')" 
                                     style='padding: 10px 15px; background: rgba(255,255,255,0.3); color: white; 
                                            border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; 
-                                           cursor: pointer; font-weight: 500;'>
-                                📋 복사
+                                           cursor: pointer; font-weight: 500; transition: all 0.3s;'
+                                    onmouseover="this.style.background='rgba(255,255,255,0.5)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,0.3)'">
+                                📋 복사 및 붙여넣기
                             </button>
                         </div>
                         <p style='color: white; opacity: 0.9; margin: 10px 0 0 0; font-size: 0.9em;'>
-                            💡 코드를 클릭하거나 복사 버튼을 눌러 복사하세요. 이 코드를 안전한 곳에 저장하세요.
+                            💡 코드를 클릭하거나 복사 버튼을 눌러 복사하세요. 자동으로 아래 입력란에 붙여넣어집니다.
                         </p>
                     </div>
+                    
+                    <script>
+                    function copyParentCodeAndPaste(code) {{
+                        // 클립보드에 복사
+                        if (navigator.clipboard && navigator.clipboard.writeText) {{
+                            navigator.clipboard.writeText(code).then(function() {{
+                                // 부모 코드 입력란에 자동으로 붙여넣기
+                                pasteToParentCodeInput(code);
+                                // 시각적 피드백
+                                const display = document.getElementById('parent-code-display-' + code);
+                                if (display) {{
+                                    display.style.background = 'rgba(76, 175, 80, 0.5)';
+                                    setTimeout(function() {{
+                                        display.style.background = 'rgba(255,255,255,0.2)';
+                                    }}, 500);
+                                }}
+                            }}).catch(function(err) {{
+                                console.error('복사 실패:', err);
+                                fallbackCopyAndPaste(code);
+                            }});
+                        }} else {{
+                            fallbackCopyAndPaste(code);
+                        }}
+                    }}
+                    
+                    function fallbackCopyAndPaste(text) {{
+                        const textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '0';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        try {{
+                            const successful = document.execCommand('copy');
+                            if (successful) {{
+                                pasteToParentCodeInput(text);
+                            }} else {{
+                                alert('❌ 복사에 실패했습니다. 코드를 수동으로 입력해주세요: ' + text);
+                            }}
+                        }} catch (err) {{
+                            console.error('복사 실패:', err);
+                            alert('❌ 복사에 실패했습니다. 코드를 수동으로 입력해주세요: ' + text);
+                        }}
+                        document.body.removeChild(textArea);
+                    }}
+                    
+                    function pasteToParentCodeInput(code) {{
+                        // 부모 코드 입력란 찾기 (여러 방법 시도)
+                        setTimeout(function() {{
+                            let inputFound = false;
+                            
+                            // 방법 1: data-testid로 찾기
+                            const allInputs = document.querySelectorAll('input[type="text"], input[data-testid*="stTextInput"]');
+                            allInputs.forEach(function(input) {{
+                                // 부모 요소에서 라벨 찾기
+                                let parent = input.closest('[data-testid*="stTextInput"]') || input.parentElement;
+                                let labelText = '';
+                                
+                                // 라벨 텍스트 찾기
+                                while (parent && !labelText) {{
+                                    const label = parent.querySelector('label');
+                                    if (label) {{
+                                        labelText = label.textContent || '';
+                                    }}
+                                    parent = parent.parentElement;
+                                }}
+                                
+                                // 부모 코드 입력란인지 확인
+                                if (labelText.includes('부모 코드') || labelText.includes('parent code') || 
+                                    input.placeholder && input.placeholder.includes('부모 코드')) {{
+                                    input.value = code;
+                                    input.dispatchEvent(new Event('input', {{ bubbles: true, cancelable: true }}));
+                                    input.dispatchEvent(new Event('change', {{ bubbles: true, cancelable: true }}));
+                                    input.focus();
+                                    input.blur();
+                                    inputFound = true;
+                                }}
+                            }});
+                            
+                            if (inputFound) {{
+                                // 성공 메시지 (간단하게)
+                                console.log('✅ 부모 코드가 입력란에 붙여넣어졌습니다.');
+                            }}
+                        }}, 200);
+                    }}
+                    </script>
                     """, unsafe_allow_html=True)
                 
                 parent_code = st.text_input(
@@ -728,8 +815,19 @@ def login_page():
                     else:
                         user_id = db.create_user(username, password, name, age, parent_code, user_type_value)
                         user_type_kr = "부모" if user_type_value == 'parent' else f"아이 (만 {age}세)"
-                        st.success(f"회원가입이 완료되었습니다! ({user_type_kr}) 로그인해주세요.")
+                        
+                        # 회원가입 성공 후 자동 로그인 처리
+                        st.session_state.logged_in = True
+                        st.session_state.user_id = user_id
+                        st.session_state.user_name = name
+                        st.session_state.show_login_success = True
+                        
+                        # 성공 메시지 및 축하
+                        st.success(f"✅ 회원가입이 완료되었습니다! ({user_type_kr}) 자동으로 로그인되었습니다.")
                         st.balloons()
+                        
+                        # 페이지 새로고침하여 메인 페이지로 이동
+                        st.rerun()
                 except Exception as e:
                     st.error(f"회원가입 중 오류가 발생했습니다: {str(e)}")
 
