@@ -44,7 +44,43 @@ if user_type != 'child':
 render_sidebar_menu(user_id, user_name, user_type)
 
 # 페이지 제목
-st.title(f"💵 {user_name}님의 용돈 관리")
+st.markdown(f"""
+<div style='display: flex; align-items: center; gap: 15px; margin-bottom: 20px;'>
+    <div style='font-size: 40px;'>💵</div>
+    <h1 style='margin: 0;'>{user_name}님의 거래 내역</h1>
+</div>
+""", unsafe_allow_html=True)
+
+# 상단 요약 카드 (Style A)
+if st.session_state.allowance_records:
+    total_income = sum(r['amount'] for r in st.session_state.allowance_records if r['type'] == 'income')
+    total_expense = sum(r['amount'] for r in st.session_state.allowance_records if r['type'] == 'expense')
+    balance = total_income - total_expense
+    
+    col_sum1, col_sum2, col_sum3 = st.columns(3)
+    with col_sum1:
+        st.markdown(f"""
+        <div style='background-color: #FFE5A5; padding: 20px; border-radius: 25px; text-align: center; border: 3px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.05);'>
+            <div style='font-size: 16px; font-weight: 700; color: #7F6000;'>💰 받은 용돈</div>
+            <div style='font-size: 24px; font-weight: 900; color: #7F6000;'>{total_income:,}원</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_sum2:
+        st.markdown(f"""
+        <div style='background-color: #FFB3B3; padding: 20px; border-radius: 25px; text-align: center; border: 3px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.05);'>
+            <div style='font-size: 16px; font-weight: 700; color: #661A1A;'>🛒 사용한 금액</div>
+            <div style='font-size: 24px; font-weight: 900; color: #661A1A;'>{total_expense:,}원</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_sum3:
+        st.markdown(f"""
+        <div style='background-color: #C1F0D5; padding: 20px; border-radius: 25px; text-align: center; border: 3px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.05);'>
+            <div style='font-size: 16px; font-weight: 700; color: #1E4D2B;'>💵 남은 금액</div>
+            <div style='font-size: 24px; font-weight: 900; color: #1E4D2B;'>{balance:,}원</div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
 st.markdown("---")
 
 # 용돈 기록 (세션 상태로 관리)
@@ -52,6 +88,39 @@ if 'allowance_records' not in st.session_state:
     st.session_state.allowance_records = []
 
 # 용돈 받기
+st.markdown("---")
+
+# 나의 목표 섹션 (Style A)
+st.subheader("🎯 나의 목표")
+if 'financial_goals' not in st.session_state:
+    st.session_state.financial_goals = [
+        {"title": "새 자전거 사기 🚲", "target_amount": 60000, "current_amount": 6000, "deadline": date(2026, 12, 31)}
+    ]
+
+for goal in st.session_state.financial_goals:
+    progress = min(goal['current_amount'] / goal['target_amount'] * 100, 100)
+    remaining = max(goal['target_amount'] - goal['current_amount'], 0)
+    
+    st.markdown(f"""
+    <div style='background-color: #D9D1F2; padding: 25px; border-radius: 30px; border: 4px solid white; box-shadow: 0 15px 30px rgba(0,0,0,0.05); margin-bottom: 20px;'>
+        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>
+            <div style='font-size: 22px; font-weight: 800; color: #3D2B66;'>🎯 {goal['title']}</div>
+            <div style='background-color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: 700; color: #3D2B66;'>{progress:.0f}% 달성</div>
+        </div>
+        <div style='background: rgba(255,255,255,0.4); border-radius: 15px; height: 14px; margin: 15px 0;'>
+            <div style='background: #3D2B66; height: 100%; border-radius: 15px; width: {progress}%;'></div>
+        </div>
+        <div style='display: flex; justify-content: space-between; font-weight: 700; color: #3D2B66;'>
+            <div>현재: {goal['current_amount']:,}원</div>
+            <div>목표: {goal['target_amount']:,}원</div>
+        </div>
+        <div style='margin-top: 10px; font-size: 15px; font-weight: 600; color: #3D2B66; opacity: 0.8;'>
+            🚲 남은 금액: {remaining:,}원 | 📅 목표일: {goal['deadline']}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
 st.subheader("💰 용돈 받기")
 
 col1, col2 = st.columns(2)
@@ -139,10 +208,26 @@ if st.session_state.allowance_records:
     sorted_records = sorted(st.session_state.allowance_records, key=lambda x: x['date'], reverse=True)[:10]
     
     for record in sorted_records:
-        if record['type'] == 'income':
-            st.success(f"💰 {record['date']} | {record['amount']:,}원 받음 | {record['source']} | {record.get('memo', '')}")
-        else:
-            st.info(f"🛒 {record['date']} | {record['amount']:,}원 사용 | {record['category']} - {record.get('item', '')} | {record.get('memo', '')}")
+        icon = "💰" if record['type'] == 'income' else "🛒"
+        bg_color = "#f0fff4" if record['type'] == 'income' else "#fff5f5"
+        border_color = "#c6f6d5" if record['type'] == 'income' else "#fed7d7"
+        text_color = "#22543d" if record['type'] == 'income' else "#822727"
+        amount_prefix = "+" if record['type'] == 'income' else "-"
+        
+        st.markdown(f"""
+        <div style='background-color: {bg_color}; padding: 15px 20px; border-radius: 15px; border: 1px solid {border_color}; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;'>
+            <div style='display: flex; align-items: center; gap: 15px;'>
+                <div style='font-size: 24px;'>{icon}</div>
+                <div>
+                    <div style='font-size: 14px; color: #718096;'>{record['date']}</div>
+                    <div style='font-weight: 700; color: #2d3748;'>{record.get('source') or record.get('category')} - {record.get('item', '') or record.get('memo', '')}</div>
+                </div>
+            </div>
+            <div style='font-size: 18px; font-weight: 800; color: {text_color};'>
+                {amount_prefix}{record['amount']:,}원
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 else:
     st.info("아직 기록된 용돈 내역이 없습니다. 용돈을 받거나 사용하면 여기에 기록됩니다!")
 

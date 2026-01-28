@@ -54,8 +54,18 @@ if 'conversation_id' not in st.session_state:
     st.session_state.conversation_id = conversation_service.get_or_create_conversation(user_id)
 
 # 페이지 제목
-st.title(f"💼 {user_name}님의 부모 상담실")
-st.markdown("---")
+st.markdown(f"""
+<div style='display: flex; align-items: center; gap: 15px; margin-bottom: 20px;'>
+    <div style='font-size: 40px;'>💼</div>
+    <h1 style='margin: 0;'>{user_name}님의 부모 상담실</h1>
+</div>
+<div style='background-color: #f8faff; padding: 20px; border-radius: 15px; border-left: 5px solid #6366f1; margin-bottom: 30px;'>
+    <p style='margin: 0; color: #4a5568; font-weight: 600;'>
+        자녀의 올바른 경제 습관 형성을 위해 AI 전문가와 상담해보세요. 
+        아이의 대화 기록과 행동 데이터를 바탕으로 맞춤형 조언을 드립니다.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # 대화 히스토리 로드
 if not st.session_state.messages:
