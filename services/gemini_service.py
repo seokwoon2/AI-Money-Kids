@@ -23,7 +23,7 @@ class GeminiService:
             raise ValueError(error_msg)
         
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-1.5-flash" # 'models/' 접두사 없이 모델명만 사용
+        self.model_name = "gemini-1.5-flash-latest" # 최신 안정 버전으로 변경
     
     def _get_system_prompt(self, user_name: str = None, user_age: int = None, user_type: str = 'child') -> str:
         """사용자 타입에 맞는 시스템 프롬프트 생성"""
