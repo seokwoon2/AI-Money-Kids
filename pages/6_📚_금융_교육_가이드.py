@@ -34,13 +34,13 @@ db = DatabaseManager()
 user = db.get_user_by_id(user_id)
 user_type = user.get('user_type', 'child') if user else 'child'
 
+# 사이드바 메뉴 렌더링 (가장 먼저 실행하여 메뉴 유실 방지)
+render_sidebar_menu(user_id, user_name, user_type)
+
 # 부모 전용 페이지 확인
 if user_type != 'parent':
     st.warning("이 페이지는 부모 전용입니다.")
     st.stop()
-
-# 사이드바 메뉴 렌더링
-render_sidebar_menu(user_id, user_name, user_type)
 
 # 페이지 제목
 st.title("📚 금융 교육 가이드")

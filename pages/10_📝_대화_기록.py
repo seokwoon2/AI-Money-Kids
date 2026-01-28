@@ -37,6 +37,9 @@ db = DatabaseManager()
 user = db.get_user_by_id(user_id)
 user_type = user.get('user_type', 'child') if user else 'child'
 
+# 사이드바 메뉴 렌더링 (가장 먼저 실행하여 메뉴 유실 방지)
+render_sidebar_menu(user_id, user_name, user_type)
+
 # 서비스 초기화
 conversation_service = ConversationService()
 
@@ -172,7 +175,7 @@ else:
                     st.info("이 대화에는 메시지가 없습니다.")
 
 # 사이드바 메뉴 렌더링
-render_sidebar_menu(user_id, user_name, user_type)
+# render_sidebar_menu(user_id, user_name, user_type) # 위로 이동됨
 
 # 사이드바 추가 정보
 with st.sidebar:

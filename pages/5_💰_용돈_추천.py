@@ -38,6 +38,9 @@ gemini_service = GeminiService()
 user = db.get_user_by_id(user_id)
 user_type = user.get('user_type', 'child') if user else 'child'
 
+# 사이드바 메뉴 렌더링 (가장 먼저 실행하여 메뉴 유실 방지)
+render_sidebar_menu(user_id, user_name, user_type)
+
 # 부모 전용 페이지 확인
 if user_type != 'parent':
     st.warning("이 페이지는 부모 전용입니다.")
@@ -49,9 +52,6 @@ children = db.get_users_by_parent_code(parent_code)
 if not children:
     st.info("아직 등록된 자녀가 없습니다. 자녀가 회원가입하면 용돈 추천을 받을 수 있습니다.")
     st.stop()
-
-# 사이드바 메뉴 렌더링
-render_sidebar_menu(user_id, user_name, user_type)
 
 # 페이지 제목
 st.title("💰 용돈 추천 시스템")
