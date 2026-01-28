@@ -80,8 +80,13 @@ def login_page():
         st.markdown("### 💰 AI 금융교육 서비스")
         st.markdown("로그인하여 서비스를 이용하세요.")
     
-    st.title("💰 AI 금융교육 서비스")
-    st.markdown("---")
+    # 타이틀 섹션 (명칭 변경 및 줄바꿈 방지)
+    st.markdown("""
+        <h1 style='text-align: left; font-size: 3rem; white-space: nowrap; margin-bottom: 0;'>
+            💰 AI Money Friends
+        </h1>
+        <div style='height: 3px; background: linear-gradient(90deg, #667eea, transparent); margin-bottom: 30px;'></div>
+    """, unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["🔐 로그인", "📝 회원가입"])
     
