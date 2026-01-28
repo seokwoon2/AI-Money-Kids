@@ -637,8 +637,8 @@ def login_page():
                 if st.button("🔑 부모 코드 생성", use_container_width=True, type="primary"):
                     new_code = generate_parent_code()
                     st.session_state.generated_parent_code = new_code
-                    # 생성된 코드를 입력란에 즉시 반영하도록 세션 상태 설정
-                    st.session_state.signup_parent_code = new_code
+                    # 입력란 key인 'signup_parent_code'에 직접 값을 할당 (이게 가장 확실함)
+                    st.session_state['signup_parent_code'] = new_code
                     st.session_state.code_generated = True
                     st.rerun()
                 
@@ -658,7 +658,7 @@ def login_page():
                             📋 클립보드에 복사
                         </button>
                         <p style='font-size: 0.9em; margin-top: 10px; opacity: 0.9;'>
-                            💡 코드가 아래 입력란에 자동으로 입력되었습니다.
+                            ✨ 코드가 아래 입력란에 자동으로 입력되었습니다.
                         </p>
                     </div>
                     <script>
@@ -667,38 +667,29 @@ def login_page():
                         textArea.value = text;
                         document.body.appendChild(textArea);
                         textArea.select();
-                        try {{
-                            document.execCommand("copy");
-                            alert("코드가 클립보드에 복사되었습니다: " + text);
-                        }} catch (err) {{
-                            console.error("복사 실패", err);
-                        }}
+                        document.execCommand("copy");
                         document.body.removeChild(textArea);
+                        alert("코드가 복사되었습니다: " + text);
                     }}
                     </script>
                     """, unsafe_allow_html=True)
 
-                # 부모 코드 입력란 (value를 세션 상태와 연동)
+                # 부모 코드 입력란 (key를 'signup_parent_code'로 설정하여 세션 상태와 직접 연동)
                 parent_code = st.text_input(
                     "부모 코드 (8자리)", 
-                    value=st.session_state.get('signup_parent_code', ''),
-                    key="signup_parent_code_input",
+                    key="signup_parent_code",
                     help="부모 코드 생성 버튼을 누르면 자동으로 채워집니다."
                 )
-                # 입력란의 값을 세션 상태에 다시 저장 (사용자가 직접 수정할 수도 있으므로)
-                st.session_state.signup_parent_code = parent_code
             else:
                 # 아이는 부모 코드 직접 입력
                 parent_code = st.text_input(
                     "부모 코드 (8자리)", 
-                    value=st.session_state.get('signup_parent_code', ''),
-                    key="signup_parent_code_child", 
+                    key="signup_parent_code", 
                     help="부모님께 받은 코드를 입력하세요."
                 )
-                st.session_state.signup_parent_code = parent_code
         
         if st.button("회원가입", type="primary", use_container_width=True):
-            parent_code = st.session_state.get('signup_parent_code', '') # 최종 값 가져오기
+            # parent_code는 st.text_input의 반환값인 위 변수를 그대로 사용
             if not username:
                 st.error("사용자명을 입력해주세요.")
             elif not password:
