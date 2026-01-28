@@ -77,8 +77,15 @@ with chat_container:
             with st.chat_message("assistant"):
                 st.write(message["content"])
 
+# 중단 플래그 초기화
+if 'cancel_generation' not in st.session_state:
+    st.session_state.cancel_generation = False
+
 # 사용자 입력
 if prompt := st.chat_input("돈에 대해 궁금한 것을 물어보세요!"):
+    # 중단 플래그 초기화
+    st.session_state.cancel_generation = False
+    
     # 사용자 메시지 추가
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -86,16 +93,87 @@ if prompt := st.chat_input("돈에 대해 궁금한 것을 물어보세요!"):
     
     # AI 응답 생성
     with st.chat_message("assistant"):
-        with st.spinner("생각 중..."):
-            response = conversation_service.chat(
-                user_id=user_id,
-                user_message=prompt,
-                user_name=user_name,
-                user_age=user_age,
-                user_type=user_type
-            )
-            st.write(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+        try:
+            import time
+            from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+            
+            start_time = time.time()
+            response = None
+            
+            # 스피너와 중단 버튼을 함께 표시
+            spinner_container = st.container()
+            with spinner_container:
+                col_spinner, col_cancel = st.columns([3, 1])
+                with col_spinner:
+                    spinner_placeholder = st.empty()
+                with col_cancel:
+                    cancel_button = st.button("⏹️ 중단", key="cancel_button_child", use_container_width=True)
+                
+                if cancel_button:
+                    st.session_state.cancel_generation = True
+                    st.warning("⚠️ 응답 생성을 중단했습니다.")
+                    st.rerun()
+                
+                with spinner_placeholder:
+                    with st.spinner("💭 생각 중이에요..."):
+                        def call_chat_service():
+                            # 중단 플래그 확인
+                            if st.session_state.get('cancel_generation', False):
+                                return None
+                            return conversation_service.chat(
+                                user_id=user_id,
+                                user_message=prompt,
+                                user_name=user_name,
+                                user_age=user_age,
+                                user_type=user_type
+                            )
+                        
+                        # 직접 API 호출 (타임아웃은 API 레벨에서 처리)
+                        try:
+                            if not st.session_state.get('cancel_generation', False):
+                                response = call_chat_service()
+                            else:
+                                response = None
+                        except Exception as api_error:
+                            if not st.session_state.get('cancel_generation', False):
+                                error_msg = str(api_error)
+                                if len(error_msg) > 200:
+                                    error_msg = error_msg[:200] + "..."
+                                response = f"죄송해요, 오류가 발생했어요: {error_msg}"
+                                
+                                # 상세 에러 정보 표시
+                                import traceback
+                                with st.expander("🔍 상세 오류 정보", expanded=True):
+                                    st.error(f"**오류 메시지:** {error_msg}")
+                                    st.code(traceback.format_exc(), language="python")
+                                    st.info("💡 이 정보를 개발자에게 전달해주시면 문제 해결에 도움이 됩니다.")
+            
+            # 중단되었는지 확인
+            if st.session_state.get('cancel_generation', False):
+                st.info("💡 응답 생성이 중단되었습니다. 새로운 질문을 입력해주세요.")
+                st.session_state.cancel_generation = False
+            elif response:
+                elapsed_time = time.time() - start_time
+                
+                # 응답이 오류 메시지인지 확인
+                if response.startswith("죄송해요"):
+                    st.error(response)
+                else:
+                    st.write(response)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    
+                    # 응답 시간이 너무 오래 걸렸으면 경고
+                    if elapsed_time > 10:
+                        st.caption(f"⏱️ 응답 시간: {elapsed_time:.1f}초")
+            else:
+                if not st.session_state.get('cancel_generation', False):
+                    st.error("죄송해요, 응답을 받지 못했어요. 다시 시도해주세요.")
+                    
+        except Exception as e:
+            if not st.session_state.get('cancel_generation', False):
+                error_msg = str(e)
+                st.error(f"죄송해요, 오류가 발생했어요: {error_msg}")
+                st.info("페이지를 새로고침하거나 잠시 후 다시 시도해주세요.")
 
 # 사이드바 메뉴 렌더링
 render_sidebar_menu(user_id, user_name, user_type)

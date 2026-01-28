@@ -152,7 +152,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             ("💼", "부모 상담실", "pages/3_💼_부모_상담실.py"),
             ("📊", "부모 대시보드", "pages/2_📊_부모_대시보드.py"),
             ("💰", "용돈 추천", "pages/5_💰_용돈_추천.py"),
-            ("📚", "금융 교육 가이드", "pages/6_📚_금융_교육_가이드.py")
+            ("📚", "금융 교육 가이드", "pages/6_📚_금융_교육_가이드.py"),
+            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
     else:
         # 아이 메뉴
@@ -160,7 +161,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             ("💬", "아이 채팅", "pages/1_💬_아이_채팅.py"),
             ("🎯", "금융 미션", "pages/7_🎯_금융_미션.py"),
             ("📖", "금융 스토리", "pages/8_📖_금융_스토리.py"),
-            ("💵", "용돈 관리", "pages/9_💵_용돈_관리.py")
+            ("💵", "용돈 관리", "pages/9_💵_용돈_관리.py"),
+            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
         ]
     
     # 메뉴 버튼 렌더링 (모두 동일한 형태)
@@ -199,6 +201,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.session_state.user_name = None
         st.session_state.messages = []
         st.session_state.conversation_id = None
+        st.session_state.show_login_success = False  # 로그인 성공 메시지 초기화
         st.switch_page("app.py")
     
     st.sidebar.markdown('</div>', unsafe_allow_html=True)

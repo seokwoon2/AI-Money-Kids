@@ -268,6 +268,58 @@ class DatabaseManager:
         finally:
             conn.close()
     
+    def get_user_conversations_by_date(self, user_id: int) -> List[Dict]:
+        """사용자의 날짜별 대화 목록 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT 
+                    c.id as conversation_id,
+                    DATE(c.created_at) as date,
+                    COUNT(m.id) as message_count,
+                    MIN(m.timestamp) as first_message_time,
+                    MAX(m.timestamp) as last_message_time
+                FROM conversations c
+                LEFT JOIN messages m ON c.id = m.conversation_id
+                WHERE c.user_id = ?
+                GROUP BY c.id, DATE(c.created_at)
+                ORDER BY c.created_at DESC
+            """, (user_id,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    
+    def get_conversation_by_id(self, conversation_id: int) -> Optional[Dict]:
+        """대화 세션 정보 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT * FROM conversations WHERE id = ?
+            """, (conversation_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+    
+    def get_all_messages_by_conversation(self, conversation_id: int) -> List[Dict]:
+        """대화의 모든 메시지 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT role, content, timestamp
+                FROM messages
+                WHERE conversation_id = ?
+                ORDER BY timestamp ASC
+            """, (conversation_id,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    
     # ========== 행동 기록 ==========
     
     def save_behavior(self, user_id: int, behavior_type: str, amount: float = None, description: str = None):
