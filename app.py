@@ -708,20 +708,6 @@ def login_page():
             elif not parent_code or not validate_parent_code(parent_code):
                 st.error("유효한 부모 코드(8자리)를 입력해주세요.")
             else:
-                # 아이는 부모 코드 입력
-                parent_code = st.text_input("부모 코드 (8자리)", key="signup_parent_code", 
-                                           help="부모님께 받은 코드를 입력하세요.")
-        
-        if st.button("회원가입", type="primary", use_container_width=True):
-            if not username:
-                st.error("사용자명을 입력해주세요.")
-            elif not password:
-                st.error("비밀번호를 입력해주세요.")
-            elif not name:
-                st.error("이름을 입력해주세요.")
-            elif not parent_code or not validate_parent_code(parent_code):
-                st.error("유효한 부모 코드(8자리)를 입력해주세요.")
-            else:
                 # 만나이 계산 (아이인 경우만)
                 age = calculate_age(birth_date) if birth_date else None
                 
