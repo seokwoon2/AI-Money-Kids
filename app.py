@@ -645,139 +645,146 @@ def login_page():
                 
                 with col_code2:
                     if st.session_state.get('generated_parent_code'):
-                        # 복사 버튼
-                        code_to_copy = st.session_state.generated_parent_code
-                        if st.button("📋 복사", use_container_width=True, key="copy_parent_code"):
-                            # JavaScript로 클립보드에 복사
+                        # 복사 및 입력란에 자동 입력 버튼
+                        if st.button("📋 복사 및\n입력란에\n붙여넣기", use_container_width=True, key="copy_and_paste_code"):
+                            code_to_copy = st.session_state.generated_parent_code
+                            # 클립보드에 복사 (JavaScript)
                             st.markdown(f"""
                             <script>
-                            navigator.clipboard.writeText('{code_to_copy}').then(function() {{
-                                alert('부모 코드가 복사되었습니다!');
-                            }});
+                            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                                navigator.clipboard.writeText('{code_to_copy}').then(function() {{
+                                    console.log('복사 완료');
+                                }});
+                            }}
                             </script>
                             """, unsafe_allow_html=True)
-                            st.success("✅ 부모 코드가 복사되었습니다!")
+                            # 입력란에 자동 입력을 위해 세션 상태 업데이트 (이미 설정되어 있지만 명시적으로)
+                            # st.session_state의 generated_parent_code가 이미 입력란 value에 연결되어 있음
+                            st.success("✅ 부모 코드가 복사되었고 입력란에 자동으로 입력되었습니다!")
+                            st.rerun()
                 
                 # 생성된 코드 표시
                 if st.session_state.get('generated_parent_code'):
                     generated_code = st.session_state.generated_parent_code
-                    st.markdown(f"""
-                    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                padding: 20px; border-radius: 12px; color: white; margin: 15px 0;'>
-                        <h4 style='color: white; margin: 0 0 10px 0;'>✅ 생성된 부모 코드</h4>
-                        <div style='display: flex; align-items: center; gap: 10px; margin: 10px 0;'>
-                            <p id='parent-code-display-{generated_code}' 
-                               style='font-size: 1.5em; font-weight: bold; color: white; margin: 0; 
-                                      font-family: monospace; letter-spacing: 2px; cursor: pointer;
-                                      padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px;
-                                      user-select: all; transition: background 0.3s;'
-                               onclick="copyParentCodeAndPaste('{generated_code}')"
-                               onmouseover="this.style.background='rgba(255,255,255,0.4)'"
-                               onmouseout="this.style.background='rgba(255,255,255,0.2)'"
-                               title='클릭하여 복사 및 붙여넣기'>{generated_code}</p>
-                            <button onclick="copyParentCodeAndPaste('{generated_code}')" 
-                                    style='padding: 10px 15px; background: rgba(255,255,255,0.3); color: white; 
-                                           border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; 
-                                           cursor: pointer; font-weight: 500; transition: all 0.3s;'
-                                    onmouseover="this.style.background='rgba(255,255,255,0.5)'"
-                                    onmouseout="this.style.background='rgba(255,255,255,0.3)'">
-                                📋 복사 및 붙여넣기
-                            </button>
+                    
+                    # 코드 표시 및 복사 버튼
+                    col_code_display, col_copy_btn = st.columns([3, 1])
+                    
+                    with col_code_display:
+                        st.markdown(f"""
+                        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                    padding: 20px; border-radius: 12px; color: white; margin: 15px 0;'>
+                            <h4 style='color: white; margin: 0 0 10px 0;'>✅ 생성된 부모 코드</h4>
+                            <div style='margin: 10px 0;'>
+                                <p id='parent-code-display-{generated_code}' 
+                                   style='font-size: 1.5em; font-weight: bold; color: white; margin: 0; 
+                                          font-family: monospace; letter-spacing: 2px; cursor: pointer;
+                                          padding: 15px; background: rgba(255,255,255,0.2); border-radius: 8px;
+                                          user-select: all; transition: background 0.3s; text-align: center;'
+                                   onclick="copyAndPasteCode('{generated_code}')"
+                                   onmouseover="this.style.background='rgba(255,255,255,0.4)'"
+                                   onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+                                   title='클릭하여 복사 및 붙여넣기'>{generated_code}</p>
+                            </div>
+                            <p style='color: white; opacity: 0.9; margin: 10px 0 0 0; font-size: 0.9em;'>
+                                💡 코드를 클릭하거나 복사 버튼을 눌러주세요. 자동으로 아래 입력란에 입력됩니다.
+                            </p>
                         </div>
-                        <p style='color: white; opacity: 0.9; margin: 10px 0 0 0; font-size: 0.9em;'>
-                            💡 코드를 클릭하거나 복사 버튼을 눌러 복사하세요. 자동으로 아래 입력란에 붙여넣어집니다.
-                        </p>
-                    </div>
-                    
-                    <script>
-                    function copyParentCodeAndPaste(code) {{
-                        // 클립보드에 복사
-                        if (navigator.clipboard && navigator.clipboard.writeText) {{
-                            navigator.clipboard.writeText(code).then(function() {{
-                                // 부모 코드 입력란에 자동으로 붙여넣기
-                                pasteToParentCodeInput(code);
-                                // 시각적 피드백
-                                const display = document.getElementById('parent-code-display-' + code);
-                                if (display) {{
-                                    display.style.background = 'rgba(76, 175, 80, 0.5)';
-                                    setTimeout(function() {{
-                                        display.style.background = 'rgba(255,255,255,0.2)';
-                                    }}, 500);
-                                }}
-                            }}).catch(function(err) {{
-                                console.error('복사 실패:', err);
-                                fallbackCopyAndPaste(code);
-                            }});
-                        }} else {{
-                            fallbackCopyAndPaste(code);
-                        }}
-                    }}
-                    
-                    function fallbackCopyAndPaste(text) {{
-                        const textArea = document.createElement('textarea');
-                        textArea.value = text;
-                        textArea.style.position = 'fixed';
-                        textArea.style.left = '-999999px';
-                        textArea.style.top = '0';
-                        document.body.appendChild(textArea);
-                        textArea.focus();
-                        textArea.select();
-                        try {{
-                            const successful = document.execCommand('copy');
-                            if (successful) {{
-                                pasteToParentCodeInput(text);
+                        
+                        <script>
+                        function copyAndPasteCode(code) {{
+                            // 클립보드에 복사
+                            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                                navigator.clipboard.writeText(code).then(function() {{
+                                    pasteToInput(code);
+                                    showFeedback();
+                                }}).catch(function(err) {{
+                                    fallbackCopyAndPaste(code);
+                                }});
                             }} else {{
-                                alert('❌ 복사에 실패했습니다. 코드를 수동으로 입력해주세요: ' + text);
+                                fallbackCopyAndPaste(code);
                             }}
-                        }} catch (err) {{
-                            console.error('복사 실패:', err);
-                            alert('❌ 복사에 실패했습니다. 코드를 수동으로 입력해주세요: ' + text);
                         }}
-                        document.body.removeChild(textArea);
-                    }}
-                    
-                    function pasteToParentCodeInput(code) {{
-                        // 부모 코드 입력란 찾기 (여러 방법 시도)
-                        setTimeout(function() {{
-                            let inputFound = false;
-                            
-                            // 방법 1: data-testid로 찾기
-                            const allInputs = document.querySelectorAll('input[type="text"], input[data-testid*="stTextInput"]');
-                            allInputs.forEach(function(input) {{
-                                // 부모 요소에서 라벨 찾기
-                                let parent = input.closest('[data-testid*="stTextInput"]') || input.parentElement;
-                                let labelText = '';
-                                
-                                // 라벨 텍스트 찾기
-                                while (parent && !labelText) {{
-                                    const label = parent.querySelector('label');
-                                    if (label) {{
-                                        labelText = label.textContent || '';
-                                    }}
-                                    parent = parent.parentElement;
-                                }}
-                                
-                                // 부모 코드 입력란인지 확인
-                                if (labelText.includes('부모 코드') || labelText.includes('parent code') || 
-                                    input.placeholder && input.placeholder.includes('부모 코드')) {{
-                                    input.value = code;
-                                    input.dispatchEvent(new Event('input', {{ bubbles: true, cancelable: true }}));
-                                    input.dispatchEvent(new Event('change', {{ bubbles: true, cancelable: true }}));
-                                    input.focus();
-                                    input.blur();
-                                    inputFound = true;
-                                }}
-                            }});
-                            
-                            if (inputFound) {{
-                                // 성공 메시지 (간단하게)
-                                console.log('✅ 부모 코드가 입력란에 붙여넣어졌습니다.');
+                        
+                        function fallbackCopyAndPaste(text) {{
+                            const textArea = document.createElement('textarea');
+                            textArea.value = text;
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-999999px';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {{
+                                document.execCommand('copy');
+                                pasteToInput(text);
+                                showFeedback();
+                            }} catch (err) {{
+                                alert('복사 실패: ' + text);
                             }}
-                        }}, 200);
-                    }}
-                    </script>
-                    """, unsafe_allow_html=True)
+                            document.body.removeChild(textArea);
+                        }}
+                        
+                        function pasteToInput(code) {{
+                            // 부모 코드 입력란 찾기
+                            setTimeout(function() {{
+                                const inputs = document.querySelectorAll('input[type="text"]');
+                                inputs.forEach(function(input) {{
+                                    // 부모 요소에서 라벨 찾기
+                                    let parent = input.closest('[data-testid*="stTextInput"]');
+                                    if (!parent) parent = input.parentElement;
+                                    
+                                    let found = false;
+                                    while (parent && !found) {{
+                                        const text = parent.textContent || '';
+                                        if (text.includes('부모 코드') || text.includes('parent code')) {{
+                                            input.value = code;
+                                            input.focus();
+                                            // Streamlit 이벤트 트리거
+                                            ['input', 'change', 'blur'].forEach(function(type) {{
+                                                input.dispatchEvent(new Event(type, {{ bubbles: true }}));
+                                            }});
+                                            found = true;
+                                        }}
+                                        parent = parent.parentElement;
+                                    }}
+                                }});
+                            }}, 100);
+                        }}
+                        
+                        function showFeedback() {{
+                            const display = document.getElementById('parent-code-display-{generated_code}');
+                            if (display) {{
+                                display.style.background = 'rgba(76, 175, 80, 0.5)';
+                                setTimeout(function() {{
+                                    display.style.background = 'rgba(255,255,255,0.2)';
+                                }}, 500);
+                            }}
+                        }}
+                        </script>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_copy_btn:
+                        st.markdown("<br>", unsafe_allow_html=True)  # 정렬을 위한 여백
+                        if st.button("📋 복사 및\n붙여넣기", use_container_width=True, key="copy_paste_btn"):
+                            code_to_copy = st.session_state.generated_parent_code
+                            # 클립보드에 복사
+                            st.markdown(f"""
+                            <script>
+                            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                                navigator.clipboard.writeText('{code_to_copy}').then(function() {{
+                                    console.log('복사 완료');
+                                }});
+                            }}
+                            </script>
+                            """, unsafe_allow_html=True)
+                            # 입력란에 자동 입력 (세션 상태가 이미 설정되어 있으므로 rerun하면 자동 반영)
+                            st.success("✅ 복사 및 붙여넣기 완료!")
+                            st.rerun()
+                    
+                    # 코드 바로 아래에 입력란 표시 (자동으로 채워짐)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.info("💡 위의 코드가 자동으로 아래 입력란에 입력됩니다.")
                 
+                # 부모 코드 입력란 (코드 생성 시 자동으로 채워짐)
                 parent_code = st.text_input(
                     "부모 코드 (8자리)", 
                     value=st.session_state.get('generated_parent_code', ''),
