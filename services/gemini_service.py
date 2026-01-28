@@ -1,12 +1,11 @@
-from google import genai
+import google.generativeai as genai
 from typing import List, Dict
 from config import Config
 
 class GeminiService:
-    """Google Gemini API 서비스 클래스 (최신 google.genai 사용)"""
+    """Google Gemini API 서비스 클래스"""
     
     def __init__(self, api_key: str = None):
-        # Config 인스턴스 생성하여 동적으로 읽기 (Streamlit Cloud Secrets 지원)
         config = Config()
         self.api_key = api_key or config.GEMINI_API_KEY
         
@@ -22,8 +21,8 @@ class GeminiService:
                 error_msg += ".env 파일에서 GOOGLE_API_KEY 또는 환경 변수를 확인하세요."
             raise ValueError(error_msg)
         
-        self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-1.5-flash-latest" # 최신 안정 버전으로 변경
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     def _get_system_prompt(self, user_name: str = None, user_age: int = None, user_type: str = 'child') -> str:
         """사용자 타입에 맞는 시스템 프롬프트 생성"""
@@ -78,22 +77,16 @@ class GeminiService:
         """컨텍스트를 포함한 대화 생성"""
         system_prompt = self._get_system_prompt(user_name, user_age, user_type)
         
-        # 마지막 사용자 메시지 추출
         if not messages or len(messages) == 0:
             last_user_message = "안녕하세요!"
         else:
             last_user_message = messages[-1].get("content", "안녕하세요!")
         
-        # 사용자 메시지에 초등학생용 설명 지시사항 추가
         user_content = f"{last_user_message}\n\n초등학생도 이해할 수 있는 자연스러운 한국어로 설명해줘."
         
         try:
-            # 최신 google.genai API 사용
             prompt = f"{system_prompt}\n\n{user_content}"
-            response = self.client.models.generate_content(
-                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
-                contents=prompt
-            )
+            response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
             error_msg = str(e)
@@ -114,7 +107,6 @@ class GeminiService:
     ) -> str:
         """부모용 코칭 메시지 생성"""
         
-        # 행동 요약
         behavior_summary = ""
         if recent_behaviors:
             saving_count = sum(1 for b in recent_behaviors if b.get('behavior_type') == 'saving')
@@ -147,10 +139,7 @@ class GeminiService:
 친절하고 실용적인 톤으로 작성하되, 자녀를 격려하는 방향으로 제시하세요."""
 
         try:
-            response = self.client.models.generate_content(
-                model="gemini-1.5-flash", # 직접 모델명 지정 (404 오류 해결 시도)
-                contents=prompt
-            )
+            response = self.model.generate_content(prompt)
             return response.text.strip()
         except Exception as e:
             error_msg = str(e)
