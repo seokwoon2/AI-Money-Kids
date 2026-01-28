@@ -8,7 +8,16 @@ class GeminiService:
     def __init__(self, api_key: str = None):
         self.api_key = api_key or Config.GEMINI_API_KEY
         if not self.api_key:
-            raise ValueError("Gemini API 키가 설정되지 않았습니다. .env 파일을 확인하세요.")
+            error_msg = "Gemini API 키가 설정되지 않았습니다. "
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets'):
+                    error_msg += "Streamlit Cloud의 Secrets에서 GEMINI_API_KEY를 설정해주세요."
+                else:
+                    error_msg += ".env 파일 또는 환경 변수를 확인하세요."
+            except:
+                error_msg += ".env 파일 또는 환경 변수를 확인하세요."
+            raise ValueError(error_msg)
         
         # API 키 형식 확인
         if not self.api_key.startswith("AIza"):
