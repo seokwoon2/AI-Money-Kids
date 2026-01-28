@@ -633,164 +633,80 @@ def login_page():
                 st.info("부모님은 나이 입력이 필요하지 않습니다.")
             
             if user_type_value == 'parent':
-                # 부모는 부모 코드 생성
-                col_code1, col_code2 = st.columns([2, 1])
+                # 부모 코드 생성 버튼
+                if st.button("🔑 부모 코드 생성", use_container_width=True, type="primary"):
+                    new_code = generate_parent_code()
+                    st.session_state.generated_parent_code = new_code
+                    # 생성된 코드를 입력란에 즉시 반영하도록 세션 상태 설정
+                    st.session_state.signup_parent_code = new_code
+                    st.session_state.code_generated = True
+                    st.rerun()
                 
-                with col_code1:
-                    if st.button("🔑 부모 코드 생성", use_container_width=True, type="primary"):
-                        new_code = generate_parent_code()
-                        st.session_state.generated_parent_code = new_code
-                        st.session_state.code_generated = True
-                        st.rerun()
-                
-                with col_code2:
-                    if st.session_state.get('generated_parent_code'):
-                        # 복사 및 입력란에 자동 입력 버튼
-                        if st.button("📋 복사 및\n입력란에\n붙여넣기", use_container_width=True, key="copy_and_paste_code"):
-                            code_to_copy = st.session_state.generated_parent_code
-                            # 클립보드에 복사 (JavaScript)
-                            st.markdown(f"""
-                            <script>
-                            if (navigator.clipboard && navigator.clipboard.writeText) {{
-                                navigator.clipboard.writeText('{code_to_copy}').then(function() {{
-                                    console.log('복사 완료');
-                                }});
-                            }}
-                            </script>
-                            """, unsafe_allow_html=True)
-                            # 입력란에 자동 입력을 위해 세션 상태 업데이트 (이미 설정되어 있지만 명시적으로)
-                            # st.session_state의 generated_parent_code가 이미 입력란 value에 연결되어 있음
-                            st.success("✅ 부모 코드가 복사되었고 입력란에 자동으로 입력되었습니다!")
-                            st.rerun()
-                
-                # 생성된 코드 표시
+                # 생성된 코드 표시 (코드가 있을 때만)
                 if st.session_state.get('generated_parent_code'):
                     generated_code = st.session_state.generated_parent_code
-                    
-                    # 코드 표시 및 복사 버튼
-                    col_code_display, col_copy_btn = st.columns([3, 1])
-                    
-                    with col_code_display:
-                        st.markdown(f"""
-                        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                    padding: 20px; border-radius: 12px; color: white; margin: 15px 0;'>
-                            <h4 style='color: white; margin: 0 0 10px 0;'>✅ 생성된 부모 코드</h4>
-                            <div style='margin: 10px 0;'>
-                                <p id='parent-code-display-{generated_code}' 
-                                   style='font-size: 1.5em; font-weight: bold; color: white; margin: 0; 
-                                          font-family: monospace; letter-spacing: 2px; cursor: pointer;
-                                          padding: 15px; background: rgba(255,255,255,0.2); border-radius: 8px;
-                                          user-select: all; transition: background 0.3s; text-align: center;'
-                                   onclick="copyAndPasteCode('{generated_code}')"
-                                   onmouseover="this.style.background='rgba(255,255,255,0.4)'"
-                                   onmouseout="this.style.background='rgba(255,255,255,0.2)'"
-                                   title='클릭하여 복사 및 붙여넣기'>{generated_code}</p>
-                            </div>
-                            <p style='color: white; opacity: 0.9; margin: 10px 0 0 0; font-size: 0.9em;'>
-                                💡 코드를 클릭하거나 복사 버튼을 눌러주세요. 자동으로 아래 입력란에 입력됩니다.
-                            </p>
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                padding: 20px; border-radius: 12px; color: white; margin: 15px 0; text-align: center;'>
+                        <h4 style='color: white; margin: 0 0 10px 0;'>✅ 생성된 부모 코드</h4>
+                        <div style='font-size: 2em; font-weight: bold; margin: 10px 0; font-family: monospace; letter-spacing: 3px;'>
+                            {generated_code}
                         </div>
-                        
-                        <script>
-                        function copyAndPasteCode(code) {{
-                            // 클립보드에 복사
-                            if (navigator.clipboard && navigator.clipboard.writeText) {{
-                                navigator.clipboard.writeText(code).then(function() {{
-                                    pasteToInput(code);
-                                    showFeedback();
-                                }}).catch(function(err) {{
-                                    fallbackCopyAndPaste(code);
-                                }});
-                            }} else {{
-                                fallbackCopyAndPaste(code);
-                            }}
+                        <button onclick="copyToClipboard('{generated_code}')" 
+                                style='background: rgba(255,255,255,0.2); border: 1px solid white; color: white; 
+                                       padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;'>
+                            📋 클립보드에 복사
+                        </button>
+                        <p style='font-size: 0.9em; margin-top: 10px; opacity: 0.9;'>
+                            💡 코드가 아래 입력란에 자동으로 입력되었습니다.
+                        </p>
+                    </div>
+                    <script>
+                    function copyToClipboard(text) {{
+                        const textArea = document.createElement("textarea");
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {{
+                            document.execCommand("copy");
+                            alert("코드가 클립보드에 복사되었습니다: " + text);
+                        }} catch (err) {{
+                            console.error("복사 실패", err);
                         }}
-                        
-                        function fallbackCopyAndPaste(text) {{
-                            const textArea = document.createElement('textarea');
-                            textArea.value = text;
-                            textArea.style.position = 'fixed';
-                            textArea.style.left = '-999999px';
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            try {{
-                                document.execCommand('copy');
-                                pasteToInput(text);
-                                showFeedback();
-                            }} catch (err) {{
-                                alert('복사 실패: ' + text);
-                            }}
-                            document.body.removeChild(textArea);
-                        }}
-                        
-                        function pasteToInput(code) {{
-                            // 부모 코드 입력란 찾기
-                            setTimeout(function() {{
-                                const inputs = document.querySelectorAll('input[type="text"]');
-                                inputs.forEach(function(input) {{
-                                    // 부모 요소에서 라벨 찾기
-                                    let parent = input.closest('[data-testid*="stTextInput"]');
-                                    if (!parent) parent = input.parentElement;
-                                    
-                                    let found = false;
-                                    while (parent && !found) {{
-                                        const text = parent.textContent || '';
-                                        if (text.includes('부모 코드') || text.includes('parent code')) {{
-                                            input.value = code;
-                                            input.focus();
-                                            // Streamlit 이벤트 트리거
-                                            ['input', 'change', 'blur'].forEach(function(type) {{
-                                                input.dispatchEvent(new Event(type, {{ bubbles: true }}));
-                                            }});
-                                            found = true;
-                                        }}
-                                        parent = parent.parentElement;
-                                    }}
-                                }});
-                            }}, 100);
-                        }}
-                        
-                        function showFeedback() {{
-                            const display = document.getElementById('parent-code-display-{generated_code}');
-                            if (display) {{
-                                display.style.background = 'rgba(76, 175, 80, 0.5)';
-                                setTimeout(function() {{
-                                    display.style.background = 'rgba(255,255,255,0.2)';
-                                }}, 500);
-                            }}
-                        }}
-                        </script>
-                        """, unsafe_allow_html=True)
-                    
-                    with col_copy_btn:
-                        st.markdown("<br>", unsafe_allow_html=True)  # 정렬을 위한 여백
-                        if st.button("📋 복사 및\n붙여넣기", use_container_width=True, key="copy_paste_btn"):
-                            code_to_copy = st.session_state.generated_parent_code
-                            # 클립보드에 복사
-                            st.markdown(f"""
-                            <script>
-                            if (navigator.clipboard && navigator.clipboard.writeText) {{
-                                navigator.clipboard.writeText('{code_to_copy}').then(function() {{
-                                    console.log('복사 완료');
-                                }});
-                            }}
-                            </script>
-                            """, unsafe_allow_html=True)
-                            # 입력란에 자동 입력 (세션 상태가 이미 설정되어 있으므로 rerun하면 자동 반영)
-                            st.success("✅ 복사 및 붙여넣기 완료!")
-                            st.rerun()
-                    
-                    # 코드 바로 아래에 입력란 표시 (자동으로 채워짐)
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.info("💡 위의 코드가 자동으로 아래 입력란에 입력됩니다.")
-                
-                # 부모 코드 입력란 (코드 생성 시 자동으로 채워짐)
+                        document.body.removeChild(textArea);
+                    }}
+                    </script>
+                    """, unsafe_allow_html=True)
+
+                # 부모 코드 입력란 (value를 세션 상태와 연동)
                 parent_code = st.text_input(
                     "부모 코드 (8자리)", 
-                    value=st.session_state.get('generated_parent_code', ''),
-                    key="signup_parent_code",
-                    help="위의 '부모 코드 생성' 버튼을 눌러 코드를 생성하거나, 직접 입력하세요."
+                    value=st.session_state.get('signup_parent_code', ''),
+                    key="signup_parent_code_input",
+                    help="부모 코드 생성 버튼을 누르면 자동으로 채워집니다."
                 )
+                # 입력란의 값을 세션 상태에 다시 저장 (사용자가 직접 수정할 수도 있으므로)
+                st.session_state.signup_parent_code = parent_code
+            else:
+                # 아이는 부모 코드 직접 입력
+                parent_code = st.text_input(
+                    "부모 코드 (8자리)", 
+                    value=st.session_state.get('signup_parent_code', ''),
+                    key="signup_parent_code_child", 
+                    help="부모님께 받은 코드를 입력하세요."
+                )
+                st.session_state.signup_parent_code = parent_code
+        
+        if st.button("회원가입", type="primary", use_container_width=True):
+            parent_code = st.session_state.get('signup_parent_code', '') # 최종 값 가져오기
+            if not username:
+                st.error("사용자명을 입력해주세요.")
+            elif not password:
+                st.error("비밀번호를 입력해주세요.")
+            elif not name:
+                st.error("이름을 입력해주세요.")
+            elif not parent_code or not validate_parent_code(parent_code):
+                st.error("유효한 부모 코드(8자리)를 입력해주세요.")
             else:
                 # 아이는 부모 코드 입력
                 parent_code = st.text_input("부모 코드 (8자리)", key="signup_parent_code", 
