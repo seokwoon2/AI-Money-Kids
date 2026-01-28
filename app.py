@@ -747,49 +747,195 @@ def login_page():
                     st.error(f"회원가입 중 오류가 발생했습니다: {str(e)}")
 
 def main_page():
-    """로그인 후 메인 페이지 (홈)"""
-    # Streamlit 기본 네비게이션 숨기기
-    from utils.menu import hide_sidebar_navigation
+    """로그인 후 메인 대시보드 페이지"""
+    from utils.menu import render_sidebar_menu, hide_sidebar_navigation
     hide_sidebar_navigation()
-    st.markdown("""
-    <style>
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    nav[data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
     
-    # 사용자 정보 가져오기
+    # 사용자 정보 및 타입 확인
     user = db.get_user_by_id(st.session_state.user_id)
     user_type = user.get('user_type', 'child') if user else 'child'
     
-    # 사이드바 메뉴 렌더링
-    from utils.menu import render_sidebar_menu
+    # 사이드바 렌더링
     render_sidebar_menu(st.session_state.user_id, st.session_state.user_name, user_type)
     
-    # 로그인 성공 메시지 표시 (한 번만, 간단하게)
-    if st.session_state.get('show_login_success', True):
-        st.success(f"✅ {st.session_state.user_name}님, 환영합니다! 🎉")
-        st.session_state.show_login_success = False
+    # 메인 페이지 스타일
+    st.markdown("""
+    <style>
+    .main-container {
+        padding: 20px 0;
+    }
+    .welcome-header {
+        margin-bottom: 30px;
+    }
+    .welcome-text {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 8px;
+    }
+    .sub-text {
+        color: #718096;
+        font-size: 16px;
+    }
     
-    # 메인 콘텐츠 영역 - 간단한 환영 메시지만
+    /* 카드형 UI */
+    .quick-card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .quick-card {
+        background-color: white;
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .quick-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.05);
+        border-color: #6366f1;
+    }
+    .card-icon {
+        font-size: 32px;
+        margin-bottom: 16px;
+    }
+    .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+    .card-desc {
+        font-size: 14px;
+        color: #718096;
+        line-height: 1.5;
+    }
+    
+    /* 금융 팁 섹션 */
+    .tip-box {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 20px;
+        margin-top: 40px;
+    }
+    .tip-title {
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # 1. 환영 인사
     st.markdown(f"""
-    <div style='text-align: center; padding: 60px 20px;'>
-        <h1 style='font-size: 2.5em; margin-bottom: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>
-            안녕하세요, {st.session_state.user_name}님! 👋
-        </h1>
-        <p style='font-size: 1.3em; color: #6c757d; margin-bottom: 40px;'>
-            AI 금융교육 서비스에 오신 것을 환영합니다
-        </p>
-        <p style='font-size: 1.1em; color: #868e96;'>
-            왼쪽 메뉴에서 원하는 서비스를 선택해주세요
-        </p>
+    <div class="welcome-header">
+        <div class="welcome-text">👋 안녕하세요, {st.session_state.user_name}님!</div>
+        <div class="sub-text">오늘도 똑똑한 금융 습관을 함께 만들어봐요.</div>
     </div>
     """, unsafe_allow_html=True)
+
+    # 2. 역할별 퀵 액션 카드
+    st.markdown("### 🚀 바로가기")
+    
+    if user_type == 'parent':
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">💼</div>
+                <div class="card-title">부모 상담실</div>
+                <div class="card-desc">자녀 금융 교육에 대한 고민을 AI 전문가와 상담해보세요.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("상담 시작하기", key="go_consult", use_container_width=True):
+                st.switch_page("pages/3_💼_부모_상담실.py")
+        
+        with col2:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">📊</div>
+                <div class="card-title">자녀 대시보드</div>
+                <div class="card-desc">우리 아이의 소비 습관과 저축 성향을 한눈에 확인하세요.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("리포트 보기", key="go_dash", use_container_width=True):
+                st.switch_page("pages/2_📊_부모_대시보드.py")
+                
+        with col3:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">💰</div>
+                <div class="card-title">용돈 추천기</div>
+                <div class="card-desc">아이의 나이와 습관에 맞는 적정 용돈을 제안해드립니다.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("용돈 계산하기", key="go_allowance", use_container_width=True):
+                st.switch_page("pages/5_💰_용돈_추천.py")
+    else:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">💬</div>
+                <div class="card-title">AI 친구와 채팅</div>
+                <div class="card-desc">돈에 대해 궁금한 점을 AI 친구에게 편하게 물어보세요!</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("대화 시작하기", key="go_chat", use_container_width=True):
+                st.switch_page("pages/1_💬_아이_채팅.py")
+        
+        with col2:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">오늘의 미션</div>
+                <div class="card-desc">미션을 완료하고 경제 지식도 쌓고 보상도 받아보세요!</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("미션 확인하기", key="go_mission", use_container_width=True):
+                st.switch_page("pages/7_🎯_금융_미션.py")
+                
+        with col3:
+            st.markdown("""
+            <div class="quick-card">
+                <div class="card-icon">📖</div>
+                <div class="card-title">금융 스토리</div>
+                <div class="card-desc">재미있는 이야기를 통해 경제 원리를 쉽게 배워봐요.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("이야기 읽기", key="go_story", use_container_width=True):
+                st.switch_page("pages/8_📖_금융_스토리.py")
+
+    # 3. 오늘의 금융 팁 (랜덤 또는 고정)
+    import random
+    tips = [
+        "저축은 '나중에 쓰고 남은 돈'을 하는 것이 아니라, '먼저 저축하고 남은 돈'을 쓰는 거예요!",
+        "사고 싶은 물건이 있을 때는 '이게 정말 필요한가?'라고 세 번만 스스로 물어보세요.",
+        "작은 돈을 아끼는 습관이 나중에 큰 부자를 만든답니다.",
+        "용돈 기입장을 쓰면 내가 어디에 돈을 많이 쓰는지 알 수 있어 계획을 세우기 좋아져요.",
+        "기회비용이란 하나를 선택했을 때 포기해야 하는 다른 것의 가치를 말해요."
+    ]
+    selected_tip = random.choice(tips)
+    
+    st.markdown(f"""
+    <div class="tip-box">
+        <div class="tip-title">💡 오늘의 금융 한마디</div>
+        <div style="font-size: 16px; opacity: 0.9;">{selected_tip}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 로그인 성공 풍선 (처음 한 번만)
+    if st.session_state.get('show_login_success', False):
+        st.balloons()
+        st.session_state.show_login_success = False
 
 # 메인 로직
 if st.session_state.logged_in:
