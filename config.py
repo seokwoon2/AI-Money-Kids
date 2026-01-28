@@ -35,7 +35,7 @@ def get_gemini_api_key():
     return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
 
 class Config:
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "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"
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY") or ""
     
     @staticmethod
     def get_gemini_api_key():
