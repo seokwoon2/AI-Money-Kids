@@ -1037,6 +1037,8 @@ def main_page():
         </div>
         """, unsafe_allow_html=True)
         if st.button("거래 기록 보기 📋", key="main_history", use_container_width=True):
+            from utils.menu import add_to_recent
+            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
             st.switch_page("pages/9_💵_용돈_관리.py")
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1051,6 +1053,8 @@ def main_page():
         </div>
         """, unsafe_allow_html=True)
         if st.button("지금 도전! 🚀", key="main_quiz", use_container_width=True):
+            from utils.menu import add_to_recent
+            add_to_recent("오늘의 퀴즈", "pages/7_🎯_금융_미션.py", "🎯")
             st.switch_page("pages/7_🎯_금융_미션.py")
 
     with col2:
@@ -1069,6 +1073,8 @@ def main_page():
         </div>
         """, unsafe_allow_html=True)
         if st.button("학습 계속하기 📚", key="main_study", use_container_width=True):
+            from utils.menu import add_to_recent
+            add_to_recent("금융 스토리", "pages/8_📖_금융_스토리.py", "📖")
             st.switch_page("pages/8_📖_금융_스토리.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1087,6 +1093,8 @@ def main_page():
         </div>
         """, unsafe_allow_html=True)
         if st.button("목표 관리하기 🧸", key="main_goal", use_container_width=True):
+            from utils.menu import add_to_recent
+            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
             st.switch_page("pages/9_💵_용돈_관리.py")
 
     # 로그인 성공 풍선 (처음 한 번만)
