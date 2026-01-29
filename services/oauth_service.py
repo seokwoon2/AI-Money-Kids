@@ -12,10 +12,27 @@ class OAuthService:
     
     def __init__(self):
         # 로컬 .env 또는 Streamlit Secrets에서 키 가져오기
-        if hasattr(st, 'secrets') and "KAKAO_REST_API_KEY" in st.secrets:
-            self.client_id = st.secrets["KAKAO_REST_API_KEY"]
-            self.redirect_uri = st.secrets["KAKAO_REDIRECT_URI"]
-        else:
+        try:
+            # Streamlit Secrets 확인 (런타임에만 가능)
+            if hasattr(st, 'secrets'):
+                try:
+                    if "KAKAO_REST_API_KEY" in st.secrets:
+                        self.client_id = st.secrets["KAKAO_REST_API_KEY"]
+                        self.redirect_uri = st.secrets.get("KAKAO_REDIRECT_URI", "http://localhost:8501")
+                    else:
+                        # Secrets에 없으면 환경 변수에서 가져오기
+                        self.client_id = os.getenv("KAKAO_REST_API_KEY")
+                        self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
+                except (AttributeError, KeyError, RuntimeError):
+                    # Secrets 접근 실패 시 환경 변수 사용
+                    self.client_id = os.getenv("KAKAO_REST_API_KEY")
+                    self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
+            else:
+                # Streamlit이 초기화되지 않았으면 환경 변수만 사용
+                self.client_id = os.getenv("KAKAO_REST_API_KEY")
+                self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
+        except Exception:
+            # 모든 초기화 실패 시 기본값 설정
             self.client_id = os.getenv("KAKAO_REST_API_KEY")
             self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
 

@@ -5,7 +5,16 @@ from utils.auth import generate_parent_code, validate_parent_code
 from utils.menu import hide_sidebar_navigation
 from services.oauth_service import OAuthService
 
-oauth_service = OAuthService()
+# OAuth 서비스 지연 초기화 (Streamlit 초기화 후에만 접근)
+def get_oauth_service():
+    """OAuth 서비스 인스턴스 가져오기 (지연 초기화)"""
+    if 'oauth_service' not in st.session_state:
+        try:
+            st.session_state.oauth_service = OAuthService()
+        except Exception as e:
+            # 초기화 실패 시 None 반환
+            st.session_state.oauth_service = None
+    return st.session_state.oauth_service
 
 def calculate_age(birth_date: date) -> int:
     """생년월일로부터 만나이 계산"""
@@ -69,8 +78,10 @@ def login_page():
     query_params = st.query_params
     if "code" in query_params:
         code = query_params["code"]
-        with st.spinner("카카오 로그인 중... 🐷"):
-            access_token = oauth_service.get_kakao_token(code)
+        oauth_service = get_oauth_service()
+        if oauth_service:
+            with st.spinner("카카오 로그인 중... 🐷"):
+                access_token = oauth_service.get_kakao_token(code)
             
             if access_token:
                 user_info = oauth_service.get_kakao_user_info(access_token)
@@ -256,13 +267,15 @@ def login_page():
             """, unsafe_allow_html=True)
             
             # 카카오 로그인 버튼 (st.link_button 사용으로 레이아웃 깨짐 방지)
-            kakao_login_url = oauth_service.get_kakao_login_url()
-            st.link_button(
-                "🟡 카카오로 3초 만에 시작하기", 
-                kakao_login_url, 
-                use_container_width=True,
-                help="카카오 계정으로 안전하게 로그인합니다."
-            )
+            oauth_service = get_oauth_service()
+            if oauth_service and oauth_service.client_id:
+                kakao_login_url = oauth_service.get_kakao_login_url()
+                st.link_button(
+                    "🟡 카카오로 3초 만에 시작하기", 
+                    kakao_login_url, 
+                    use_container_width=True,
+                    help="카카오 계정으로 안전하게 로그인합니다."
+                )
             
             # 네이버, 구글 버튼 (준비 중)
             soc_col1, soc_col2 = st.columns(2)
