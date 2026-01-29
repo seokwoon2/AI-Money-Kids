@@ -195,7 +195,7 @@ def login_page():
         <div class="login-header">
             <div class="piggy-logo">🐷</div>
             <h1 class="login-title">AI <span>Money</span> Friends</h1>
-            <p class="login-subtitle">똑똑한 경제 습관, 꿀꿀이랑 시작해봐요! ✨</p>
+            <p class="login-subtitle">우리 아이의 첫 금융 교육, 지금 시작하세요! 💰✨</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -236,6 +236,25 @@ def login_page():
                 form_username = st.text_input("👤 아이디", placeholder="아이디를 입력하세요", value=initial_username)
                 form_password = st.text_input("🔐 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
                 
+                # 비밀번호 강도 표시 (간이 구현)
+                if form_password:
+                    strength = 0
+                    if len(form_password) >= 4: strength += 1
+                    if any(c.isdigit() for c in form_password): strength += 1
+                    if any(c.isupper() for c in form_password) or len(form_password) >= 8: strength += 1
+                    
+                    colors = ["#ff4b4b", "#ffa500", "#00c853"]
+                    labels = ["약함 🔴", "보통 🟡", "강함 🟢"]
+                    idx = min(strength, 2)
+                    st.markdown(f"""
+                        <div style="margin-top: -10px; margin-bottom: 10px;">
+                            <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px;">
+                                <div style="width: {(idx+1)*33}%; height: 100%; background: {colors[idx]}; border-radius: 2px; transition: 0.3s;"></div>
+                            </div>
+                            <div style="font-size: 11px; color: {colors[idx]}; margin-top: 4px; font-weight: 700;">비밀번호 강도: {labels[idx]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
                 col_check1, col_check2 = st.columns(2)
                 with col_check1:
                     remember_default = st.session_state.get('remember_username', False)
@@ -244,38 +263,63 @@ def login_page():
                     auto_default = st.session_state.get('auto_login', False)
                     auto_login = st.checkbox("🚀 자동 로그인", value=auto_default)
                 
-                login_clicked = st.form_submit_button("🚀 시작하기!", type="primary", use_container_width=True)
+                # 메인 로그인 버튼 (강조된 스타일)
+                login_clicked = st.form_submit_button("🚀 로그인하기!", type="primary", use_container_width=True)
             
             if login_clicked:
-                if not form_username or not form_password:
-                    st.warning("⚠️ 아이디와 비밀번호를 모두 입력해줘!")
-                else:
-                    user = db.get_user_by_username(form_username)
-                    if user and db.verify_password(form_password, user['password_hash']):
-                        if user['user_type'] != login_type_value:
-                            type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
-                            st.error(f"❌ 이 계정은 **{type_kr}** 계정이야. 다시 확인해볼래?")
-                        else:
-                            # 로그인 성공
-                            st.session_state.logged_in = True
-                            st.session_state.user_id = user['id']
-                            st.session_state.user_name = user['name']
-                            st.session_state.show_login_success = True
-                            
-                            # 아이디 저장 처리
-                            if remember_username:
-                                st.markdown(f"<script>localStorage.setItem('saved_username', '{form_username}'); localStorage.setItem('remember_username', 'true');</script>", unsafe_allow_html=True)
-                            else:
-                                st.markdown("<script>localStorage.removeItem('saved_username'); localStorage.removeItem('remember_username');</script>", unsafe_allow_html=True)
-                            
-                            if auto_login:
-                                st.markdown("<script>localStorage.setItem('auto_login', 'true');</script>", unsafe_allow_html=True)
-                            else:
-                                st.markdown("<script>localStorage.removeItem('auto_login');</script>", unsafe_allow_html=True)
-                            
-                            st.rerun()
+                with st.spinner("꿀꿀이가 확인 중이에요... 🐷"):
+                    if not form_username or not form_password:
+                        st.warning("⚠️ 아이디와 비밀번호를 모두 입력해줘!")
                     else:
-                        st.error("❌ 아이디나 비밀번호가 틀린 것 같아. 다시 입력해볼래?")
+                        user = db.get_user_by_username(form_username)
+                        if user and db.verify_password(form_password, user['password_hash']):
+                            if user['user_type'] != login_type_value:
+                                type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
+                                st.error(f"❌ 이 계정은 **{type_kr}** 계정이야. 다시 확인해볼래?")
+                            else:
+                                # 로그인 성공
+                                st.session_state.logged_in = True
+                                st.session_state.user_id = user['id']
+                                st.session_state.user_name = user['name']
+                                st.session_state.show_login_success = True
+                                
+                                # 아이디 저장 처리
+                                if remember_username:
+                                    st.markdown(f"<script>localStorage.setItem('saved_username', '{form_username}'); localStorage.setItem('remember_username', 'true');</script>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown("<script>localStorage.removeItem('saved_username'); localStorage.removeItem('remember_username');</script>", unsafe_allow_html=True)
+                                
+                                if auto_login:
+                                    st.markdown("<script>localStorage.setItem('auto_login', 'true');</script>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown("<script>localStorage.removeItem('auto_login');</script>", unsafe_allow_html=True)
+                                
+                                st.success(f"🎉 환영합니다, {user['name']}님!")
+                                st.balloons()
+                                import time
+                                time.sleep(1)
+                                st.rerun()
+                        else:
+                            st.error("❌ 아이디나 비밀번호가 틀린 것 같아. 다시 입력해볼래?")
+            
+            # 소셜 로그인 옵션 추가
+            st.markdown("""
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="display: flex; align-items: center; color: #cbd5e1; font-size: 12px;">
+                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                        <div style="padding: 0 10px;">또는 소셜 계정으로 시작</div>
+                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            soc_col1, soc_col2, soc_col3 = st.columns(3)
+            with soc_col1:
+                st.button("🟡 카카오", use_container_width=True, help="카카오톡으로 로그인 (준비 중)")
+            with soc_col2:
+                st.button("🟢 네이버", use_container_width=True, help="네이버로 로그인 (준비 중)")
+            with soc_col3:
+                st.button("⚪ 구글", use_container_width=True, help="구글로 로그인 (준비 중)")
             
             # 아이디/비밀번호 찾기
             st.markdown('<div class="footer-link">', unsafe_allow_html=True)
