@@ -245,21 +245,72 @@ def login_page():
             
             # 2. 소셜 로그인 섹션 (상단 추가)
             st.markdown("""
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">간편하게 시작하기</p>
+                <style>
+                .social-divider {
+                    display: flex;
+                    align-items: center;
+                    margin: 25px 0 15px 0;
+                }
+                .social-divider-line {
+                    flex-grow: 1;
+                    height: 1px;
+                    background-color: #e2e8f0;
+                }
+                .social-divider-text {
+                    padding: 0 15px;
+                    color: #94a3b8;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                }
+                .kakao-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: #FEE500;
+                    color: #3c1e1e;
+                    padding: 12px;
+                    border-radius: 16px;
+                    text-decoration: none;
+                    font-weight: 800;
+                    font-size: 16px;
+                    box-shadow: 0 4px 12px rgba(254, 229, 0, 0.2);
+                    transition: all 0.3s ease;
+                    border: none;
+                    width: 100%;
+                    cursor: pointer;
+                }
+                .kakao-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 15px rgba(254, 229, 0, 0.3);
+                    background-color: #fada00;
+                }
+                .kakao-icon {
+                    width: 24px;
+                    height: 24px;
+                    margin-right: 10px;
+                }
+                </style>
+                <div class="social-divider">
+                    <div class="social-divider-line"></div>
+                    <div class="social-divider-text">간편하게 시작하기</div>
+                    <div class="social-divider-line"></div>
                 </div>
             """, unsafe_allow_html=True)
             
-            # 카카오 로그인 버튼 (st.link_button 사용으로 레이아웃 깨짐 방지)
+            # 카카오 로그인 버튼 (커스텀 스타일)
             kakao_login_url = oauth_service.get_kakao_login_url()
-            st.link_button(
-                "🟡 카카오로 3초 만에 시작하기", 
-                kakao_login_url, 
-                use_container_width=True,
-                help="카카오 계정으로 안전하게 로그인합니다."
-            )
+            st.markdown(f"""
+                <a href="{kakao_login_url}" target="_self" style="text-decoration: none;">
+                    <div class="kakao-btn">
+                        <img src="https://developers.kakao.com/assets/img/lib/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png" class="kakao-icon">
+                        카카오로 3초 만에 시작하기
+                    </div>
+                </a>
+            """, unsafe_allow_html=True)
             
             # 네이버, 구글 버튼 (준비 중)
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
             soc_col1, soc_col2 = st.columns(2)
             with soc_col1:
                 st.markdown("""
