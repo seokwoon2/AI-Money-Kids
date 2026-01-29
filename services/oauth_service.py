@@ -1,13 +1,18 @@
+"""
+OAuth 서비스 모듈
+카카오, 네이버, 구글 소셜 로그인을 지원합니다.
+로컬 환경(.env)과 Streamlit Cloud(secrets) 모두 지원합니다.
+"""
 import os
 import streamlit as st
 import requests
 from urllib.parse import urlencode
+from typing import Optional, Dict
 
 # .env 파일 로드 (로컬 환경용)
 try:
     from dotenv import load_dotenv
     # 프로젝트 루트에서 .env 파일 찾기
-    import os
     env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     load_dotenv(dotenv_path=env_path, override=True)
     # 현재 디렉토리에서도 시도
@@ -19,12 +24,20 @@ except Exception:
     # .env 파일이 없어도 계속 진행
     pass
 
+
 class OAuthService:
+    """
+    OAuth 서비스 클래스
+    카카오, 네이버, 구글 소셜 로그인을 처리합니다.
+    """
+    
     def __init__(self):
-        # 환경 변수 로드 순서: .env 파일 우선 → 없으면 Streamlit Secrets
+        """
+        OAuth 서비스 초기화
+        환경 변수 로드 순서: .env 파일 우선 → 없으면 Streamlit Secrets
+        """
         try:
             # 먼저 .env 파일에서 로드 (로컬 환경)
-            # os.getenv는 None을 반환하거나 빈 문자열을 반환할 수 있음
             self.kakao_key = os.getenv('KAKAO_CLIENT_ID') or None
             self.kakao_redirect = os.getenv('KAKAO_REDIRECT_URI') or 'http://localhost:8501'
             
@@ -87,7 +100,7 @@ class OAuthService:
                         if not self.google_redirect or self.google_redirect == 'http://localhost:8501':
                             if st.secrets.get('GOOGLE_REDIRECT_URI'):
                                 self.google_redirect = st.secrets['GOOGLE_REDIRECT_URI']
-                except Exception:
+                except Exception as e:
                     # Secrets 접근 실패 시 기존 .env 값 유지
                     pass
             
@@ -126,7 +139,15 @@ class OAuthService:
     # 카카오 로그인
     # =====================
     def get_kakao_login_url(self) -> str:
-        """카카오 로그인 URL 생성"""
+        """
+        카카오 로그인 URL 생성
+        
+        Returns:
+            str: 카카오 로그인 인가 URL
+            
+        Raises:
+            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+        """
         if not self.kakao_key:
             raise ValueError("카카오 클라이언트 ID가 설정되지 않았습니다. Streamlit Secrets 또는 .env 파일을 확인해주세요.")
         
@@ -141,8 +162,19 @@ class OAuthService:
         }
         return f"{base_url}?{urlencode(params)}"
     
-    def get_kakao_token(self, code: str) -> dict:
-        """카카오 액세스 토큰 발급"""
+    def get_kakao_token(self, code: str) -> Dict:
+        """
+        카카오 액세스 토큰 발급
+        
+        Args:
+            code: 인가 코드
+            
+        Returns:
+            dict: 토큰 정보 (access_token, refresh_token 등)
+        """
+        if not self.kakao_key:
+            return {}
+            
         token_url = "https://kauth.kakao.com/oauth/token"
         data = {
             'grant_type': 'authorization_code',
@@ -151,30 +183,67 @@ class OAuthService:
             'code': code
         }
         try:
-            response = requests.post(token_url, data=data)
+            response = requests.post(token_url, data=data, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("카카오 토큰 발급 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"카카오 토큰 발급 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"카카오 토큰 발급 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"카카오 토큰 발급 중 오류 발생: {str(e)}")
             return {}
     
-    def get_kakao_user_info(self, access_token: str) -> dict:
-        """카카오 사용자 정보 조회"""
+    def get_kakao_user_info(self, access_token: str) -> Dict:
+        """
+        카카오 사용자 정보 조회
+        
+        Args:
+            access_token: 액세스 토큰
+            
+        Returns:
+            dict: 사용자 정보
+        """
+        if not access_token:
+            return {}
+            
         user_info_url = "https://kapi.kakao.com/v2/user/me"
         headers = {'Authorization': f'Bearer {access_token}'}
         try:
-            response = requests.get(user_info_url, headers=headers)
+            response = requests.get(user_info_url, headers=headers, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("카카오 사용자 정보 조회 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"카카오 사용자 정보 조회 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"카카오 사용자 정보 조회 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"카카오 사용자 정보 조회 중 오류 발생: {str(e)}")
             return {}
     
     # =====================
     # 네이버 로그인
     # =====================
     def get_naver_login_url(self) -> str:
-        """네이버 로그인 URL 생성"""
+        """
+        네이버 로그인 URL 생성
+        
+        Returns:
+            str: 네이버 로그인 인가 URL
+            
+        Raises:
+            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+        """
         if not self.naver_client_id:
             raise ValueError("네이버 클라이언트 ID가 설정되지 않았습니다.")
         
@@ -183,7 +252,8 @@ class OAuthService:
         
         import secrets
         state = secrets.token_urlsafe(16)
-        st.session_state['naver_state'] = state
+        if hasattr(st, 'session_state'):
+            st.session_state['naver_state'] = state
         
         base_url = "https://nid.naver.com/oauth2.0/authorize"
         params = {
@@ -194,8 +264,20 @@ class OAuthService:
         }
         return f"{base_url}?{urlencode(params)}"
     
-    def get_naver_token(self, code: str, state: str) -> dict:
-        """네이버 액세스 토큰 발급"""
+    def get_naver_token(self, code: str, state: str) -> Dict:
+        """
+        네이버 액세스 토큰 발급
+        
+        Args:
+            code: 인가 코드
+            state: 상태 값 (CSRF 방지용)
+            
+        Returns:
+            dict: 토큰 정보
+        """
+        if not self.naver_client_id or not self.naver_client_secret:
+            return {}
+            
         token_url = "https://nid.naver.com/oauth2.0/token"
         params = {
             'grant_type': 'authorization_code',
@@ -205,30 +287,67 @@ class OAuthService:
             'state': state
         }
         try:
-            response = requests.get(token_url, params=params)
+            response = requests.get(token_url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("네이버 토큰 발급 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"네이버 토큰 발급 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"네이버 토큰 발급 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"네이버 토큰 발급 중 오류 발생: {str(e)}")
             return {}
     
-    def get_naver_user_info(self, access_token: str) -> dict:
-        """네이버 사용자 정보 조회"""
+    def get_naver_user_info(self, access_token: str) -> Dict:
+        """
+        네이버 사용자 정보 조회
+        
+        Args:
+            access_token: 액세스 토큰
+            
+        Returns:
+            dict: 사용자 정보
+        """
+        if not access_token:
+            return {}
+            
         user_info_url = "https://openapi.naver.com/v1/nid/me"
         headers = {'Authorization': f'Bearer {access_token}'}
         try:
-            response = requests.get(user_info_url, headers=headers)
+            response = requests.get(user_info_url, headers=headers, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("네이버 사용자 정보 조회 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"네이버 사용자 정보 조회 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"네이버 사용자 정보 조회 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"네이버 사용자 정보 조회 중 오류 발생: {str(e)}")
             return {}
     
     # =====================
     # 구글 로그인
     # =====================
     def get_google_login_url(self) -> str:
-        """구글 로그인 URL 생성"""
+        """
+        구글 로그인 URL 생성
+        
+        Returns:
+            str: 구글 로그인 인가 URL
+            
+        Raises:
+            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+        """
         if not self.google_client_id:
             raise ValueError("구글 클라이언트 ID가 설정되지 않았습니다.")
         
@@ -245,8 +364,19 @@ class OAuthService:
         }
         return f"{base_url}?{urlencode(params)}"
     
-    def get_google_token(self, code: str) -> dict:
-        """구글 액세스 토큰 발급"""
+    def get_google_token(self, code: str) -> Dict:
+        """
+        구글 액세스 토큰 발급
+        
+        Args:
+            code: 인가 코드
+            
+        Returns:
+            dict: 토큰 정보
+        """
+        if not self.google_client_id or not self.google_client_secret:
+            return {}
+            
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             'code': code,
@@ -256,21 +386,50 @@ class OAuthService:
             'grant_type': 'authorization_code'
         }
         try:
-            response = requests.post(token_url, data=data)
+            response = requests.post(token_url, data=data, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("구글 토큰 발급 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"구글 토큰 발급 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"구글 토큰 발급 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"구글 토큰 발급 중 오류 발생: {str(e)}")
             return {}
     
-    def get_google_user_info(self, access_token: str) -> dict:
-        """구글 사용자 정보 조회"""
+    def get_google_user_info(self, access_token: str) -> Dict:
+        """
+        구글 사용자 정보 조회
+        
+        Args:
+            access_token: 액세스 토큰
+            
+        Returns:
+            dict: 사용자 정보
+        """
+        if not access_token:
+            return {}
+            
         user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
         headers = {'Authorization': f'Bearer {access_token}'}
         try:
-            response = requests.get(user_info_url, headers=headers)
+            response = requests.get(user_info_url, headers=headers, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.Timeout:
+            if hasattr(st, 'error'):
+                st.error("구글 사용자 정보 조회 시간 초과: 서버 응답이 지연되었습니다.")
+            return {}
+        except requests.exceptions.RequestException as e:
+            if hasattr(st, 'error'):
+                st.error(f"구글 사용자 정보 조회 실패: {str(e)}")
+            return {}
         except Exception as e:
-            st.error(f"구글 사용자 정보 조회 실패: {e}")
+            if hasattr(st, 'error'):
+                st.error(f"구글 사용자 정보 조회 중 오류 발생: {str(e)}")
             return {}

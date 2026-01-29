@@ -1,183 +1,138 @@
-# 💰 AI 금융교육 서비스
+# AI Money Friends 💰
 
-아이들의 금융 습관을 기르는 것을 돕는 AI 기반 Streamlit 웹 애플리케이션입니다.
+AI-powered financial education platform for kids.
 
-## ✨ 주요 기능
+## Features
 
-### 1단계: 기본 뼈대
-- ✅ Streamlit 기반 웹 인터페이스
-- ✅ OpenAI GPT-4o-mini API 연동
-- ✅ 아이들이 채팅으로 돈 관련 질문 가능
-- ✅ 소비/저축 행동 기록 기능
-- ✅ 부모용 리포트 화면
+- **Social Login**: Support for Kakao, Naver, and Google OAuth login
+- **AI Chatbot**: Interactive financial education chatbot powered by Google Gemini
+- **Financial Education**: Age-appropriate financial lessons and activities
+- **Parent Dashboard**: Monitor your child's financial learning progress
+- **Child Dashboard**: Fun and engaging interface for kids to learn about money
 
-### 2단계: 대화 기억 기능
-- ✅ 아이별 대화 내용 저장
-- ✅ 이전 대화를 기억하며 답변
-- ✅ 일별 대화 세션 관리
+## Installation
 
-### 3단계: 금융습관 분석
-- ✅ 충동성 점수 계산 (낮을수록 좋음)
-- ✅ 저축성향 점수 계산 (높을수록 좋음)
-- ✅ 인내심 점수 계산 (높을수록 좋음)
-- ✅ 행동 데이터 기반 자동 분석
+### Prerequisites
 
-### 4단계: 부모 대시보드
-- ✅ 점수 시각화 (게이지 차트)
-- ✅ 점수 추이 그래프 (최근 30일)
-- ✅ AI 생성 코칭 메시지
-- ✅ 행동 기록 테이블
+- Python 3.8 or higher
+- pip package manager
 
-## 🚀 시작하기
+### Setup
 
-### 필수 요구사항
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd "JB AI Money Kids"
+```
 
-- Python 3.8 이상
-- OpenAI API 키
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-### 설치 방법
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-1. **저장소 클론 또는 다운로드**
+4. Create a `.env` file in the project root:
+```env
+# Social Login
+KAKAO_CLIENT_ID=your_kakao_client_id
+KAKAO_REDIRECT_URI=http://localhost:8501
 
-2. **의존성 패키지 설치**
-   ```bash
-   pip install -r requirements.txt
-   ```
+NAVER_CLIENT_ID=your_naver_client_id
+NAVER_CLIENT_SECRET=your_naver_client_secret
+NAVER_REDIRECT_URI=http://localhost:8501
 
-3. **환경 변수 설정**
-   
-   `.env.example` 파일을 참고하여 `.env` 파일을 생성하고 OpenAI API 키를 입력하세요:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8501
 
-4. **애플리케이션 실행**
-   ```bash
-   streamlit run app.py
-   ```
+# AI API Keys
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+```
 
-5. **브라우저에서 열기**
-   
-   터미널에 표시된 URL (일반적으로 `http://localhost:8501`)을 브라우저에서 열어주세요.
+## Running the Application
 
-## 📖 사용 방법
+Start the Streamlit app:
+```bash
+streamlit run app.py
+```
 
-### 회원가입
+The app will be available at `http://localhost:8501`
 
-1. 메인 페이지에서 "회원가입" 탭 선택
-2. 사용자 정보 입력:
-   - 사용자명 (아이의 아이디)
-   - 비밀번호
-   - 이름 (닉네임)
-   - 나이
-   - 부모 코드 (8자리)
-3. 부모 코드가 없으면 "부모님용 코드 생성" 버튼을 눌러 생성
-4. 생성된 부모 코드를 안전한 곳에 저장 (자녀들이 같은 코드로 가입)
+## Environment Variables
 
-### 로그인
+### Social Login
 
-1. 메인 페이지에서 "로그인" 탭 선택
-2. 사용자명과 비밀번호 입력
-3. 로그인 후 사이드바에서 페이지 선택
+- `KAKAO_CLIENT_ID`: Kakao REST API Key
+- `KAKAO_REDIRECT_URI`: Redirect URI for Kakao OAuth
+- `NAVER_CLIENT_ID`: Naver Client ID
+- `NAVER_CLIENT_SECRET`: Naver Client Secret
+- `NAVER_REDIRECT_URI`: Redirect URI for Naver OAuth
+- `GOOGLE_CLIENT_ID`: Google Client ID
+- `GOOGLE_CLIENT_SECRET`: Google Client Secret
+- `GOOGLE_REDIRECT_URI`: Redirect URI for Google OAuth
 
-### 아이 채팅 페이지
+### AI Services
 
-1. 사이드바에서 "💬 아이 채팅" 선택
-2. 돈에 대해 궁금한 것을 자유롭게 질문
-3. AI가 아이의 나이와 이전 대화를 고려하여 답변
-4. 대화 중 저축, 소비 등 언급 시 자동으로 행동 기록
+- `GEMINI_API_KEY`: Google Gemini API key
+- `GROQ_API_KEY`: Groq API key (optional)
 
-**예시 질문:**
-- 저축이 왜 중요한가요?
-- 용돈을 어떻게 관리하면 좋을까요?
-- 비싼 장난감을 사고 싶어요
-- 돈을 모으는 방법이 뭐예요?
+## Deployment (Streamlit Cloud)
 
-### 부모 대시보드
-
-1. 사이드바에서 "📊 부모 대시보드" 선택
-2. 자녀 선택 드롭다운에서 확인할 자녀 선택
-3. 다음 정보 확인:
-   - **금융습관 점수**: 충동성, 저축성향, 인내심 (게이지 차트)
-   - **점수 추이**: 최근 30일간의 점수 변화 그래프
-   - **AI 코칭 인사이트**: 자녀의 강점과 개선 방향 제시
-   - **행동 기록**: 최근 20개 행동 기록 테이블
-
-## 📁 프로젝트 구조
+1. Push your code to GitHub
+2. Go to [Streamlit Cloud](https://streamlit.io/cloud)
+3. Create a new app and connect your repository
+4. Add secrets in the app settings:
 
 ```
-JB AI Money Kids/
-├── app.py                          # Streamlit 메인 앱
-├── requirements.txt                # 의존성 패키지
-├── .env.example                    # 환경 변수 예시
-├── README.md                       # 프로젝트 설명서
-├── config.py                       # 설정 관리
-├── database/
-│   ├── __init__.py
-│   ├── db_manager.py              # 데이터베이스 CRUD 작업
-│   └── schema.sql                 # 테이블 스키마 정의
+[oauth]
+kakao_client_id = "your_kakao_client_id"
+kakao_redirect_uri = "https://your-app.streamlit.app"
+naver_client_id = "your_naver_client_id"
+naver_client_secret = "your_naver_client_secret"
+naver_redirect_uri = "https://your-app.streamlit.app"
+google_client_id = "your_google_client_id"
+google_client_secret = "your_google_client_secret"
+google_redirect_uri = "https://your-app.streamlit.app"
+```
+
+## Project Structure
+
+```
+.
+├── app.py                 # Main application file
 ├── services/
-│   ├── __init__.py
-│   ├── openai_service.py          # OpenAI API 통신
-│   ├── conversation_service.py    # 대화 히스토리 관리
-│   └── analysis_service.py        # 금융습관 분석 로직
-├── models/
-│   ├── __init__.py
-│   └── user.py                    # 사용자 데이터 모델
-├── pages/
-│   ├── 1_💬_아이_채팅.py         # 아이용 채팅 인터페이스
-│   └── 2_📊_부모_대시보드.py     # 부모용 대시보드
-└── utils/
-    ├── __init__.py
-    └── auth.py                    # 인증 헬퍼 함수
+│   ├── oauth_service.py   # OAuth service (Kakao, Naver, Google)
+│   ├── gemini_service.py  # Google Gemini AI service
+│   └── conversation_service.py  # Chat conversation service
+├── database/
+│   └── db_manager.py      # Database management
+├── utils/
+│   ├── menu.py            # Sidebar menu
+│   └── auth.py            # Authentication utilities
+├── pages/                 # Streamlit pages
+│   ├── 1_💬_아이_채팅.py
+│   ├── 7_🎯_금융_미션.py
+│   └── 8_📖_금융_스토리.py
+├── .env                   # Environment variables (local)
+├── .env.example           # Environment variables template
+├── requirements.txt       # Python dependencies
+└── README.md             # This file
 ```
 
-## 🔧 기술 스택
+## License
 
-- **Frontend**: Streamlit
-- **Backend**: Python
-- **Database**: SQLite
-- **AI**: OpenAI GPT-4o-mini
-- **Visualization**: Plotly
-- **Data Processing**: Pandas
+This project is licensed under the MIT License.
 
-## 📊 데이터베이스 스키마
+## Contributing
 
-- **users**: 사용자 정보 (아이 계정)
-- **conversations**: 대화 세션
-- **messages**: 채팅 메시지
-- **behaviors**: 금융 행동 기록
-- **scores**: 금융습관 점수
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 🎯 금융습관 분석 로직
+## Support
 
-### 충동성 점수 (0-100, 낮을수록 좋음)
-- 충동구매 횟수 / 전체 소비 횟수 * 100
-
-### 저축성향 점수 (0-100, 높을수록 좋음)
-- 저축 금액 / (저축 금액 + 소비 금액) * 100
-
-### 인내심 점수 (0-100, 높을수록 좋음)
-- (계획적 소비 + 만족 지연) / 전체 소비 횟수 * 100
-
-## 🔐 보안
-
-- 비밀번호는 bcrypt로 해싱되어 저장됩니다
-- 부모 코드는 UUID 기반으로 생성됩니다
-- 세션 상태로 로그인 정보 관리
-
-## 📝 라이선스
-
-이 프로젝트는 교육 목적으로 제작되었습니다.
-
-## 🤝 기여
-
-버그 리포트나 기능 제안은 이슈로 등록해주세요.
-
-## 📧 문의
-
-질문이나 도움이 필요하시면 이슈를 생성해주세요.
-
----
-
-**즐거운 금융 교육 되세요! 💰**
+For issues and questions, please open an issue on GitHub.

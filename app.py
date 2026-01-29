@@ -81,68 +81,138 @@ if 'show_signup' not in st.session_state:
 db = DatabaseManager()
 
 def handle_oauth_callback():
-    """소셜 로그인 콜백 처리"""
+    """
+    소셜 로그인 콜백 처리
+    카카오, 네이버, 구글 OAuth 콜백을 처리합니다.
+    """
     query_params = st.query_params
     
-    # 카카오
-    if 'code' in query_params and 'state' not in query_params:
-        code = query_params['code']
-        from services.oauth_service import OAuthService
-        oauth = OAuthService()
-        
-        token = oauth.get_kakao_token(code)
-        if 'access_token' in token:
-            user_info = oauth.get_kakao_user_info(token['access_token'])
-            if user_info:
-                st.session_state['logged_in'] = True
-                st.session_state['username'] = user_info.get('properties', {}).get('nickname', '사용자')
-                st.session_state['user_type'] = 'parent'
-                st.session_state['oauth_provider'] = 'kakao'
-                st.success(f"환영합니다, {st.session_state['username']}님! 🎉")
-                st.balloons()
-                st.query_params.clear()
-                st.rerun()
+    # 에러 파라미터 확인
+    if 'error' in query_params:
+        error = query_params.get('error')
+        error_description = query_params.get('error_description', '알 수 없는 오류')
+        st.error(f"로그인 오류: {error_description}")
+        st.query_params.clear()
+        return
     
-    # 네이버
-    elif 'code' in query_params and 'state' in query_params:
-        code = query_params['code']
-        state = query_params['state']
+    try:
         from services.oauth_service import OAuthService
         oauth = OAuthService()
         
-        if st.session_state.get('naver_state') == state:
-            token = oauth.get_naver_token(code, state)
-            if 'access_token' in token:
-                user_info = oauth.get_naver_user_info(token['access_token'])
-                if user_info and user_info.get('resultcode') == '00':
-                    response = user_info.get('response', {})
-                    st.session_state['logged_in'] = True
-                    st.session_state['username'] = response.get('name', '사용자')
-                    st.session_state['user_type'] = 'parent'
-                    st.session_state['oauth_provider'] = 'naver'
-                    st.success(f"환영합니다, {st.session_state['username']}님! 🎉")
-                    st.balloons()
-                    st.query_params.clear()
-                    st.rerun()
-    
-    # 구글 (code 파라미터가 있지만 error는 없는 경우)
-    elif 'code' in query_params and 'error' not in query_params:
-        code = query_params['code']
-        from services.oauth_service import OAuthService
-        oauth = OAuthService()
+        # 카카오 로그인 처리
+        if 'code' in query_params and 'state' not in query_params:
+            code = query_params['code']
+            with st.spinner("카카오 로그인 처리 중... 🐷"):
+                token = oauth.get_kakao_token(code)
+                if 'access_token' in token:
+                    user_info = oauth.get_kakao_user_info(token['access_token'])
+                    if user_info and 'id' in user_info:
+                        # 카카오 사용자 정보 추출
+                        nickname = user_info.get('properties', {}).get('nickname', '사용자')
+                        user_id = f"kakao_{user_info['id']}"
+                        
+                        # 세션 저장
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = user_id
+                        st.session_state['user_name'] = nickname
+                        st.session_state['username'] = nickname
+                        st.session_state['user_type'] = 'parent'
+                        st.session_state['oauth_provider'] = 'kakao'
+                        st.session_state['access_token'] = token['access_token']
+                        st.session_state['user_info'] = user_info
+                        st.session_state['show_login_success'] = True
+                        
+                        st.success(f"🎉 환영합니다, {nickname}님!")
+                        st.balloons()
+                        st.query_params.clear()
+                        import time
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("카카오 사용자 정보를 가져올 수 없습니다.")
+                else:
+                    st.error("카카오 토큰 발급에 실패했습니다.")
         
-        token = oauth.get_google_token(code)
-        if 'access_token' in token:
-            user_info = oauth.get_google_user_info(token['access_token'])
-            if user_info:
-                st.session_state['logged_in'] = True
-                st.session_state['username'] = user_info.get('name', '사용자')
-                st.session_state['user_type'] = 'parent'
-                st.session_state['oauth_provider'] = 'google'
-                st.success(f"환영합니다, {st.session_state['username']}님! 🎉")
-                st.balloons()
+        # 네이버 로그인 처리
+        elif 'code' in query_params and 'state' in query_params:
+            code = query_params['code']
+            state = query_params['state']
+            
+            # State 검증
+            saved_state = st.session_state.get('naver_state')
+            if saved_state != state:
+                st.error("네이버 로그인 보안 검증에 실패했습니다. 다시 시도해주세요.")
                 st.query_params.clear()
-                st.rerun()
+                return
+            
+            with st.spinner("네이버 로그인 처리 중... 🟢"):
+                token = oauth.get_naver_token(code, state)
+                if 'access_token' in token:
+                    user_info = oauth.get_naver_user_info(token['access_token'])
+                    if user_info and user_info.get('resultcode') == '00':
+                        response = user_info.get('response', {})
+                        name = response.get('name', '사용자')
+                        user_id = f"naver_{response.get('id', '')}"
+                        
+                        # 세션 저장
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = user_id
+                        st.session_state['user_name'] = name
+                        st.session_state['username'] = name
+                        st.session_state['user_type'] = 'parent'
+                        st.session_state['oauth_provider'] = 'naver'
+                        st.session_state['access_token'] = token['access_token']
+                        st.session_state['user_info'] = response
+                        st.session_state['show_login_success'] = True
+                        
+                        st.success(f"🎉 환영합니다, {name}님!")
+                        st.balloons()
+                        st.query_params.clear()
+                        import time
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        error_msg = user_info.get('message', '알 수 없는 오류') if user_info else '사용자 정보 조회 실패'
+                        st.error(f"네이버 사용자 정보 조회 실패: {error_msg}")
+                else:
+                    st.error("네이버 토큰 발급에 실패했습니다.")
+        
+        # 구글 로그인 처리
+        elif 'code' in query_params:
+            code = query_params['code']
+            with st.spinner("구글 로그인 처리 중... 🔵"):
+                token = oauth.get_google_token(code)
+                if 'access_token' in token:
+                    user_info = oauth.get_google_user_info(token['access_token'])
+                    if user_info and 'id' in user_info:
+                        name = user_info.get('name', '사용자')
+                        user_id = f"google_{user_info['id']}"
+                        
+                        # 세션 저장
+                        st.session_state['logged_in'] = True
+                        st.session_state['user_id'] = user_id
+                        st.session_state['user_name'] = name
+                        st.session_state['username'] = name
+                        st.session_state['user_type'] = 'parent'
+                        st.session_state['oauth_provider'] = 'google'
+                        st.session_state['access_token'] = token['access_token']
+                        st.session_state['user_info'] = user_info
+                        st.session_state['show_login_success'] = True
+                        
+                        st.success(f"🎉 환영합니다, {name}님!")
+                        st.balloons()
+                        st.query_params.clear()
+                        import time
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("구글 사용자 정보를 가져올 수 없습니다.")
+                else:
+                    st.error("구글 토큰 발급에 실패했습니다.")
+                    
+    except Exception as e:
+        st.error(f"로그인 처리 중 오류가 발생했습니다: {str(e)}")
+        st.query_params.clear()
 
 def login_page():
     """로그인 페이지 - 3개 소셜 로그인 지원"""
