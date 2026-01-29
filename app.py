@@ -61,7 +61,7 @@ if 'show_login_success' not in st.session_state:
 db = DatabaseManager()
 
 def login_page():
-    """로그인/회원가입 페이지"""
+    """아이 친화적인 로그인/회원가입 페이지"""
     # 로그인하지 않았을 때 사이드바 네비게이션 숨기기
     hide_sidebar_navigation()
     
@@ -69,262 +69,281 @@ def login_page():
     with st.sidebar:
         st.markdown("""
         <style>
-        [data-testid="stSidebarNav"] {
-            display: none !important;
-        }
-        nav[data-testid="stSidebarNav"] {
-            display: none !important;
-        }
-        /* 상단 여백 제거 */
-        [data-testid="stSidebarContent"] {
-            padding-top: 0 !important;
-        }
+        [data-testid="stSidebarNav"] { display: none !important; }
+        [data-testid="stSidebarContent"] { padding-top: 0 !important; }
         </style>
         """, unsafe_allow_html=True)
-        st.markdown("### 💰 AI Money Friends")
-        st.markdown("로그인하여 서비스를 이용하세요.")
+        st.markdown("### 🐷 AI Money Friends")
+        st.markdown("친구야 반가워! 같이 돈 공부 해볼까?")
     
-    # 타이틀 섹션 (글자 크기 축소 및 줄바꿈 최적화)
+    # 아이 친화적인 CSS 주입
     st.markdown("""
         <style>
-        /* 로그인 페이지 배경 및 카드 스타일 */
+        /* 전체 배경색: 연한 파스텔 블루 */
         .stApp {
-            background: linear-gradient(135deg, #f6f8ff 0%, #f1f4ff 100%);
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
         }
         
-        div[data-testid="stExpander"] {
+        /* 카드 컨테이너 스타일 */
+        div[data-testid="stExpander"], .login-card {
             border: none !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05) !important;
             background-color: white !important;
-            border-radius: 20px !important;
+            border-radius: 30px !important;
+            padding: 30px !important;
         }
         
         /* 탭 스타일 커스텀 */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
+            gap: 20px;
             background-color: transparent;
+            justify-content: center;
         }
-        
         .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: #f8f9fa;
-            border-radius: 10px 10px 0 0;
-            gap: 1px;
-            padding: 10px 20px;
-            font-weight: 700;
-            color: #718096;
+            height: 55px;
+            background-color: #f8fafc;
+            border-radius: 20px 20px 0 0;
+            padding: 10px 30px;
+            font-weight: 800;
+            color: #94a3b8;
+            border: none !important;
         }
-        
         .stTabs [aria-selected="true"] {
             background-color: white !important;
-            color: #6366f1 !important;
-            border-bottom: 3px solid #6366f1 !important;
+            color: #3b82f6 !important;
+            border-bottom: 4px solid #3b82f6 !important;
         }
 
-        /* 입력 필드 둥글게 */
+        /* 입력 필드: 둥글고 파스텔톤 배경 */
         .stTextInput input {
-            border-radius: 12px !important;
-            padding: 12px 15px !important;
-            border: 1px solid #e2e8f0 !important;
-        }
-        
-        /* 버튼 스타일 */
-        .stButton > button {
             border-radius: 15px !important;
-            padding: 10px 24px !important;
-            font-weight: 700 !important;
-            transition: all 0.3s ease !important;
+            padding: 15px 20px !important;
+            border: 2px solid #f1f5f9 !important;
+            background-color: #f8fafc !important;
+            font-size: 16px !important;
+            transition: all 0.3s ease;
+        }
+        .stTextInput input:focus {
+            border-color: #3b82f6 !important;
+            background-color: white !important;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
         }
         
-        /* 메인 타이틀 디자인 */
+        /* 라디오 버튼 스타일 */
+        div[data-testid="stRadio"] label {
+            font-weight: 700 !important;
+            color: #475569 !important;
+        }
+        
+        /* 메인 로그인 버튼: 파란색 그라데이션 */
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(90deg, #3b82f6, #2563eb) !important;
+            border: none !important;
+            border-radius: 20px !important;
+            padding: 15px 0 !important;
+            font-size: 20px !important;
+            font-weight: 800 !important;
+            color: white !important;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2) !important;
+            transition: all 0.3s ease !important;
+            height: auto !important;
+        }
+        .stButton > button[kind="primary"]:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 15px 25px rgba(37, 99, 235, 0.3) !important;
+        }
+        
+        /* 로고 섹션 */
         .login-header {
             text-align: center;
-            padding: 40px 0;
+            padding: 20px 0 40px 0;
         }
-        .login-logo-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 15px;
+        .piggy-logo {
+            font-size: 100px;
+            margin-bottom: 10px;
+            display: inline-block;
+            animation: bounce 2s infinite;
         }
-        .login-logo-circle {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 45px;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.15);
-            border: 1px solid #eef2ff;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
         .login-title {
-            font-size: 2.8rem;
+            font-size: 3rem;
             font-weight: 900;
-            letter-spacing: -1px;
-            color: #1a202c;
-            margin-bottom: 8px;
+            color: #1e293b;
+            margin-bottom: 5px;
         }
         .login-title span {
-            background: linear-gradient(90deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #ec4899; /* 핑크색 포인트 */
         }
         .login-subtitle {
-            color: #718096;
-            font-size: 1.1rem;
-            font-weight: 500;
-            letter-spacing: -0.5px;
+            color: #64748b;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        /* 하단 링크 */
+        .footer-link {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+            font-weight: 600;
         }
         </style>
         
         <div class="login-header">
-            <div class="login-logo-container">
-                <div class="login-logo-circle">🤖</div>
-            </div>
-            <h1 class="login-title">AI <span>Money Friends</span></h1>
-            <p class="login-subtitle">우리 아이를 위한 가장 똑똑한 금융 첫걸음</p>
+            <div class="piggy-logo">🐷</div>
+            <h1 class="login-title">AI <span>Money</span> Friends</h1>
+            <p class="login-subtitle">똑똑한 경제 습관, 꿀꿀이랑 시작해봐요! ✨</p>
         </div>
     """, unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["🔐 로그인", "📝 회원가입"])
+    # 중앙 정렬을 위한 컬럼 배치
+    _, center_col, _ = st.columns([1, 2, 1])
     
-    with tab1:
-        st.markdown("""
-            <div style='text-align: center; margin-bottom: 20px;'>
-                <h3 style='color: #2d3748; margin-bottom: 5px;'>환영합니다! 👋</h3>
-                <p style='color: #718096; font-size: 0.9rem;'>로그인 유형을 선택하고 정보를 입력해주세요.</p>
-            </div>
-        """, unsafe_allow_html=True)
+    with center_col:
+        tab1, tab2 = st.tabs(["🔐 로그인하기", "📝 새로 가입하기"])
         
-        # 로그인 유형 선택 추가
-        login_type = st.radio(
-            "로그인 유형",
-            ["👨‍👩‍👧 부모님 로그인", "👶 우리 아이 로그인"],
-            key="login_user_type_radio",
-            horizontal=True,
-            label_visibility="collapsed"
-        )
-        login_type_value = 'parent' if "부모님" in login_type else 'child'
-        
-        # 페이지 로드 시마다 localStorage 값을 읽어와서 쿠키에 동기화
-        st.markdown("""
-        <script>
-        (function() {
-            try {
-                const savedUsername = localStorage.getItem('saved_username');
-                const rememberUsername = localStorage.getItem('remember_username') === 'true';
-                const autoLogin = localStorage.getItem('auto_login') === 'true';
+        with tab1:
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # 1. 사용자 유형 선택 (라디오 버튼 통합)
+            login_type = st.radio(
+                "누구신가요?",
+                ["👨‍👩‍👧 부모님이에요", "👶 아이에요"],
+                key="login_user_type_radio",
+                horizontal=True
+            )
+            login_type_value = 'parent' if "부모님" in login_type else 'child'
+            
+            # 쿠키/localStorage 로직 (기존 유지)
+            try:
+                cookies = st.cookies
+                if 'st_saved_username' in cookies and cookies['st_saved_username']:
+                    st.session_state.saved_username = cookies['st_saved_username']
+                if 'st_remember_username' in cookies:
+                    st.session_state.remember_username = cookies['st_remember_username'] == 'true'
+                if 'st_auto_login' in cookies:
+                    st.session_state.auto_login = cookies['st_auto_login'] == 'true'
+            except: pass
+            
+            saved_username_value = st.session_state.get('saved_username', '')
+            initial_username = st.session_state.get('login_username_value', '') or saved_username_value
+            
+            # 로그인 폼
+            with st.form("login_form", clear_on_submit=False):
+                form_username = st.text_input("👤 아이디", placeholder="아이디를 입력하세요", value=initial_username)
+                form_password = st.text_input("🔐 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
                 
-                if (savedUsername) {
-                    document.cookie = `st_saved_username=${encodeURIComponent(savedUsername)}; path=/; max-age=31536000`;
-                } else {
-                    document.cookie = `st_saved_username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-                }
-                if (rememberUsername) {
-                    document.cookie = `st_remember_username=true; path=/; max-age=31536000`;
-                } else {
-                    document.cookie = `st_remember_username=false; path=/; max-age=31536000`;
-                }
-                if (autoLogin) {
-                    document.cookie = `st_auto_login=true; path=/; max-age=31536000`;
-                } else {
-                    document.cookie = `st_auto_login=false; path=/; max-age=31536000`;
-                }
-            } catch(e) {
-                console.error('localStorage 읽기 오류:', e);
-            }
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-        
-        # 쿠키에서 localStorage 값 읽기
-        try:
-            cookies = st.cookies
-            if 'st_saved_username' in cookies and cookies['st_saved_username']:
-                st.session_state.saved_username = cookies['st_saved_username']
-            else:
-                st.session_state.saved_username = ""
-            if 'st_remember_username' in cookies:
-                st.session_state.remember_username = cookies['st_remember_username'] == 'true'
-            else:
-                st.session_state.remember_username = False
-            if 'st_auto_login' in cookies:
-                st.session_state.auto_login = cookies['st_auto_login'] == 'true'
-            else:
-                st.session_state.auto_login = False
-        except:
-            pass
-        
-        saved_username_value = st.session_state.get('saved_username', '')
-        initial_username = st.session_state.get('login_username_value', '') or saved_username_value
-        
-        with st.form("login_form", clear_on_submit=False):
-            form_username = st.text_input("사용자명", key="login_username_form", value=initial_username)
-            form_password = st.text_input("비밀번호", type="password", key="login_password_form", value="")
+                col_check1, col_check2 = st.columns(2)
+                with col_check1:
+                    remember_default = st.session_state.get('remember_username', False)
+                    remember_username = st.checkbox("💾 아이디 저장", value=remember_default)
+                with col_check2:
+                    auto_default = st.session_state.get('auto_login', False)
+                    auto_login = st.checkbox("🚀 자동 로그인", value=auto_default)
+                
+                login_clicked = st.form_submit_button("🚀 시작하기!", type="primary", use_container_width=True)
             
-            col_check1, col_check2 = st.columns(2)
-            with col_check1:
-                remember_default = st.session_state.get('remember_username', False)
-                remember_username = st.checkbox("💾 아이디 저장", value=remember_default, key="remember_username_check")
-            with col_check2:
-                auto_default = st.session_state.get('auto_login', False)
-                auto_login = st.checkbox("🚀 자동 로그인", value=auto_default, key="auto_login_check")
-            
-            login_clicked = st.form_submit_button("로그인", type="primary", use_container_width=True)
-        
-        if login_clicked:
-            username = form_username
-            password = form_password
-            if not username:
-                st.warning("⚠️ 사용자명을 입력해주세요.")
-            elif not password:
-                st.warning("⚠️ 비밀번호를 입력해주세요.")
-            else:
-                st.session_state.login_username_value = username
-                user = db.get_user_by_username(username)
-                if user and db.verify_password(password, user['password_hash']):
-                    if user['user_type'] != login_type_value:
-                        type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
-                        st.error(f"❌ 이 계정은 **{type_kr}** 계정입니다. 로그인 유형을 확인해주세요.")
-                    else:
-                        st.session_state.logged_in = True
-                        st.session_state.user_id = user['id']
-                        st.session_state.user_name = user['name']
-                        st.session_state.show_login_success = True
-                        st.session_state.login_username_value = ""
-                        
-                        if remember_username:
-                            st.session_state.saved_username = username
-                            st.session_state.remember_username = True
-                            st.markdown(f"<script>localStorage.setItem('saved_username', '{username}'); localStorage.setItem('remember_username', 'true');</script>", unsafe_allow_html=True)
-                        else:
-                            st.session_state.saved_username = ""
-                            st.session_state.remember_username = False
-                            st.markdown("<script>localStorage.removeItem('saved_username'); localStorage.removeItem('remember_username');</script>", unsafe_allow_html=True)
-                        
-                        st.session_state.auto_login = auto_login
-                        if auto_login:
-                            st.markdown("<script>localStorage.setItem('auto_login', 'true');</script>", unsafe_allow_html=True)
-                        else:
-                            st.markdown("<script>localStorage.removeItem('auto_login');</script>", unsafe_allow_html=True)
-                        
-                        st.rerun()
+            if login_clicked:
+                if not form_username or not form_password:
+                    st.warning("⚠️ 아이디와 비밀번호를 모두 입력해줘!")
                 else:
-                    st.error("❌ 사용자명 또는 비밀번호가 올바르지 않습니다.")
-        
-        col_find1, col_find2 = st.columns(2)
-        with col_find1:
-            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username"):
-                st.session_state.show_username_find = True
-                st.session_state.show_password_reset = False
-                st.rerun()
-        with col_find2:
-            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password"):
-                st.session_state.show_password_reset = True
-                st.session_state.show_username_find = False
-                st.rerun()
+                    user = db.get_user_by_username(form_username)
+                    if user and db.verify_password(form_password, user['password_hash']):
+                        if user['user_type'] != login_type_value:
+                            type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
+                            st.error(f"❌ 이 계정은 **{type_kr}** 계정이야. 다시 확인해볼래?")
+                        else:
+                            # 로그인 성공
+                            st.session_state.logged_in = True
+                            st.session_state.user_id = user['id']
+                            st.session_state.user_name = user['name']
+                            st.session_state.show_login_success = True
+                            
+                            # 아이디 저장 처리
+                            if remember_username:
+                                st.markdown(f"<script>localStorage.setItem('saved_username', '{form_username}'); localStorage.setItem('remember_username', 'true');</script>", unsafe_allow_html=True)
+                            else:
+                                st.markdown("<script>localStorage.removeItem('saved_username'); localStorage.removeItem('remember_username');</script>", unsafe_allow_html=True)
+                            
+                            if auto_login:
+                                st.markdown("<script>localStorage.setItem('auto_login', 'true');</script>", unsafe_allow_html=True)
+                            else:
+                                st.markdown("<script>localStorage.removeItem('auto_login');</script>", unsafe_allow_html=True)
+                            
+                            st.rerun()
+                    else:
+                        st.error("❌ 아이디나 비밀번호가 틀린 것 같아. 다시 입력해볼래?")
+            
+            # 아이디/비밀번호 찾기
+            st.markdown('<div class="footer-link">', unsafe_allow_html=True)
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("🔍 아이디 찾기", use_container_width=True):
+                    st.session_state.show_username_find = True
+                    st.rerun()
+            with c2:
+                if st.button("🔑 비밀번호 찾기", use_container_width=True):
+                    st.session_state.show_password_reset = True
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tab2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.subheader("📝 우리 가족이 되어볼까?")
+            
+            # 사용자 타입 선택
+            user_type = st.radio(
+                "어떤 계정을 만들까요?",
+                ["👨‍👩‍👧 부모님으로 가입", "👶 아이로 가입"],
+                key="signup_user_type",
+                horizontal=True
+            )
+            user_type_value = 'parent' if user_type == "👨‍👩‍👧 부모님으로 가입" else 'child'
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                signup_username = st.text_input("아이디", key="signup_username", placeholder="사용할 아이디")
+                signup_password = st.text_input("비밀번호", type="password", key="signup_password", placeholder="비밀번호 (4자 이상)")
+                signup_name = st.text_input("이름 (닉네임)", key="signup_name", placeholder="친구들이 부를 이름")
+            
+            with col2:
+                if user_type_value == 'child':
+                    birth_date = st.date_input("생년월일", value=date.today().replace(year=date.today().year - 10))
+                    age = calculate_age(birth_date)
+                    st.info(f"만나이: **{age}세**")
+                else:
+                    st.info("부모님은 나이 입력이 필요 없어요!")
+                
+                parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", placeholder="8자리 코드 입력")
+                if user_type_value == 'parent':
+                    if st.button("🔑 새 코드 만들기", use_container_width=True):
+                        new_code = generate_parent_code()
+                        st.session_state['signup_parent_code'] = new_code
+                        st.rerun()
+
+            if st.button("✨ 가입 완료!", type="primary", use_container_width=True):
+                if not signup_username or not signup_password or not signup_name or not parent_code:
+                    st.error("모든 정보를 다 입력해줘야 해! 😊")
+                elif not validate_parent_code(parent_code):
+                    st.error("부모 코드가 올바르지 않아. (8자리)")
+                else:
+                    try:
+                        if db.get_user_by_username(signup_username):
+                            st.error("이미 사용 중인 아이디야. 다른 걸로 해볼까?")
+                        else:
+                            user_id = db.create_user(signup_username, signup_password, signup_name, age if user_type_value == 'child' else None, parent_code, user_type_value)
+                            st.session_state.logged_in = True
+                            st.session_state.user_id = user_id
+                            st.session_state.user_name = signup_name
+                            st.session_state.show_login_success = True
+                            st.success("🎉 환영해! 가입이 완료되었어!")
+                            st.balloons()
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"오류가 발생했어: {str(e)}")
 
 def main_page():
     """로그인 후 메인 대시보드 페이지 - 유형별 분기"""
