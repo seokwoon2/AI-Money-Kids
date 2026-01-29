@@ -154,6 +154,49 @@ def login_page():
         <style>
         .stApp { background-color: #f9f9f9; }
         
+        /* 돼지 애니메이션 */
+        @keyframes pigBounce {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-15px) rotate(-5deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(0deg);
+            }
+            75% {
+                transform: translateY(-15px) rotate(5deg);
+            }
+        }
+        
+        @keyframes pigWiggle {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-10deg);
+            }
+            75% {
+                transform: rotate(10deg);
+            }
+        }
+        
+        @keyframes pigPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .pig-animation {
+            display: inline-block;
+            animation: pigBounce 2s ease-in-out infinite, pigWiggle 3s ease-in-out infinite;
+            animation-delay: 0s, 0.5s;
+        }
+        
         .stTextInput > div > div > input {
             border-radius: 10px !important;
             border: 2px solid #e0e0e0 !important;
@@ -187,7 +230,7 @@ def login_page():
         # 로고
         st.markdown("""
             <div style='text-align: center; padding: 40px 0 30px 0;'>
-                <div style='font-size: 80px;'>🐷</div>
+                <div class='pig-animation' style='font-size: 80px; display: inline-block;'>🐷</div>
                 <h1 style='color: #FF69B4; font-size: 32px; margin: 10px 0;'>AI Money Friends</h1>
                 <p style='color: #888; font-size: 14px;'>아이들의 경제 교육 친구</p>
             </div>
@@ -203,43 +246,80 @@ def login_page():
             oauth = OAuthService()
             
             # 카카오
-            kakao_url = oauth.get_kakao_login_url()
-            st.markdown(f"""
-                <a href="{kakao_url}" target="_self" style='
-                    display: block; width: 100%; padding: 14px; margin: 10px 0;
-                    background: linear-gradient(135deg, #FEE500 0%, #FFD700 100%);
-                    color: #000; text-align: center; text-decoration: none;
-                    border-radius: 12px; font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3);
-                '>🟡 카카오로 시작하기</a>
-            """, unsafe_allow_html=True)
+            if oauth.kakao_key:
+                try:
+                    kakao_url = oauth.get_kakao_login_url()
+                    st.markdown(f"""
+                        <a href="{kakao_url}" target="_self" style='
+                            display: block; width: 100%; padding: 14px; margin: 10px 0;
+                            background: linear-gradient(135deg, #FEE500 0%, #FFD700 100%);
+                            color: #000; text-align: center; text-decoration: none;
+                            border-radius: 12px; font-weight: bold;
+                            box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3);
+                        '>🟡 카카오로 시작하기</a>
+                    """, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"⚠️ 카카오 로그인 설정 오류: {str(e)}")
+                    st.info("💡 Streamlit Secrets에 `KAKAO_CLIENT_ID`와 `KAKAO_REDIRECT_URI`를 설정해주세요.")
+            else:
+                st.info("💡 카카오 로그인을 사용하려면 Streamlit Secrets에 `KAKAO_CLIENT_ID`를 설정해주세요.")
             
             # 네이버
-            naver_url = oauth.get_naver_login_url()
-            st.markdown(f"""
-                <a href="{naver_url}" target="_self" style='
-                    display: block; width: 100%; padding: 14px; margin: 10px 0;
-                    background: linear-gradient(135deg, #03C75A 0%, #00B347 100%);
-                    color: white; text-align: center; text-decoration: none;
-                    border-radius: 12px; font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3);
-                '>🟢 네이버로 시작하기</a>
-            """, unsafe_allow_html=True)
+            if oauth.naver_client_id:
+                try:
+                    naver_url = oauth.get_naver_login_url()
+                    st.markdown(f"""
+                        <a href="{naver_url}" target="_self" style='
+                            display: block; width: 100%; padding: 14px; margin: 10px 0;
+                            background: linear-gradient(135deg, #03C75A 0%, #00B347 100%);
+                            color: white; text-align: center; text-decoration: none;
+                            border-radius: 12px; font-weight: bold;
+                            box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3);
+                        '>🟢 네이버로 시작하기</a>
+                    """, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"⚠️ 네이버 로그인 설정 오류: {str(e)}")
+            else:
+                st.info("💡 네이버 로그인을 사용하려면 Streamlit Secrets에 `NAVER_CLIENT_ID`를 설정해주세요.")
             
             # 구글
-            google_url = oauth.get_google_login_url()
-            st.markdown(f"""
-                <a href="{google_url}" target="_self" style='
-                    display: block; width: 100%; padding: 14px; margin: 10px 0;
-                    background: linear-gradient(135deg, #4285F4 0%, #357AE8 100%);
-                    color: white; text-align: center; text-decoration: none;
-                    border-radius: 12px; font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
-                '>🔵 구글로 시작하기</a>
-            """, unsafe_allow_html=True)
+            if oauth.google_client_id:
+                try:
+                    google_url = oauth.get_google_login_url()
+                    st.markdown(f"""
+                        <a href="{google_url}" target="_self" style='
+                            display: block; width: 100%; padding: 14px; margin: 10px 0;
+                            background: linear-gradient(135deg, #4285F4 0%, #357AE8 100%);
+                            color: white; text-align: center; text-decoration: none;
+                            border-radius: 12px; font-weight: bold;
+                            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+                        '>🔵 구글로 시작하기</a>
+                    """, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"⚠️ 구글 로그인 설정 오류: {str(e)}")
+            else:
+                st.info("💡 구글 로그인을 사용하려면 Streamlit Secrets에 `GOOGLE_CLIENT_ID`를 설정해주세요.")
             
         except Exception as e:
             st.error(f"소셜 로그인 초기화 실패: {e}")
+            st.info("""
+            **설정 가이드:**
+            
+            Streamlit Cloud의 경우:
+            1. "Manage app" → "Secrets" 메뉴로 이동
+            2. 다음 형식으로 입력:
+            ```
+            [oauth]
+            kakao_client_id = "your_kakao_rest_api_key"
+            kakao_redirect_uri = "https://your-app-url.streamlit.app"
+            ```
+            
+            또는 직접 접근:
+            ```
+            KAKAO_CLIENT_ID = "your_kakao_rest_api_key"
+            KAKAO_REDIRECT_URI = "https://your-app-url.streamlit.app"
+            ```
+            """)
         
         # 구분선
         st.markdown("""
