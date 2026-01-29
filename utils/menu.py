@@ -1,69 +1,17 @@
-"""공통 메뉴 유틸리티 - 토스 스타일 UI 개편 (최종 수정본)"""
+"""공통 메뉴 유틸리티 - 카카오뱅크 스타일 UI 개편"""
 import streamlit as st
 from database.db_manager import DatabaseManager
 
-def add_to_recent(name, path, icon):
-    """최근 접근한 메뉴 추가 (세션 상태에 저장)"""
-    if 'recent_menus' not in st.session_state:
-        st.session_state.recent_menus = []
-    
-    menu_item = {"name": name, "path": path, "icon": icon}
-    # 기존 목록에서 중복 제거 후 맨 앞에 추가
-    filtered_menus = [m for m in st.session_state.recent_menus if m['path'] != path]
-    st.session_state.recent_menus = ([menu_item] + filtered_menus)[:5]
-
-def toggle_favorite(name, path, icon):
-    """즐겨찾기 토글"""
-    if 'favorites' not in st.session_state:
-        st.session_state.favorites = []
-    
-    menu_item = {"name": name, "path": path, "icon": icon}
-    if any(f['path'] == path for f in st.session_state.favorites):
-        st.session_state.favorites = [f for f in st.session_state.favorites if f['path'] != path]
-    else:
-        st.session_state.favorites.append(menu_item)
-
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
-    """사이드바 메뉴 렌더링 - 토스 스타일 및 헤더 버튼 오류 해결"""
+    """사이드바 메뉴 렌더링 - 카카오뱅크 스타일 (노란색 액센트, 라운드 스타일)"""
     
-    # 세션 상태 초기화
-    if 'favorites' not in st.session_state:
-        st.session_state.favorites = []
-    if 'recent_menus' not in st.session_state:
-        st.session_state.recent_menus = []
-
-    # CSS 주입: 오직 헤더의 첫 번째 버튼(메뉴)에만 '전체메뉴' 텍스트 추가
+    # CSS 주입: 카카오뱅크 스타일 및 메뉴 하이라이트
     st.markdown("""
     <style>
     /* 1. 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
     
-    /* 2. 상단 헤더 '전체메뉴' 버튼 딱 하나만 적용 */
-    /* Streamlit의 사이드바 버튼을 정확히 타겟팅 */
-    header[data-testid="stHeader"] button[title="Open sidebar"]::after {
-        content: " 전체메뉴" !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        margin-left: 5px !important;
-    }
-    header[data-testid="stHeader"] button[title="Open sidebar"] {
-        background-color: #6366f1 !important;
-        color: white !important;
-        border-radius: 8px !important;
-        padding: 0 12px !important;
-        width: auto !important;
-        height: 35px !important;
-        margin-left: 10px !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-    
-    /* 다른 헤더 버튼(Share, Star 등)에는 글자가 붙지 않도록 초기화 */
-    header[data-testid="stHeader"] button:not([title="Open sidebar"])::after {
-        content: "" !important;
-    }
-
-    /* 3. 사이드바 스타일 (토스 리스트 스타일) */
+    /* 2. 사이드바 전체 배경 및 스타일 */
     .stSidebar {
         background-color: #ffffff !important;
         border-right: 1px solid #f0f2f6;
@@ -72,156 +20,144 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         padding-top: 0 !important;
     }
 
-    /* 사이드바 헤더 (사용자 정보) */
-    .sb-header {
-        padding: 40px 20px 20px 20px;
-        background-color: #f8faff;
-        border-bottom: 1px solid #edf2f7;
-        margin-bottom: 10px;
+    /* 3. 섹션 구분선 */
+    .sb-divider {
+        margin: 10px 20px;
+        border-top: 1px solid #f0f2f6;
     }
-    .sb-badge {
-        background-color: #eef2ff;
-        color: #6366f1;
-        padding: 4px 10px;
-        border-radius: 8px;
+
+    /* 4. 섹션 타이틀 */
+    .sb-section-title {
+        color: #a0aec0;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 15px 25px 5px 25px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* 5. 사용자 프로필 영역 */
+    .sb-profile {
+        padding: 40px 25px 15px 25px;
+        background-color: #ffffff;
+    }
+    .sb-mode-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background-color: #fef3c7; /* 카카오 노란색 연한 버전 */
+        color: #92400e;
         font-size: 12px;
         font-weight: 700;
-        display: inline-block;
         margin-bottom: 8px;
     }
-    .sb-name {
+    .sb-user-name {
+        font-size: 18px;
+        font-weight: 800;
         color: #1a202c;
-        font-size: 19px;
-        font-weight: 700;
     }
 
-    /* 섹션 타이틀 */
-    .sb-group-title {
-        color: #a0aec0;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 25px 20px 8px 20px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* 토스 스타일 리스트 메뉴 버튼 */
-    .stSidebar .stButton > button {
-        width: 100% !important;
-        border: none !important;
-        background-color: transparent !important;
-        color: #4a5568 !important;
+    /* 6. 페이지 링크 커스텀 (카카오뱅크 스타일) */
+    div[data-testid="stSidebar"] a {
         padding: 10px 20px !important;
-        text-align: left !important;
-        font-size: 15px !important;
-        font-weight: 500 !important;
+        margin: 2px 15px !important;
         border-radius: 12px !important;
-        margin: 2px 0 !important;
+        color: #4a5568 !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        text-decoration: none !important;
         display: flex !important;
         align-items: center !important;
-        transition: all 0.2s ease !important;
     }
-    
-    .stSidebar .stButton > button:hover {
+
+    /* 호버 효과 */
+    div[data-testid="stSidebar"] a:hover {
         background-color: #f7fafc !important;
-        color: #6366f1 !important;
+        color: #1a202c !important;
         transform: translateX(4px);
     }
 
-    /* 아이콘과 텍스트 정렬 */
-    .stSidebar .stButton > button div[data-testid="stMarkdownContainer"] p {
-        margin: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 12px !important;
+    /* 현재 페이지 하이라이트 (카카오 노랑) */
+    div[data-testid="stSidebar"] a[aria-current="page"] {
+        background-color: #ffeb00 !important;
+        color: #1a202c !important;
+        box-shadow: 0 2px 8px rgba(255, 235, 0, 0.2);
     }
 
-    /* 즐겨찾기 별 버튼 특수 스타일 */
-    div.star-col .stButton > button {
-        padding: 10px 5px !important;
-        justify-content: center !important;
+    /* 아이콘 크기 조절 */
+    div[data-testid="stSidebar"] a span[data-testid="stWidgetLabel"] {
+        font-size: 22px !important;
+        margin-right: 10px !important;
     }
     
-    .sb-divider {
-        margin: 15px 20px;
-        border-top: 1px solid #f0f2f6;
+    /* 로그아웃 버튼 특수 스타일 */
+    .logout-btn-container {
+        padding: 0 15px;
+        margin-top: 10px;
+    }
+    .stSidebar .stButton > button {
+        width: 100% !important;
+        background-color: transparent !important;
+        color: #a0aec0 !important;
+        border: 1px solid #f0f2f6 !important;
+        border-radius: 12px !important;
+        font-size: 13px !important;
+        padding: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+    .stSidebar .stButton > button:hover {
+        background-color: #fff5f5 !important;
+        color: #e53e3e !important;
+        border-color: #feb2b2 !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # 사이드바 프로필
-    user_type_kr = "부모님 모드" if user_type == 'parent' else "어린이 모드"
-    st.sidebar.markdown(f"""
-    <div class="sb-header">
-        <div class="sb-badge">{user_type_kr}</div>
-        <div class="sb-name">{"👨‍👩‍👧" if user_type == 'parent' else "🐣"} {user_name}님</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 1. ⭐ 즐겨찾기
-    if st.session_state.favorites:
-        st.sidebar.markdown('<div class="sb-group-title">⭐ 즐겨찾기</div>', unsafe_allow_html=True)
-        for fav in st.session_state.favorites:
-            if st.sidebar.button(f"{fav['icon']} {fav['name']}", key=f"fav_{fav['path']}"):
-                add_to_recent(fav['name'], fav['path'], fav['icon'])
-                st.switch_page(fav['path'])
-
-    # 2. 🕒 최근 방문
-    if st.session_state.recent_menus:
-        st.sidebar.markdown('<div class="sb-group-title">🕒 최근 방문</div>', unsafe_allow_html=True)
-        for recent in st.session_state.recent_menus:
-            if st.sidebar.button(f"{recent['icon']} {recent['name']}", key=f"recent_{recent['path']}"):
-                st.switch_page(recent['path'])
-
-    st.sidebar.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-    st.sidebar.markdown('<div class="sb-group-title">📂 전체 메뉴</div>', unsafe_allow_html=True)
-
-    # 전체 메뉴 리스트 정의
-    if user_type == 'parent':
-        menu_items = [
-            ("🏠", "홈으로 가기", "app.py"),
-            ("💼", "부모 상담실", "pages/3_💼_부모_상담실.py"),
-            ("📊", "자녀 대시보드", "pages/2_📊_부모_대시보드.py"),
-            ("💰", "용돈 추천기", "pages/5_💰_용돈_추천.py"),
-            ("📖", "꿈꾸기 가이드", "pages/6_📚_금융_교육_가이드.py"),
-            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
-        ]
-    else:
-        menu_items = [
-            ("🏠", "홈으로 가기", "app.py"),
-            ("💬", "AI 선생님", "pages/1_💬_아이_채팅.py"),
-            ("🎯", "오늘의 퀴즈", "pages/7_🎯_금융_미션.py"),
-            ("📖", "금융 스토리", "pages/8_📖_금융_스토리.py"),
-            ("💵", "거래 내역", "pages/9_💵_용돈_관리.py"),
-            ("📝", "대화 기록", "pages/10_📝_대화_기록.py")
-        ]
-
-    # 전체 메뉴 렌더링 (즐겨찾기 버튼 포함)
-    for icon, name, path in menu_items:
-        col_m, col_s = st.sidebar.columns([0.8, 0.2])
-        with col_m:
-            if st.button(f"{icon} {name}", key=f"side_{path}"):
-                if path != "app.py":
-                    add_to_recent(name, path, icon)
-                st.switch_page(path)
-        with col_s:
-            if path != "app.py":
-                st.markdown('<div class="star-col">', unsafe_allow_html=True)
-                is_fav = any(f['path'] == path for f in st.session_state.favorites)
-                if st.button("⭐" if is_fav else "☆", key=f"star_{path}"):
-                    toggle_favorite(name, path, icon)
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-    st.sidebar.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-    
-    if st.sidebar.button("👤 내 정보 수정", key="side_info"):
-        add_to_recent("내 정보 수정", "pages/4_👤_내정보.py", "👤")
-        st.switch_page("pages/4_👤_내정보.py")
+    # --- 사이드바 콘텐츠 시작 ---
+    with st.sidebar:
+        # 1. 사용자 정보 섹션
+        st.markdown('<div class="sb-section-title">━━━ 사용자 ━━━</div>', unsafe_allow_html=True)
+        user_type_kr = "부모 모드" if user_type == 'parent' else "아이 모드"
+        st.markdown(f"""
+        <div class="sb-profile">
+            <div class="sb-mode-badge">📁 {user_type_kr}</div>
+            <div class="sb-user-name">👤 {user_name}님</div>
+        </div>
+        """, unsafe_allow_html=True)
         
-    if st.sidebar.button("🚪 로그아웃", key="side_logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+        st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
+
+        # 2. 주요 메뉴 섹션
+        st.markdown('<div class="sb-section-title">━━━ 메뉴 ━━━</div>', unsafe_allow_html=True)
+        
+        if user_type == 'parent':
+            st.page_link("app.py", label="홈", icon="🏠")
+            st.page_link("pages/2_📊_부모_대시보드.py", label="대시보드", icon="📊")
+            st.page_link("pages/3_💼_부모_상담실.py", label="부모 상담실", icon="💼")
+            st.page_link("pages/9_💵_용돈_관리.py", label="거래 내역", icon="📈")
+            st.page_link("pages/5_💰_용돈_추천.py", label="용돈 관리", icon="🔥")
+            st.page_link("pages/6_📚_금융_교육_가이드.py", label="목표 가이드", icon="📚")
+        else:
+            st.page_link("app.py", label="홈", icon="🏠")
+            st.page_link("pages/1_💬_아이_채팅.py", label="AI 선생님", icon="💬")
+            st.page_link("pages/7_🎯_금융_미션.py", label="오늘의 퀴즈", icon="🎯")
+            st.page_link("pages/8_📖_금융_스토리.py", label="금융 스토리", icon="📖")
+            st.page_link("pages/9_💵_용돈_관리.py", label="거래 내역", icon="💵")
+        
+        st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
+
+        # 3. 기타 섹션
+        st.markdown('<div class="sb-section-title">━━━ 기타 ━━━</div>', unsafe_allow_html=True)
+        st.page_link("pages/4_👤_내정보.py", label="설정", icon="⚙️")
+        
+        # 로그아웃 버튼
+        st.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)
+        if st.button("🚪 로그아웃", key="side_logout"):
+            st.session_state.logged_in = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def hide_sidebar_navigation():
     st.markdown("<style>[data-testid='stSidebarNav'] {display: none !important;}</style>", unsafe_allow_html=True)
