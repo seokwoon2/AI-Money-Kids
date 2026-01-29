@@ -434,7 +434,7 @@ def parent_dashboard(user_name):
     
     with col1:
         if total_savings_val == 0:
-            content_html = '<div style="height:150px; display:flex; align-items:center; justify-content:center; color:#a0aec0; font-weight:600;">지금까지 기록된 저축액이 없어요 🪙</div>'
+            content_html = '<div style="height:150px; display:flex; align-items:center; justify-content:center; color:#a0aec0; font-weight:600; text-align:center;">지금까지 기록된 저축액이 없어요 🪙</div>'
         else:
             bars_html = ""
             labels_html = ""
@@ -449,16 +449,16 @@ def parent_dashboard(user_name):
         yesterday_total = monthly_stats.get('yesterday_total', 0) or 0
         
         st.markdown(f"""
-        <div class="parent-card">
-            <div class="card-label">📈 이번 달 가족 저축액 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">자세히 보기</span></div>
-            {content_html}
-            <div class="stat-row">
-                <div class="stat-item"><div class="stat-val">{int(monthly_total):,}원</div><div class="stat-lbl">이번달 총 저축</div></div>
-                <div class="stat-item"><div class="stat-val">{int(yesterday_total):,}원</div><div class="stat-lbl">어제 저축</div></div>
-                <div class="stat-item"><div class="stat-val">0원</div><div class="stat-lbl">목표 잔액</div></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="parent-card">
+<div class="card-label">📈 이번 달 가족 저축액 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">자세히 보기</span></div>
+{content_html}
+<div class="stat-row">
+<div class="stat-item"><div class="stat-val">{int(monthly_total):,}원</div><div class="stat-lbl">이번달 총 저축</div></div>
+<div class="stat-item"><div class="stat-val">{int(yesterday_total):,}원</div><div class="stat-lbl">어제 저축</div></div>
+<div class="stat-item"><div class="stat-val">0원</div><div class="stat-lbl">목표 잔액</div></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
     with col2:
         if not children:
@@ -487,23 +487,26 @@ def parent_dashboard(user_name):
         # 미션 달성률 (현재는 0%로 고정, 추후 DB 연동 가능)
         percent = 0
         circumference = 2 * 3.14159 * 45
-        offset = circumference * (1 - percent / 100)
+        # 0%일 때는 아예 안 보이게 처리
+        gauge_fill_html = ""
+        if percent > 0:
+            offset = circumference * (1 - percent / 100)
+            gauge_fill_html = f'<circle class="gauge-fill" cx="50" cy="50" r="45" style="stroke-dasharray: {circumference}; stroke-dashoffset: {offset};"></circle>'
         
         st.markdown(f"""
-        <div class="parent-card" style="text-align:center;">
-            <div class="card-label">🏆 AI 금융 퀴즈 & 미션</div>
-            <div class="gauge-container">
-                <svg width="120" height="120" viewBox="0 0 100 100">
-                    <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
-                    <circle class="gauge-fill" cx="50" cy="50" r="45" 
-                            style="stroke-dasharray: {circumference}; stroke-dashoffset: {offset};"></circle>
-                </svg>
-                <div class="gauge-text">⭐</div>
-            </div>
-            <div style="font-weight:700; color:#4a5568; margin-top:15px; margin-bottom:5px;">이번 주 {percent}% 완료</div>
-            <p style="font-size: 12px; color: #a0aec0;">아직 진행한 미션이 없습니다.</p>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="parent-card" style="text-align:center;">
+<div class="card-label">🏆 AI 금융 퀴즈 & 미션</div>
+<div class="gauge-container">
+<svg width="120" height="120" viewBox="0 0 100 100">
+<circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+{gauge_fill_html}
+</svg>
+<div class="gauge-text">⭐</div>
+</div>
+<div style="font-weight:700; color:#4a5568; margin-top:15px; margin-bottom:5px;">이번 주 {percent}% 완료</div>
+<p style="font-size: 12px; color: #a0aec0;">아직 진행한 미션이 없습니다.</p>
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     col4, col5, col6 = st.columns([1.2, 1, 0.8])
