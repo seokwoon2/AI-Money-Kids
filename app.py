@@ -462,37 +462,26 @@ def parent_dashboard(user_name):
 
     with col2:
         if not children:
-            children_content = """
-            <div style="text-align:center; padding: 40px 0; color: #a0aec0;">
-                <div style="font-size: 40px; margin-bottom: 10px;">👶</div>
-                등록된 자녀가 없습니다.<br>자녀 계정으로 가입 시<br>부모 코드를 입력해주세요!
-            </div>
-            """
+            children_content = '<div style="text-align:center; padding: 40px 0; color: #a0aec0;"><div style="font-size: 40px; margin-bottom: 10px;">👶</div>등록된 자녀가 없습니다.<br>자녀 계정으로 가입 시<br>부모 코드를 입력해주세요!</div>'
         else:
             children_content = ""
             for child in children:
                 child_stats = db.get_child_stats(child['id'])
                 total_savings = child_stats.get('total_savings', 0) or 0
                 activity_count = child_stats.get('activity_count', 0) or 0
-                children_content += f"""
-                <div class="child-item">
-                    <div class="child-avatar">{"👦" if child.get('age', 0) > 7 else "👶"}</div>
-                    <div class="child-info"><div class="child-name">{child['name']}</div></div>
-                    <div class="child-amount">{int(total_savings):,}원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">{activity_count}개 활동 완료</span></div>
-                </div>
-                """
+                children_content += f'<div class="child-item"><div class="child-avatar">{"👦" if child.get("age", 0) > 7 else "👶"}</div><div class="child-info"><div class="child-name">{child["name"]}</div></div><div class="child-amount">{int(total_savings):,}원<br><span style="font-size:11px; color:#a0aec0; font-weight:400;">{activity_count}개 활동 완료</span></div></div>'
         
         st.markdown(f"""
-        <div class="parent-card">
-            <div class="card-label">👦 자녀 용돈 현황</div>
-            <div class="children-list-container">
-                {children_content}
-            </div>
-            <div style="margin-top:20px;">
-                <button style="width:100%; padding:10px; border-radius:10px; border:1px solid #edf2f7; background:white; color:#4a5568; font-weight:700; cursor:pointer;">총 용돈 보기</button>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="parent-card">
+<div class="card-label">👦 자녀 용돈 현황</div>
+<div class="children-list-container">
+{children_content}
+</div>
+<div style="margin-top:20px;">
+<button style="width:100%; padding:10px; border-radius:10px; border:1px solid #edf2f7; background:white; color:#4a5568; font-weight:700; cursor:pointer;">총 용돈 보기</button>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
     with col3:
         # 미션 달성률 (현재는 0%로 고정, 추후 DB 연동 가능)
