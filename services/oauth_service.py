@@ -3,61 +3,85 @@ import streamlit as st
 import requests
 from urllib.parse import urlencode
 
+# .env 파일 로드 (로컬 환경용)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv가 설치되지 않은 경우 무시
+    pass
+
 class OAuthService:
     def __init__(self):
-        # 환경 감지 (로컬 .env 또는 Streamlit Cloud secrets)
+        # 환경 변수 로드 순서: .env 파일 → Streamlit Secrets → 환경 변수
         try:
+            # 먼저 .env 파일에서 로드 (로컬 환경)
+            self.kakao_key = os.getenv('KAKAO_CLIENT_ID')
+            self.kakao_redirect = os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8501')
+            
+            self.naver_client_id = os.getenv('NAVER_CLIENT_ID')
+            self.naver_client_secret = os.getenv('NAVER_CLIENT_SECRET')
+            self.naver_redirect = os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8501')
+            
+            self.google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+            self.google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+            self.google_redirect = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
+            
+            # Streamlit Secrets가 있으면 우선 적용 (Cloud 환경)
             if hasattr(st, 'secrets') and st.secrets:
-                # Streamlit Cloud - 여러 구조 시도
                 try:
+                    # 구조 1: st.secrets['oauth']['kakao_client_id']
                     if 'oauth' in st.secrets:
-                        # 구조 1: st.secrets['oauth']['kakao_client_id']
-                        self.kakao_key = st.secrets.get('oauth', {}).get('kakao_client_id') or st.secrets.get('KAKAO_CLIENT_ID')
-                        self.kakao_redirect = st.secrets.get('oauth', {}).get('kakao_redirect_uri') or st.secrets.get('KAKAO_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('oauth', {}).get('kakao_client_id'):
+                            self.kakao_key = st.secrets['oauth']['kakao_client_id']
+                        if st.secrets.get('oauth', {}).get('kakao_redirect_uri'):
+                            self.kakao_redirect = st.secrets['oauth']['kakao_redirect_uri']
                         
-                        self.naver_client_id = st.secrets.get('oauth', {}).get('naver_client_id') or st.secrets.get('NAVER_CLIENT_ID')
-                        self.naver_client_secret = st.secrets.get('oauth', {}).get('naver_client_secret') or st.secrets.get('NAVER_CLIENT_SECRET')
-                        self.naver_redirect = st.secrets.get('oauth', {}).get('naver_redirect_uri') or st.secrets.get('NAVER_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('oauth', {}).get('naver_client_id'):
+                            self.naver_client_id = st.secrets['oauth']['naver_client_id']
+                        if st.secrets.get('oauth', {}).get('naver_client_secret'):
+                            self.naver_client_secret = st.secrets['oauth']['naver_client_secret']
+                        if st.secrets.get('oauth', {}).get('naver_redirect_uri'):
+                            self.naver_redirect = st.secrets['oauth']['naver_redirect_uri']
                         
-                        self.google_client_id = st.secrets.get('oauth', {}).get('google_client_id') or st.secrets.get('GOOGLE_CLIENT_ID')
-                        self.google_client_secret = st.secrets.get('oauth', {}).get('google_client_secret') or st.secrets.get('GOOGLE_CLIENT_SECRET')
-                        self.google_redirect = st.secrets.get('oauth', {}).get('google_redirect_uri') or st.secrets.get('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('oauth', {}).get('google_client_id'):
+                            self.google_client_id = st.secrets['oauth']['google_client_id']
+                        if st.secrets.get('oauth', {}).get('google_client_secret'):
+                            self.google_client_secret = st.secrets['oauth']['google_client_secret']
+                        if st.secrets.get('oauth', {}).get('google_redirect_uri'):
+                            self.google_redirect = st.secrets['oauth']['google_redirect_uri']
+                    # 구조 2: st.secrets['KAKAO_CLIENT_ID'] (직접 접근)
                     else:
-                        # 구조 2: st.secrets['KAKAO_CLIENT_ID'] (직접 접근)
-                        self.kakao_key = st.secrets.get('KAKAO_CLIENT_ID')
-                        self.kakao_redirect = st.secrets.get('KAKAO_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('KAKAO_CLIENT_ID'):
+                            self.kakao_key = st.secrets['KAKAO_CLIENT_ID']
+                        if st.secrets.get('KAKAO_REDIRECT_URI'):
+                            self.kakao_redirect = st.secrets['KAKAO_REDIRECT_URI']
                         
-                        self.naver_client_id = st.secrets.get('NAVER_CLIENT_ID')
-                        self.naver_client_secret = st.secrets.get('NAVER_CLIENT_SECRET')
-                        self.naver_redirect = st.secrets.get('NAVER_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('NAVER_CLIENT_ID'):
+                            self.naver_client_id = st.secrets['NAVER_CLIENT_ID']
+                        if st.secrets.get('NAVER_CLIENT_SECRET'):
+                            self.naver_client_secret = st.secrets['NAVER_CLIENT_SECRET']
+                        if st.secrets.get('NAVER_REDIRECT_URI'):
+                            self.naver_redirect = st.secrets['NAVER_REDIRECT_URI']
                         
-                        self.google_client_id = st.secrets.get('GOOGLE_CLIENT_ID')
-                        self.google_client_secret = st.secrets.get('GOOGLE_CLIENT_SECRET')
-                        self.google_redirect = st.secrets.get('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
+                        if st.secrets.get('GOOGLE_CLIENT_ID'):
+                            self.google_client_id = st.secrets['GOOGLE_CLIENT_ID']
+                        if st.secrets.get('GOOGLE_CLIENT_SECRET'):
+                            self.google_client_secret = st.secrets['GOOGLE_CLIENT_SECRET']
+                        if st.secrets.get('GOOGLE_REDIRECT_URI'):
+                            self.google_redirect = st.secrets['GOOGLE_REDIRECT_URI']
                 except Exception:
-                    # Secrets 접근 실패 시 환경 변수로 폴백
-                    self.kakao_key = os.getenv('KAKAO_CLIENT_ID')
-                    self.kakao_redirect = os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8501')
-                    
-                    self.naver_client_id = os.getenv('NAVER_CLIENT_ID')
-                    self.naver_client_secret = os.getenv('NAVER_CLIENT_SECRET')
-                    self.naver_redirect = os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8501')
-                    
-                    self.google_client_id = os.getenv('GOOGLE_CLIENT_ID')
-                    self.google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-                    self.google_redirect = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
-            else:
-                # 로컬 .env
-                self.kakao_key = os.getenv('KAKAO_CLIENT_ID')
-                self.kakao_redirect = os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8501')
+                    # Secrets 접근 실패 시 기존 .env 값 유지
+                    pass
+            
+            # 빈 문자열을 None으로 변환
+            if self.kakao_key == '':
+                self.kakao_key = None
+            if self.naver_client_id == '':
+                self.naver_client_id = None
+            if self.google_client_id == '':
+                self.google_client_id = None
                 
-                self.naver_client_id = os.getenv('NAVER_CLIENT_ID')
-                self.naver_client_secret = os.getenv('NAVER_CLIENT_SECRET')
-                self.naver_redirect = os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8501')
-                
-                self.google_client_id = os.getenv('GOOGLE_CLIENT_ID')
-                self.google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-                self.google_redirect = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
         except Exception as e:
             # 모든 초기화 실패 시 기본값
             self.kakao_key = None
