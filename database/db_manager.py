@@ -411,3 +411,67 @@ class DatabaseManager:
             return [dict(row) for row in rows]
         finally:
             conn.close()
+
+    # ========== 대시보드 통계 ==========
+
+    def get_children_monthly_savings(self, parent_code: str) -> List[Dict]:
+        """부모 코드로 연결된 모든 자녀의 최근 6개월간 월별 저축 합계 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT 
+                    strftime('%m', b.timestamp) as month,
+                    SUM(b.amount) as total_amount
+                FROM behaviors b
+                JOIN users u ON b.user_id = u.id
+                WHERE u.parent_code = ? 
+                AND u.user_type = 'child'
+                AND b.behavior_type = 'saving'
+                AND b.timestamp >= date('now', '-6 months')
+                GROUP BY month
+                ORDER BY month ASC
+            """, (parent_code,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_children_behavior_stats_this_month(self, parent_code: str) -> Dict:
+        """이번 달 자녀들의 금융 활동 통계 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # 이번 달 저축 총액, 어제 저축액, 현재 잔액(가상)
+            cursor.execute("""
+                SELECT 
+                    SUM(CASE WHEN behavior_type = 'saving' THEN amount ELSE 0 END) as monthly_total,
+                    SUM(CASE WHEN behavior_type = 'saving' AND date(timestamp) = date('now', '-1 day') THEN amount ELSE 0 END) as yesterday_total
+                FROM behaviors b
+                JOIN users u ON b.user_id = u.id
+                WHERE u.parent_code = ? 
+                AND u.user_type = 'child'
+                AND strftime('%m', b.timestamp) = strftime('%m', 'now')
+                AND strftime('%Y', b.timestamp) = strftime('%Y', 'now')
+            """, (parent_code,))
+            row = cursor.fetchone()
+            return dict(row) if row else {"monthly_total": 0, "yesterday_total": 0}
+        finally:
+            conn.close()
+
+    def get_child_stats(self, user_id: int) -> Dict:
+        """개별 자녀의 통계 정보 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as activity_count,
+                    SUM(CASE WHEN behavior_type = 'saving' THEN amount ELSE 0 END) as total_savings
+                FROM behaviors
+                WHERE user_id = ?
+            """, (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else {"activity_count": 0, "total_savings": 0}
+        finally:
+            conn.close()
