@@ -12,8 +12,14 @@ def get_oauth_service():
         try:
             st.session_state.oauth_service = OAuthService()
         except Exception as e:
-            # 초기화 실패 시 None 반환
-            st.session_state.oauth_service = None
+            # 초기화 실패 시 빈 서비스 객체 생성 (버튼은 표시되도록)
+            class EmptyOAuthService:
+                def __init__(self):
+                    self.client_id = None
+                    self.redirect_uri = None
+                def get_kakao_login_url(self):
+                    return "#"
+            st.session_state.oauth_service = EmptyOAuthService()
     return st.session_state.oauth_service
 
 def calculate_age(birth_date: date) -> int:
@@ -69,6 +75,8 @@ if 'login_username_value' not in st.session_state:
     st.session_state.login_username_value = ""
 if 'show_login_success' not in st.session_state:
     st.session_state.show_login_success = True
+if 'show_signup' not in st.session_state:
+    st.session_state.show_signup = False
 
 db = DatabaseManager()
 
@@ -245,72 +253,30 @@ def login_page():
     _, center_col, _ = st.columns([1, 2, 1])
     
     with center_col:
-        tab1, tab2 = st.tabs(["🔐 로그인하기", "📝 새로 가입하기"])
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        with tab1:
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # 1. 사용자 유형 선택 (라디오 버튼 통합)
+        # 로그인 방식 선택
+        st.markdown("### 🔐 로그인 방법을 선택하세요")
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 1. 아이디로 로그인
+        with st.expander("👤 아이디로 로그인", expanded=True):
+            # 사용자 유형 선택
             login_type = st.radio(
                 "누구신가요?",
-                ["👨‍👩‍👧 부모님이에요", "👶 아이에요"],
+                ["👨‍👩‍👧 부모님", "👶 아이"],
                 key="login_user_type_radio",
                 horizontal=True
             )
             login_type_value = 'parent' if "부모님" in login_type else 'child'
             
-            # 2. 소셜 로그인 섹션 (상단 추가)
-            st.markdown("""
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">간편하게 시작하기</p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # 카카오 로그인 버튼 (st.link_button 사용으로 레이아웃 깨짐 방지)
-            oauth_service = get_oauth_service()
-            if oauth_service and oauth_service.client_id:
-                kakao_login_url = oauth_service.get_kakao_login_url()
-                st.link_button(
-                    "🟡 카카오로 3초 만에 시작하기", 
-                    kakao_login_url, 
-                    use_container_width=True,
-                    help="카카오 계정으로 안전하게 로그인합니다."
-                )
-            
-            # 네이버, 구글 버튼 (준비 중)
-            soc_col1, soc_col2 = st.columns(2)
-            with soc_col1:
-                st.markdown("""
-                    <div style="background-color: #ffffff; color: #000000; padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #e2e8f0; opacity: 0.5; cursor: not-allowed;">
-                        🟢 네이버 (준비 중)
-                    </div>
-                """, unsafe_allow_html=True)
-            with soc_col2:
-                st.markdown("""
-                    <div style="background-color: #ffffff; color: #000000; padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #e2e8f0; opacity: 0.5; cursor: not-allowed;">
-                        ⚪ 구글 (준비 중)
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("""
-                <div style="text-align: center; margin: 25px 0;">
-                    <div style="display: flex; align-items: center; color: #cbd5e1; font-size: 12px;">
-                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                        <div style="padding: 0 10px;">또는 직접 입력하기</div>
-                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # 쿠키/localStorage 로직 (기존 유지)
+            # 쿠키/localStorage 로직
             try:
                 cookies = st.cookies
                 if 'st_saved_username' in cookies and cookies['st_saved_username']:
                     st.session_state.saved_username = cookies['st_saved_username']
                 if 'st_remember_username' in cookies:
                     st.session_state.remember_username = cookies['st_remember_username'] == 'true'
-                if 'st_auto_login' in cookies:
-                    st.session_state.auto_login = cookies['st_auto_login'] == 'true'
             except: pass
             
             saved_username_value = st.session_state.get('saved_username', '')
@@ -318,30 +284,24 @@ def login_page():
             
             # 로그인 폼
             with st.form("login_form", clear_on_submit=False):
-                form_username = st.text_input("👤 아이디", placeholder="아이디를 입력하세요", value=initial_username)
-                form_password = st.text_input("🔐 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
+                form_username = st.text_input("아이디", placeholder="아이디를 입력하세요", value=initial_username)
+                form_password = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
                 
-                col_check1, col_check2 = st.columns(2)
-                with col_check1:
-                    remember_default = st.session_state.get('remember_username', False)
-                    remember_username = st.checkbox("💾 아이디 저장", value=remember_default)
-                with col_check2:
-                    auto_default = st.session_state.get('auto_login', False)
-                    auto_login = st.checkbox("🚀 자동 로그인", value=auto_default)
+                remember_default = st.session_state.get('remember_username', False)
+                remember_username = st.checkbox("💾 아이디 저장", value=remember_default)
                 
-                # 메인 로그인 버튼 (강조된 스타일)
-                login_clicked = st.form_submit_button("🚀 로그인하기!", type="primary", use_container_width=True)
+                login_clicked = st.form_submit_button("🚀 로그인하기", type="primary", use_container_width=True)
             
             if login_clicked:
-                with st.spinner("꿀꿀이가 확인 중이에요... 🐷"):
+                with st.spinner("확인 중이에요... 🐷"):
                     if not form_username or not form_password:
-                        st.warning("⚠️ 아이디와 비밀번호를 모두 입력해줘!")
+                        st.warning("⚠️ 아이디와 비밀번호를 모두 입력해주세요!")
                     else:
                         user = db.get_user_by_username(form_username)
                         if user and db.verify_password(form_password, user['password_hash']):
                             if user['user_type'] != login_type_value:
                                 type_kr = "부모님" if user['user_type'] == 'parent' else "아이"
-                                st.error(f"❌ 이 계정은 **{type_kr}** 계정이야. 다시 확인해볼래?")
+                                st.error(f"❌ 이 계정은 **{type_kr}** 계정입니다.")
                             else:
                                 # 로그인 성공
                                 st.session_state.logged_in = True
@@ -349,16 +309,10 @@ def login_page():
                                 st.session_state.user_name = user['name']
                                 st.session_state.show_login_success = True
                                 
-                                # 아이디 저장 처리
                                 if remember_username:
                                     st.markdown(f"<script>localStorage.setItem('saved_username', '{form_username}'); localStorage.setItem('remember_username', 'true');</script>", unsafe_allow_html=True)
                                 else:
                                     st.markdown("<script>localStorage.removeItem('saved_username'); localStorage.removeItem('remember_username');</script>", unsafe_allow_html=True)
-                                
-                                if auto_login:
-                                    st.markdown("<script>localStorage.setItem('auto_login', 'true');</script>", unsafe_allow_html=True)
-                                else:
-                                    st.markdown("<script>localStorage.removeItem('auto_login');</script>", unsafe_allow_html=True)
                                 
                                 st.success(f"🎉 환영합니다, {user['name']}님!")
                                 st.balloons()
@@ -366,40 +320,64 @@ def login_page():
                                 time.sleep(1)
                                 st.rerun()
                         else:
-                            st.error("❌ 아이디나 비밀번호가 틀린 것 같아. 다시 입력해볼래?")
+                            st.error("❌ 아이디나 비밀번호가 틀렸습니다.")
             
             # 아이디/비밀번호 찾기
-            st.markdown('<div class="footer-link">', unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
-            with c1:
+            col1, col2 = st.columns(2)
+            with col1:
                 if st.button("🔍 아이디 찾기", use_container_width=True):
                     st.session_state.show_username_find = True
                     st.rerun()
-            with c2:
+            with col2:
                 if st.button("🔑 비밀번호 찾기", use_container_width=True):
                     st.session_state.show_password_reset = True
                     st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with tab2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader("📝 우리 가족이 되어볼까?")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 2. 카카오로 로그인
+        oauth_service = get_oauth_service()
+        if oauth_service and oauth_service.client_id:
+            try:
+                kakao_login_url = oauth_service.get_kakao_login_url()
+                st.link_button(
+                    "🟡 카카오로 로그인", 
+                    kakao_login_url, 
+                    use_container_width=True,
+                    help="카카오 계정으로 안전하게 로그인합니다."
+                )
+            except Exception:
+                st.info("💡 카카오 로그인을 사용하려면 관리자에게 문의해주세요.")
+        else:
+            st.info("💡 카카오 로그인을 사용하려면 관리자에게 문의해주세요.")
+        
+        # 3. 네이버로 로그인 (준비 중)
+        st.button("🟢 네이버로 로그인", use_container_width=True, disabled=True, help="준비 중입니다")
+        
+        # 4. 구글로 로그인 (준비 중)
+        st.button("⚪ 구글로 로그인", use_container_width=True, disabled=True, help="준비 중입니다")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 회원가입 섹션
+        if st.session_state.get('show_signup', False):
+            st.markdown("---")
+            st.markdown("### 📝 회원가입")
             
             # 사용자 타입 선택
             user_type = st.radio(
                 "어떤 계정을 만들까요?",
-                ["👨‍👩‍👧 부모님으로 가입", "👶 아이로 가입"],
+                ["👨‍👩‍👧 부모님", "👶 아이"],
                 key="signup_user_type",
                 horizontal=True
             )
-            user_type_value = 'parent' if user_type == "👨‍👩‍👧 부모님으로 가입" else 'child'
+            user_type_value = 'parent' if "부모님" in user_type else 'child'
             
             col1, col2 = st.columns(2)
             with col1:
                 signup_username = st.text_input("아이디", key="signup_username", placeholder="사용할 아이디")
                 signup_password = st.text_input("비밀번호", type="password", key="signup_password", placeholder="비밀번호 (4자 이상)")
                 
-                # 비밀번호 강도 표시 (회원가입으로 이동)
                 if signup_password:
                     strength = 0
                     if len(signup_password) >= 4: strength += 1
@@ -412,7 +390,7 @@ def login_page():
                     st.markdown(f"""
                         <div style="margin-top: -10px; margin-bottom: 10px;">
                             <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px;">
-                                <div style="width: {(idx+1)*33}%; height: 100%; background: {colors[idx]}; border-radius: 2px; transition: 0.3s;"></div>
+                                <div style="width: {(idx+1)*33}%; height: 100%; background: {colors[idx]}; border-radius: 2px;"></div>
                             </div>
                             <div style="font-size: 11px; color: {colors[idx]}; margin-top: 4px; font-weight: 700;">비밀번호 안전도: {labels[idx]}</div>
                         </div>
@@ -420,12 +398,11 @@ def login_page():
 
                 signup_password_confirm = st.text_input("비밀번호 확인", type="password", key="signup_password_confirm", placeholder="비밀번호 다시 입력")
                 
-                # 비밀번호 일치 확인 표시
                 if signup_password and signup_password_confirm:
                     if signup_password == signup_password_confirm:
-                        st.markdown("<p style='color: #00c853; font-size: 12px; font-weight: 700; margin-top: -10px;'>✅ 비밀번호가 일치해요!</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='color: #00c853; font-size: 12px; font-weight: 700; margin-top: -10px;'>✅ 비밀번호가 일치합니다!</p>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<p style='color: #ff4b4b; font-size: 12px; font-weight: 700; margin-top: -10px;'>❌ 비밀번호가 달라요. 다시 확인해줘!</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='color: #ff4b4b; font-size: 12px; font-weight: 700; margin-top: -10px;'>❌ 비밀번호가 다릅니다.</p>", unsafe_allow_html=True)
                 
                 signup_name = st.text_input("이름 (닉네임)", key="signup_name", placeholder="친구들이 부를 이름")
             
@@ -435,9 +412,8 @@ def login_page():
                     age = calculate_age(birth_date)
                     st.info(f"만나이: **{age}세**")
                 else:
-                    st.info("부모님은 나이 입력이 필요 없어요!")
+                    st.info("부모님은 나이 입력이 필요 없습니다!")
                 
-                # 부모 코드 생성 로직을 입력창 위로 이동
                 if user_type_value == 'parent':
                     if st.button("🔑 새 코드 만들기", use_container_width=True):
                         new_code = generate_parent_code()
@@ -451,30 +427,45 @@ def login_page():
                     help="부모님은 '새 코드 만들기'를 눌러주세요. 아이는 부모님께 받은 코드를 입력하세요."
                 )
 
-            if st.button("✨ 가입 완료!", type="primary", use_container_width=True):
-                if not signup_username or not signup_password or not signup_password_confirm or not signup_name or not parent_code:
-                    st.error("모든 정보를 다 입력해줘야 해! 😊")
-                elif signup_password != signup_password_confirm:
-                    st.error("비밀번호가 서로 달라. 똑같이 입력했는지 확인해줄래? 🧐")
-                elif len(signup_password) < 4:
-                    st.error("비밀번호는 최소 4자 이상이어야 해! 🔒")
-                elif not validate_parent_code(parent_code):
-                    st.error("부모 코드가 올바르지 않아. (8자리)")
-                else:
-                    try:
-                        if db.get_user_by_username(signup_username):
-                            st.error("이미 사용 중인 아이디야. 다른 걸로 해볼까?")
-                        else:
-                            user_id = db.create_user(signup_username, signup_password, signup_name, age if user_type_value == 'child' else None, parent_code, user_type_value)
-                            st.session_state.logged_in = True
-                            st.session_state.user_id = user_id
-                            st.session_state.user_name = signup_name
-                            st.session_state.show_login_success = True
-                            st.success("🎉 환영해! 가입이 완료되었어!")
-                            st.balloons()
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"오류가 발생했어: {str(e)}")
+            col_btn1, col_btn2 = st.columns([1, 1])
+            with col_btn1:
+                if st.button("✨ 가입 완료!", type="primary", use_container_width=True):
+                    if not signup_username or not signup_password or not signup_password_confirm or not signup_name or not parent_code:
+                        st.error("모든 정보를 입력해주세요! 😊")
+                    elif signup_password != signup_password_confirm:
+                        st.error("비밀번호가 일치하지 않습니다. 🧐")
+                    elif len(signup_password) < 4:
+                        st.error("비밀번호는 최소 4자 이상이어야 합니다! 🔒")
+                    elif not validate_parent_code(parent_code):
+                        st.error("부모 코드가 올바르지 않습니다. (8자리)")
+                    else:
+                        try:
+                            if db.get_user_by_username(signup_username):
+                                st.error("이미 사용 중인 아이디입니다.")
+                            else:
+                                user_id = db.create_user(signup_username, signup_password, signup_name, age if user_type_value == 'child' else None, parent_code, user_type_value)
+                                st.session_state.logged_in = True
+                                st.session_state.user_id = user_id
+                                st.session_state.user_name = signup_name
+                                st.session_state.show_login_success = True
+                                st.session_state.show_signup = False
+                                st.success("🎉 환영합니다! 가입이 완료되었습니다!")
+                                st.balloons()
+                                import time
+                                time.sleep(1)
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"오류가 발생했습니다: {str(e)}")
+            with col_btn2:
+                if st.button("↩️ 로그인으로 돌아가기", use_container_width=True):
+                    st.session_state.show_signup = False
+                    st.rerun()
+        else:
+            # 회원가입 링크
+            if st.button("📝 계정이 없으신가요? 회원가입하기", use_container_width=True):
+                st.session_state.show_signup = True
+                st.rerun()
+
 
 def main_page():
     """로그인 후 메인 대시보드 페이지 - 유형별 분기"""
