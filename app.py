@@ -346,23 +346,29 @@ def main_page():
 
 def parent_dashboard(user_name):
     """부모용 대시보드 - Style B (전문적인 분석형)"""
+    # 자녀 정보 및 통계 가져오기
     user = db.get_user_by_id(st.session_state.user_id)
     parent_code = user['parent_code'] if user else ""
     children = db.get_users_by_parent_code(parent_code)
     
+    # DB에서 실제 데이터 가져오기
     monthly_stats = db.get_children_behavior_stats_this_month(parent_code)
     savings_history = db.get_children_monthly_savings(parent_code)
     
+    # 최근 6개월 데이터 구성
     current_month = datetime.now().month
     months = []
     monthly_savings = []
+    total_savings_val = 0
     for i in range(5, -1, -1):
         m = (current_month - i - 1) % 12 + 1
         months.append(f"{m}월")
         found = False
         for row in savings_history:
             if int(row['month']) == m:
-                monthly_savings.append(row['total_amount'] / 1000)
+                val = row['total_amount'] or 0
+                monthly_savings.append(val / 1000)
+                total_savings_val += val
                 found = True
                 break
         if not found:
@@ -388,6 +394,37 @@ def parent_dashboard(user_name):
     .chart-container { height: 150px; display: flex; align-items: flex-end; justify-content: space-around; padding: 10px 0; gap: 5px; }
     .chart-bar { background: #6366f1; width: 30px; border-radius: 5px 5px 0 0; position: relative; transition: height 0.5s ease; }
     .chart-bar:hover { background: #4f46e5; }
+    
+    /* 게이지 차트 스타일 */
+    .gauge-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    .gauge-bg {
+        fill: none;
+        stroke: #eef2ff;
+        stroke-width: 10;
+    }
+    .gauge-fill {
+        fill: none;
+        stroke: #6366f1;
+        stroke-width: 10;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dasharray 0.5s ease;
+    }
+    .gauge-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        font-weight: 800;
+        color: #6366f1;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -396,13 +433,17 @@ def parent_dashboard(user_name):
     col1, col2, col3 = st.columns([1.2, 1, 0.8])
     
     with col1:
-        bars_html = ""
-        labels_html = ""
-        max_val = max(monthly_savings) if monthly_savings and max(monthly_savings) > 0 else 100
-        for m, v in zip(months, monthly_savings):
-            height = (v / max_val) * 100
-            bars_html += f'<div class="chart-bar" style="height: {height}%;" title="{int(v*1000):,}원"></div>'
-            labels_html += f'<div style="width: 30px; text-align: center;">{m}</div>'
+        if total_savings_val == 0:
+            content_html = '<div style="height:150px; display:flex; align-items:center; justify-content:center; color:#a0aec0; font-weight:600;">지금까지 기록된 저축액이 없어요 🪙</div>'
+        else:
+            bars_html = ""
+            labels_html = ""
+            max_val = max(monthly_savings) if monthly_savings and max(monthly_savings) > 0 else 100
+            for m, v in zip(months, monthly_savings):
+                height = (v / max_val) * 100
+                bars_html += f'<div class="chart-bar" style="height: {height}%;" title="{int(v*1000):,}원"></div>'
+                labels_html += f'<div style="width: 30px; text-align: center;">{m}</div>'
+            content_html = f'<div class="chart-container">{bars_html}</div><div style="display: flex; justify-content: space-around; font-size: 10px; color: #a0aec0; margin-bottom: 15px;">{labels_html}</div>'
 
         monthly_total = monthly_stats.get('monthly_total', 0) or 0
         yesterday_total = monthly_stats.get('yesterday_total', 0) or 0
@@ -410,8 +451,7 @@ def parent_dashboard(user_name):
         st.markdown(f"""
         <div class="parent-card">
             <div class="card-label">📈 이번 달 가족 저축액 <span style="margin-left:auto; background:#6366f1; color:white; font-size:11px; padding:2px 8px; border-radius:10px;">자세히 보기</span></div>
-            <div class="chart-container">{bars_html}</div>
-            <div style="display: flex; justify-content: space-around; font-size: 10px; color: #a0aec0; margin-bottom: 15px;">{labels_html}</div>
+            {content_html}
             <div class="stat-row">
                 <div class="stat-item"><div class="stat-val">{int(monthly_total):,}원</div><div class="stat-lbl">이번달 총 저축</div></div>
                 <div class="stat-item"><div class="stat-val">{int(yesterday_total):,}원</div><div class="stat-lbl">어제 저축</div></div>
@@ -421,20 +461,20 @@ def parent_dashboard(user_name):
         """, unsafe_allow_html=True)
 
     with col2:
-        children_html = ""
         if not children:
-            children_html = """
+            children_content = """
             <div style="text-align:center; padding: 40px 0; color: #a0aec0;">
                 <div style="font-size: 40px; margin-bottom: 10px;">👶</div>
                 등록된 자녀가 없습니다.<br>자녀 계정으로 가입 시<br>부모 코드를 입력해주세요!
             </div>
             """
         else:
+            children_content = ""
             for child in children:
                 child_stats = db.get_child_stats(child['id'])
                 total_savings = child_stats.get('total_savings', 0) or 0
                 activity_count = child_stats.get('activity_count', 0) or 0
-                children_html += f"""
+                children_content += f"""
                 <div class="child-item">
                     <div class="child-avatar">{"👦" if child.get('age', 0) > 7 else "👶"}</div>
                     <div class="child-info"><div class="child-name">{child['name']}</div></div>
@@ -445,7 +485,9 @@ def parent_dashboard(user_name):
         st.markdown(f"""
         <div class="parent-card">
             <div class="card-label">👦 자녀 용돈 현황</div>
-            {children_html}
+            <div class="children-list-container">
+                {children_content}
+            </div>
             <div style="margin-top:20px;">
                 <button style="width:100%; padding:10px; border-radius:10px; border:1px solid #edf2f7; background:white; color:#4a5568; font-weight:700; cursor:pointer;">총 용돈 보기</button>
             </div>
@@ -453,15 +495,24 @@ def parent_dashboard(user_name):
         """, unsafe_allow_html=True)
 
     with col3:
-        st.markdown("""
+        # 미션 달성률 (현재는 0%로 고정, 추후 DB 연동 가능)
+        percent = 0
+        circumference = 2 * 3.14159 * 45
+        offset = circumference * (1 - percent / 100)
+        
+        st.markdown(f"""
         <div class="parent-card" style="text-align:center;">
             <div class="card-label">🏆 AI 금융 퀴즈 & 미션</div>
-            <div style="margin: 20px auto; width:100px; height:100px; border-radius:50%; border:8px solid #eef2ff; border-top:8px solid #6366f1; display:flex; align-items:center; justify-content:center; font-size:30px;">⭐</div>
-            <div style="font-weight:700; color:#4a5568; margin-bottom:5px;">이번 주 0% 완료</div>
-            <div style="width:100%; height:8px; background:#eef2ff; border-radius:4px; overflow:hidden;">
-                <div style="width:0%; height:100%; background:#6366f1;"></div>
+            <div class="gauge-container">
+                <svg width="120" height="120" viewBox="0 0 100 100">
+                    <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+                    <circle class="gauge-fill" cx="50" cy="50" r="45" 
+                            style="stroke-dasharray: {circumference}; stroke-dashoffset: {offset};"></circle>
+                </svg>
+                <div class="gauge-text">⭐</div>
             </div>
-            <p style="font-size: 12px; color: #a0aec0; margin-top: 10px;">아직 진행한 미션이 없습니다.</p>
+            <div style="font-weight:700; color:#4a5568; margin-top:15px; margin-bottom:5px;">이번 주 {percent}% 완료</div>
+            <p style="font-size: 12px; color: #a0aec0;">아직 진행한 미션이 없습니다.</p>
         </div>
         """, unsafe_allow_html=True)
 
