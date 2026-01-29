@@ -173,8 +173,24 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         # 로그아웃 버튼
         st.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)
         if st.button("🚪 로그아웃", key="side_logout"):
+            # 카카오 로그아웃 처리
+            if hasattr(st.session_state, 'access_token') and st.session_state.access_token:
+                try:
+                    from services.oauth_service import OAuthService
+                    oauth_service = OAuthService()
+                    oauth_service.kakao_logout(st.session_state.access_token)
+                except Exception:
+                    pass  # 카카오 로그아웃 실패해도 계속 진행
+            
+            # 세션 상태 초기화
             st.session_state.logged_in = False
-            st.rerun()
+            st.session_state.user_id = None
+            st.session_state.user_name = None
+            st.session_state.user_info = None
+            st.session_state.access_token = None
+            
+            # 메인 페이지로 이동
+            st.switch_page("app.py")
         st.markdown('</div>', unsafe_allow_html=True)
 
 def hide_sidebar_navigation():

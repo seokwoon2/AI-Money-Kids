@@ -70,18 +70,23 @@ def login_page():
     if "code" in query_params:
         code = query_params["code"]
         with st.spinner("카카오 로그인 중... 🐷"):
-            token_info = oauth_service.get_kakao_token(code)
-            if token_info:
-                user_info = oauth_service.get_kakao_user_info(token_info['access_token'])
+            access_token = oauth_service.get_kakao_token(code)
+            
+            if access_token:
+                user_info = oauth_service.get_kakao_user_info(access_token)
+                
                 if user_info:
                     # 카카오 로그인 성공
                     st.session_state.logged_in = True
                     st.session_state.user_id = f"kakao_{user_info['id']}"
-                    st.session_state.user_name = user_info['properties']['nickname']
+                    st.session_state.user_name = user_info.get('name') or user_info.get('properties', {}).get('nickname', '사용자')
                     st.session_state.user_info = user_info
+                    st.session_state.access_token = access_token
                     st.session_state.show_login_success = True
+                    
                     st.success(f"🎉 환영합니다, {st.session_state.user_name}님!")
                     st.balloons()
+                    
                     # 쿼리 파라미터 제거를 위해 리다이렉트
                     st.query_params.clear()
                     import time

@@ -25,8 +25,7 @@ nav[data-testid="stSidebarNav"] {
 
 # 로그인 확인
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
-    st.warning("로그인이 필요합니다. 메인 페이지에서 로그인해주세요.")
-    st.stop()
+    st.switch_page("app.py")
 
 user_id = st.session_state.user_id
 user_name = st.session_state.user_name
@@ -185,6 +184,32 @@ render_sidebar_menu(user_id, user_name, user_type)
 
 # 사이드바 추가 정보
 with st.sidebar:
+    st.markdown("---")
+    
+    # API 키 상태 확인 (관리자용)
+    try:
+        from config import get_gemini_api_key
+        api_key = get_gemini_api_key()
+        if api_key:
+            st.success("✅ AI 서비스 준비 완료")
+            with st.expander("🔧 API 키 상태"):
+                st.code(f"키 확인됨: {api_key[:10]}...{api_key[-5:] if len(api_key) > 15 else ''}")
+        else:
+            st.warning("⚠️ API 키가 설정되지 않았습니다")
+            with st.expander("🔧 API 키 설정 방법"):
+                st.markdown("""
+                1. Streamlit Cloud 대시보드 접속
+                2. 앱 설정 → Secrets 탭
+                3. 다음 형식으로 입력:
+                ```toml
+                [secrets]
+                GOOGLE_API_KEY = "AIzaSy..."
+                ```
+                4. 저장 후 앱 재시작
+                """)
+    except Exception:
+        pass
+    
     st.markdown("---")
     st.markdown("### 💡 팁")
     st.info("""

@@ -25,8 +25,7 @@ nav[data-testid="stSidebarNav"] {
 
 # 로그인 확인
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
-    st.warning("로그인이 필요합니다. 메인 페이지에서 로그인해주세요.")
-    st.stop()
+    st.switch_page("app.py")
 
 user_id = st.session_state.user_id
 user_name = st.session_state.user_name
