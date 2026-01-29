@@ -3,6 +3,9 @@ from datetime import date, datetime
 from database.db_manager import DatabaseManager
 from utils.auth import generate_parent_code, validate_parent_code
 from utils.menu import hide_sidebar_navigation
+from services.oauth_service import OAuthService
+
+oauth_service = OAuthService()
 
 def calculate_age(birth_date: date) -> int:
     """생년월일로부터 만나이 계산"""
@@ -62,6 +65,29 @@ db = DatabaseManager()
 
 def login_page():
     """아이 친화적인 로그인/회원가입 페이지"""
+    # 0. OAuth 콜백 처리
+    query_params = st.query_params
+    if "code" in query_params:
+        code = query_params["code"]
+        with st.spinner("카카오 로그인 중... 🐷"):
+            token_info = oauth_service.get_kakao_token(code)
+            if token_info:
+                user_info = oauth_service.get_kakao_user_info(token_info['access_token'])
+                if user_info:
+                    # 카카오 로그인 성공
+                    st.session_state.logged_in = True
+                    st.session_state.user_id = f"kakao_{user_info['id']}"
+                    st.session_state.user_name = user_info['properties']['nickname']
+                    st.session_state.user_info = user_info
+                    st.session_state.show_login_success = True
+                    st.success(f"🎉 환영합니다, {st.session_state.user_name}님!")
+                    st.balloons()
+                    # 쿼리 파라미터 제거를 위해 리다이렉트
+                    st.query_params.clear()
+                    import time
+                    time.sleep(1)
+                    st.rerun()
+
     # 로그인하지 않았을 때 사이드바 네비게이션 숨기기
     hide_sidebar_navigation()
     
@@ -217,6 +243,48 @@ def login_page():
             )
             login_type_value = 'parent' if "부모님" in login_type else 'child'
             
+            # 2. 소셜 로그인 섹션 (상단 추가)
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin-bottom: 15px;">간편하게 시작하기</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # 카카오 로그인 버튼
+            kakao_login_url = oauth_service.get_kakao_login_url()
+            st.markdown(f"""
+                <a href="{kakao_login_url}" target="_self" style="text-decoration: none;">
+                    <div style="background-color: #FEE500; color: #000000; padding: 12px; border-radius: 15px; text-align: center; font-weight: 800; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <span style="font-size: 20px;">🟡</span> 카카오로 3초 만에 시작하기
+                    </div>
+                </a>
+            """, unsafe_allow_html=True)
+            
+            # 네이버, 구글 버튼 (준비 중)
+            soc_col1, soc_col2 = st.columns(2)
+            with soc_col1:
+                st.markdown("""
+                    <div style="background-color: #ffffff; color: #000000; padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #e2e8f0; opacity: 0.5; cursor: not-allowed;">
+                        🟢 네이버 (준비 중)
+                    </div>
+                """, unsafe_allow_html=True)
+            with soc_col2:
+                st.markdown("""
+                    <div style="background-color: #ffffff; color: #000000; padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #e2e8f0; opacity: 0.5; cursor: not-allowed;">
+                        ⚪ 구글 (준비 중)
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("""
+                <div style="text-align: center; margin: 25px 0;">
+                    <div style="display: flex; align-items: center; color: #cbd5e1; font-size: 12px;">
+                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                        <div style="padding: 0 15px;">또는 직접 입력하기</div>
+                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
             # 쿠키/localStorage 로직 (기존 유지)
             try:
                 cookies = st.cookies
@@ -301,25 +369,6 @@ def login_page():
                                 st.rerun()
                         else:
                             st.error("❌ 아이디나 비밀번호가 틀린 것 같아. 다시 입력해볼래?")
-            
-            # 소셜 로그인 옵션 추가
-            st.markdown("""
-                <div style="text-align: center; margin: 20px 0;">
-                    <div style="display: flex; align-items: center; color: #cbd5e1; font-size: 12px;">
-                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                        <div style="padding: 0 10px;">또는 소셜 계정으로 시작</div>
-                        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            soc_col1, soc_col2, soc_col3 = st.columns(3)
-            with soc_col1:
-                st.button("🟡 카카오", use_container_width=True, help="카카오톡으로 로그인 (준비 중)")
-            with soc_col2:
-                st.button("🟢 네이버", use_container_width=True, help="네이버로 로그인 (준비 중)")
-            with soc_col3:
-                st.button("⚪ 구글", use_container_width=True, help="구글로 로그인 (준비 중)")
             
             # 아이디/비밀번호 찾기
             st.markdown('<div class="footer-link">', unsafe_allow_html=True)
