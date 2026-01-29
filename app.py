@@ -243,25 +243,24 @@ def login_page():
             )
             login_type_value = 'parent' if "부모님" in login_type else 'child'
             
-            # 2. 소셜 로그인 섹션 (상단 추가)
-            st.markdown("""
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin-bottom: 15px;">간편하게 시작하기</p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # 카카오 로그인 버튼
-            kakao_login_url = oauth_service.get_kakao_login_url()
-            st.markdown(f"""
-                <a href="{kakao_login_url}" target="_self" style="text-decoration: none;">
-                    <div style="background-color: #FEE500; color: #000000; padding: 12px; border-radius: 15px; text-align: center; font-weight: 800; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                        <span style="font-size: 20px;">🟡</span> 카카오로 3초 만에 시작하기
-                    </div>
-                </a>
-            """, unsafe_allow_html=True)
-            
-            # 네이버, 구글 버튼 (준비 중)
-            soc_col1, soc_col2 = st.columns(2)
+        # 2. 소셜 로그인 섹션 (상단 추가)
+        st.markdown("""
+            <div style="text-align: center; margin-bottom: 15px;">
+                <p style="color: #64748b; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">간편하게 시작하기</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 카카오 로그인 버튼 (st.link_button 사용으로 레이아웃 깨짐 방지)
+        kakao_login_url = oauth_service.get_kakao_login_url()
+        st.link_button(
+            "🟡 카카오로 3초 만에 시작하기", 
+            kakao_login_url, 
+            use_container_width=True,
+            help="카카오 계정으로 안전하게 로그인합니다."
+        )
+        
+        # 네이버, 구글 버튼 (준비 중)
+        soc_col1, soc_col2 = st.columns(2)
             with soc_col1:
                 st.markdown("""
                     <div style="background-color: #ffffff; color: #000000; padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #e2e8f0; opacity: 0.5; cursor: not-allowed;">
