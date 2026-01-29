@@ -303,25 +303,6 @@ def login_page():
                 form_username = st.text_input("👤 아이디", placeholder="아이디를 입력하세요", value=initial_username)
                 form_password = st.text_input("🔐 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
                 
-                # 비밀번호 강도 표시 (간이 구현)
-                if form_password:
-                    strength = 0
-                    if len(form_password) >= 4: strength += 1
-                    if any(c.isdigit() for c in form_password): strength += 1
-                    if any(c.isupper() for c in form_password) or len(form_password) >= 8: strength += 1
-                    
-                    colors = ["#ff4b4b", "#ffa500", "#00c853"]
-                    labels = ["약함 🔴", "보통 🟡", "강함 🟢"]
-                    idx = min(strength, 2)
-                    st.markdown(f"""
-                        <div style="margin-top: -10px; margin-bottom: 10px;">
-                            <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px;">
-                                <div style="width: {(idx+1)*33}%; height: 100%; background: {colors[idx]}; border-radius: 2px; transition: 0.3s;"></div>
-                            </div>
-                            <div style="font-size: 11px; color: {colors[idx]}; margin-top: 4px; font-weight: 700;">비밀번호 강도: {labels[idx]}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
                 col_check1, col_check2 = st.columns(2)
                 with col_check1:
                     remember_default = st.session_state.get('remember_username', False)
@@ -399,6 +380,35 @@ def login_page():
             with col1:
                 signup_username = st.text_input("아이디", key="signup_username", placeholder="사용할 아이디")
                 signup_password = st.text_input("비밀번호", type="password", key="signup_password", placeholder="비밀번호 (4자 이상)")
+                
+                # 비밀번호 강도 표시 (회원가입으로 이동)
+                if signup_password:
+                    strength = 0
+                    if len(signup_password) >= 4: strength += 1
+                    if any(c.isdigit() for c in signup_password): strength += 1
+                    if any(c.isupper() for c in signup_password) or len(signup_password) >= 8: strength += 1
+                    
+                    colors = ["#ff4b4b", "#ffa500", "#00c853"]
+                    labels = ["약함 🔴", "보통 🟡", "강함 🟢"]
+                    idx = min(strength, 2)
+                    st.markdown(f"""
+                        <div style="margin-top: -10px; margin-bottom: 10px;">
+                            <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px;">
+                                <div style="width: {(idx+1)*33}%; height: 100%; background: {colors[idx]}; border-radius: 2px; transition: 0.3s;"></div>
+                            </div>
+                            <div style="font-size: 11px; color: {colors[idx]}; margin-top: 4px; font-weight: 700;">비밀번호 안전도: {labels[idx]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                signup_password_confirm = st.text_input("비밀번호 확인", type="password", key="signup_password_confirm", placeholder="비밀번호 다시 입력")
+                
+                # 비밀번호 일치 확인 표시
+                if signup_password and signup_password_confirm:
+                    if signup_password == signup_password_confirm:
+                        st.markdown("<p style='color: #00c853; font-size: 12px; font-weight: 700; margin-top: -10px;'>✅ 비밀번호가 일치해요!</p>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<p style='color: #ff4b4b; font-size: 12px; font-weight: 700; margin-top: -10px;'>❌ 비밀번호가 달라요. 다시 확인해줘!</p>", unsafe_allow_html=True)
+                
                 signup_name = st.text_input("이름 (닉네임)", key="signup_name", placeholder="친구들이 부를 이름")
             
             with col2:
@@ -424,8 +434,12 @@ def login_page():
                 )
 
             if st.button("✨ 가입 완료!", type="primary", use_container_width=True):
-                if not signup_username or not signup_password or not signup_name or not parent_code:
+                if not signup_username or not signup_password or not signup_password_confirm or not signup_name or not parent_code:
                     st.error("모든 정보를 다 입력해줘야 해! 😊")
+                elif signup_password != signup_password_confirm:
+                    st.error("비밀번호가 서로 달라. 똑같이 입력했는지 확인해줄래? 🧐")
+                elif len(signup_password) < 4:
+                    st.error("비밀번호는 최소 4자 이상이어야 해! 🔒")
                 elif not validate_parent_code(parent_code):
                     st.error("부모 코드가 올바르지 않아. (8자리)")
                 else:
