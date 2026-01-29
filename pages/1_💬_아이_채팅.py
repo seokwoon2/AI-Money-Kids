@@ -43,7 +43,12 @@ if user_type != 'child':
     st.stop()
 
 # 서비스 초기화
-conversation_service = ConversationService()
+try:
+    conversation_service = ConversationService()
+except Exception as e:
+    st.error("⚠️ AI 서비스 초기화 중 오류가 발생했습니다.")
+    st.info("관리자에게 문의해주세요.")
+    st.stop()
 
 # 세션 상태 초기화
 if 'messages' not in st.session_state:

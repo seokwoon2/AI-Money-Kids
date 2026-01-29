@@ -9,14 +9,21 @@ class ConversationService:
     
     def __init__(self):
         self.db = DatabaseManager()
+        self.gemini_service = None
+        self._init_gemini_service()
+    
+    def _init_gemini_service(self):
+        """Gemini 서비스 초기화 시도"""
         try:
-            self.gemini_service = GeminiService()
+            from config import get_gemini_api_key
+            api_key = get_gemini_api_key()
+            if api_key:
+                self.gemini_service = GeminiService(api_key=api_key)
+            else:
+                self.gemini_service = None
         except Exception as e:
             # API 키가 없어도 서비스는 초기화되도록 함
             self.gemini_service = None
-            import streamlit as st
-            if hasattr(st, 'session_state'):
-                pass  # 나중에 에러 처리
     
     def get_or_create_conversation(self, user_id: int) -> int:
         """사용자의 대화 세션 가져오기 또는 생성"""
@@ -37,8 +44,22 @@ class ConversationService:
         user_type: str = 'child'
     ) -> str:
         """사용자 메시지 처리 및 AI 응답 생성"""
+        # Gemini 서비스가 없으면 다시 시도
         if not self.gemini_service:
-            return "죄송해요, AI 서비스가 준비되지 않았어요. API 키를 확인해주세요."
+            self._init_gemini_service()
+        
+        if not self.gemini_service:
+            return """안녕하세요! 😊
+
+현재 AI 상담 서비스가 준비 중이에요. 
+관리자에게 문의해주시면 곧 사용할 수 있도록 도와드릴게요!
+
+그동안 이런 질문들을 해볼 수 있어요:
+- 저축이 왜 중요한가요?
+- 용돈을 어떻게 관리하면 좋을까요?
+- 돈을 모으는 방법이 뭐예요?
+
+곧 AI 선생님이 답변해드릴 수 있도록 준비 중이에요! 💪"""
         
         # 대화 세션 가져오기
         conversation_id = self.get_or_create_conversation(user_id)
