@@ -409,12 +409,19 @@ def login_page():
                 else:
                     st.info("부모님은 나이 입력이 필요 없어요!")
                 
-                parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", placeholder="8자리 코드 입력")
+                # 부모 코드 생성 로직을 입력창 위로 이동
                 if user_type_value == 'parent':
                     if st.button("🔑 새 코드 만들기", use_container_width=True):
                         new_code = generate_parent_code()
                         st.session_state['signup_parent_code'] = new_code
                         st.rerun()
+                
+                parent_code = st.text_input(
+                    "🔑 부모 코드", 
+                    key="signup_parent_code", 
+                    placeholder="8자리 코드 입력",
+                    help="부모님은 '새 코드 만들기'를 눌러주세요. 아이는 부모님께 받은 코드를 입력하세요."
+                )
 
             if st.button("✨ 가입 완료!", type="primary", use_container_width=True):
                 if not signup_username or not signup_password or not signup_name or not parent_code:
