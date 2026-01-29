@@ -1,6 +1,17 @@
 """공통 메뉴 유틸리티 - 카카오뱅크 스타일 UI 개편"""
 import streamlit as st
+import os
 from database.db_manager import DatabaseManager
+
+def safe_page_link(page_path: str, label: str, icon: str = None):
+    """안전하게 페이지 링크를 생성하는 헬퍼 함수"""
+    try:
+        # 파일 존재 여부 확인
+        if os.path.exists(page_path):
+            st.page_link(page_path, label=label, icon=icon)
+    except Exception:
+        # 페이지가 없거나 오류가 발생하면 무시
+        pass
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     """사이드바 메뉴 렌더링 - 카카오뱅크 스타일 (노란색 액센트, 라운드 스타일)"""
@@ -128,8 +139,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         """, unsafe_allow_html=True)
         
         # 내 정보 버튼 추가
-        if st.button("내 정보", key="side_info_top", use_container_width=False):
-            st.switch_page("pages/4_👤_내정보.py")
+        try:
+            if os.path.exists("pages/4_👤_내정보.py"):
+                if st.button("내 정보", key="side_info_top", use_container_width=False):
+                    st.switch_page("pages/4_👤_내정보.py")
+        except Exception:
+            pass
         
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
 
@@ -138,17 +153,17 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         
         if user_type == 'parent':
             st.page_link("app.py", label="홈", icon="🏠")
-            st.page_link("pages/2_📊_부모_대시보드.py", label="대시보드", icon="📊")
-            st.page_link("pages/3_💼_부모_상담실.py", label="부모 상담실", icon="💼")
-            st.page_link("pages/9_💵_용돈_관리.py", label="거래 내역", icon="📈")
-            st.page_link("pages/5_💰_용돈_추천.py", label="용돈 관리", icon="🔥")
-            st.page_link("pages/6_📚_금융_교육_가이드.py", label="목표 가이드", icon="📚")
+            safe_page_link("pages/2_📊_부모_대시보드.py", "대시보드", "📊")
+            safe_page_link("pages/3_💼_부모_상담실.py", "부모 상담실", "💼")
+            safe_page_link("pages/9_💵_용돈_관리.py", "거래 내역", "📈")
+            safe_page_link("pages/5_💰_용돈_추천.py", "용돈 관리", "🔥")
+            safe_page_link("pages/6_📚_금융_교육_가이드.py", "목표 가이드", "📚")
         else:
             st.page_link("app.py", label="홈", icon="🏠")
-            st.page_link("pages/1_💬_아이_채팅.py", label="AI 선생님", icon="💬")
-            st.page_link("pages/7_🎯_금융_미션.py", label="오늘의 퀴즈", icon="🎯")
-            st.page_link("pages/8_📖_금융_스토리.py", label="금융 스토리", icon="📖")
-            st.page_link("pages/9_💵_용돈_관리.py", label="거래 내역", icon="💵")
+            safe_page_link("pages/1_💬_아이_채팅.py", "AI 선생님", "💬")
+            safe_page_link("pages/7_🎯_금융_미션.py", "오늘의 퀴즈", "🎯")
+            safe_page_link("pages/8_📖_금융_스토리.py", "금융 스토리", "📖")
+            safe_page_link("pages/9_💵_용돈_관리.py", "거래 내역", "💵")
         
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
 

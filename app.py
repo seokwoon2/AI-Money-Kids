@@ -703,29 +703,52 @@ def child_dashboard(user_name):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("""<div class="dash-card card-mint"><div class="card-title">💰 내 저축함</div><div class="badge-label" style="background:#fff385; color:#7F6000; position:absolute; top:25px; right:25px;">저축왕 진행 중! 👑</div><div style="margin-top:20px;"><div class="card-subtitle">저축왕 성취도 (75%)</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 75%;"></div></div><h2 style="margin:5px 0; font-size: 34px; font-weight:900;">45,000원</h2><p style="margin:0; font-size:14px; font-weight:700; opacity:0.8;">🌱 목표: 60,000원</p></div><div class="card-mascot">🍯</div></div>""", unsafe_allow_html=True)
+        import os
         if st.button("거래 기록 보기 📋", key="main_history", use_container_width=True):
-            from utils.menu import add_to_recent
-            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
-            st.switch_page("pages/9_💵_용돈_관리.py")
+            try:
+                if os.path.exists("pages/9_💵_용돈_관리.py"):
+                    from utils.menu import add_to_recent
+                    try:
+                        add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
+                    except: pass
+                    st.switch_page("pages/9_💵_용돈_관리.py")
+                else:
+                    st.info("거래 내역 페이지가 준비 중입니다. 곧 만나요! 💫")
+            except Exception as e:
+                st.info("거래 내역 페이지가 준비 중입니다. 곧 만나요! 💫")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""<div class="dash-card card-coral"><div class="card-title">❓ 오늘의 퀴즈</div><p style="font-size: 18px; font-weight:700; margin-top:20px;">매일매일 지식이 쑥쑥!</p><div class="badge-label" style="margin-top:5px;">새로운 미션 도착! ✨</div><div class="card-mascot">❓</div></div>""", unsafe_allow_html=True)
-        if st.button("지금 도전! 🚀", key="main_quiz", use_container_width=True):
-            from utils.menu import add_to_recent
-            add_to_recent("오늘의 퀴즈", "pages/7_🎯_금융_미션.py", "🎯")
-            st.switch_page("pages/7_🎯_금융_미션.py")
+        if os.path.exists("pages/7_🎯_금융_미션.py"):
+            if st.button("지금 도전! 🚀", key="main_quiz", use_container_width=True):
+                from utils.menu import add_to_recent
+                try:
+                    add_to_recent("오늘의 퀴즈", "pages/7_🎯_금융_미션.py", "🎯")
+                except: pass
+                st.switch_page("pages/7_🎯_금융_미션.py")
 
     with col2:
         st.markdown("""<div class="dash-card card-yellow"><div class="card-title">📖 오늘의 학습</div><div class="badge-label" style="background:#C5B4E3; color:#3D2B66; position:absolute; top:25px; right:25px;">꿈꾸기 가이드 📖</div><div style="margin-top:20px;"><div class="card-subtitle">오늘의 목표 (40%)</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 40%;"></div></div><p style="margin:0; font-weight:700; font-size:16px;">3/5 완료</p><p style="margin:5px 0 0 0; font-size:14px; opacity:0.8;">꿈을 이루는 저축법 배우기</p></div><div class="card-mascot">🤖</div></div>""", unsafe_allow_html=True)
-        if st.button("학습 계속하기 📚", key="main_study", use_container_width=True):
-            from utils.menu import add_to_recent
-            add_to_recent("금융 스토리", "pages/8_📖_금융_스토리.py", "📖")
-            st.switch_page("pages/8_📖_금융_스토리.py")
+        if os.path.exists("pages/8_📖_금융_스토리.py"):
+            if st.button("학습 계속하기 📚", key="main_study", use_container_width=True):
+                from utils.menu import add_to_recent
+                try:
+                    add_to_recent("금융 스토리", "pages/8_📖_금융_스토리.py", "📖")
+                except: pass
+                st.switch_page("pages/8_📖_금융_스토리.py")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""<div class="dash-card card-lavender"><div class="card-title">🎯 나의 목표</div><div style="margin-top:20px;"><div class="card-subtitle">자전거 사기 (10%)</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 10%;"></div></div><p style="margin:0; font-weight:700; font-size:16px;">"새 자전거 사기" 🚲</p><p style="margin:5px 0 0 0; font-size:14px; font-weight:700;">남은 금액: 54,000원</p></div><div class="card-mascot">🎯</div></div>""", unsafe_allow_html=True)
         if st.button("목표 관리하기 🧸", key="main_goal", use_container_width=True):
-            from utils.menu import add_to_recent
-            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
-            st.switch_page("pages/9_💵_용돈_관리.py")
+            try:
+                if os.path.exists("pages/9_💵_용돈_관리.py"):
+                    from utils.menu import add_to_recent
+                    try:
+                        add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
+                    except: pass
+                    st.switch_page("pages/9_💵_용돈_관리.py")
+                else:
+                    st.info("목표 관리 페이지가 준비 중입니다. 곧 만나요! 💫")
+            except Exception as e:
+                st.info("목표 관리 페이지가 준비 중입니다. 곧 만나요! 💫")
 
 # 메인 로직
 if st.session_state.logged_in:
