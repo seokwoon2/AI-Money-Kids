@@ -127,6 +127,10 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         </div>
         """, unsafe_allow_html=True)
         
+        # 내 정보 버튼 추가
+        if st.button("👤 내 정보", key="side_info_top", use_container_width=True):
+            st.switch_page("pages/4_👤_내정보.py")
+        
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
 
         # 2. 주요 메뉴 섹션
@@ -150,7 +154,6 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
 
         # 3. 기타 섹션
         st.markdown('<div class="sb-section-title">━━━ 기타 ━━━</div>', unsafe_allow_html=True)
-        st.page_link("pages/4_👤_내정보.py", label="설정", icon="⚙️")
         
         # 로그아웃 버튼
         st.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)

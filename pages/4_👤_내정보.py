@@ -68,29 +68,29 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
     
-    # 정보 수정 섹션 - 트렌디한 탭 방식 (3개 탭)
-    tab1, tab2, tab3 = st.tabs(["✏️ 이름 변경", "🔐 비밀번호 변경", "🔄 계정 타입 변경"])
+    # 정보 수정 섹션 - 트렌디한 탭 방식 (4개 탭)
+    tab1, tab2, tab3, tab4 = st.tabs(["✏️ 닉네임 변경", "🔐 비밀번호 변경", "🔄 계정 타입 변경", "🔑 코드 확인"])
     
     with tab1:
-        st.markdown("### 이름 변경")
+        st.markdown("### 닉네임 변경")
         new_name = st.text_input(
-            "새 이름", 
+            "새 닉네임", 
             value=user.get('name'), 
             key="edit_name",
-            placeholder="변경할 이름을 입력하세요"
+            placeholder="변경할 닉네임을 입력하세요"
         )
         
-        if st.button("💾 이름 저장", type="primary", use_container_width=True, key="save_name"):
+        if st.button("💾 닉네임 저장", type="primary", use_container_width=True, key="save_name"):
             if new_name != user.get('name'):
                 if new_name.strip():
                     if db.update_user_info(user_id, name=new_name):
                         st.session_state.user_name = new_name
-                        st.success("✅ 이름이 변경되었습니다!")
+                        st.success("✅ 닉네임이 변경되었습니다!")
                         st.rerun()
                     else:
-                        st.error("❌ 이름 변경에 실패했습니다.")
+                        st.error("❌ 닉네임 변경에 실패했습니다.")
                 else:
-                    st.warning("⚠️ 이름을 입력해주세요.")
+                    st.warning("⚠️ 닉네임을 입력해주세요.")
             else:
                 st.info("ℹ️ 변경할 내용이 없습니다.")
     
@@ -158,12 +158,20 @@ with col1:
             if new_type_value != user_type:
                 if db.update_user_type(user_id, new_type_value):
                     st.success("✅ 계정 타입이 변경되었습니다!")
-                    st.info("💡 변경사항을 적용하려면 로그아웃 후 다시 로그인하거나 페이지를 새로고침하세요.")
                     st.rerun()
                 else:
                     st.error("❌ 계정 타입 변경에 실패했습니다.")
             else:
                 st.info("ℹ️ 이미 선택한 계정 타입입니다.")
+
+    with tab4:
+        st.markdown("### 🔑 나의 부모 코드")
+        st.info("💡 아이가 회원가입할 때 이 코드를 입력하면 가족으로 연결됩니다.")
+        st.markdown(f"""
+        <div style='background: #f0f4ff; padding: 20px; border-radius: 12px; text-align: center; border: 2px dashed #6366f1;'>
+            <span style='font-size: 24px; font-weight: 800; color: #6366f1; letter-spacing: 2px;'>{parent_code}</span>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -259,6 +267,40 @@ with col3:
     st.metric("총 대화 세션", conversations_count['count'] if conversations_count else 0)
 with col4:
     st.metric("총 메시지 수", messages_count['count'] if messages_count else 0)
+
+st.markdown("---")
+
+# 최근 거래/활동 내역 추가
+st.subheader("💸 최근 활동 내역")
+behaviors = db.get_user_behaviors(user_id, limit=5)
+if behaviors:
+    for b in behaviors:
+        b_type_kr = {
+            'saving': '💰 저축',
+            'planned_spending': '📝 계획 소비',
+            'impulse_buying': '⚡ 충동 구매',
+            'delayed_gratification': '⏳ 인내심',
+            'comparing_prices': '🔍 가격 비교'
+        }.get(b['behavior_type'], b['behavior_type'])
+        
+        amount_str = f"{int(b['amount']):,}원" if b['amount'] else ""
+        date_str = datetime.fromisoformat(b['timestamp'].replace('Z', '+00:00')).strftime('%m/%d %H:%M') if b['timestamp'] else ""
+        
+        st.markdown(f"""
+        <div style='background: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; 
+                    border: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center;'>
+            <div>
+                <span style='font-weight: 700; color: #2d3748;'>{b_type_kr}</span>
+                <span style='font-size: 0.85em; color: #a0aec0; margin-left: 10px;'>{b.get('description', '')}</span>
+            </div>
+            <div style='text-align: right;'>
+                <div style='font-weight: 800; color: #1a202c;'>{amount_str}</div>
+                <div style='font-size: 0.75em; color: #cbd5e1;'>{date_str}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("ℹ️ 아직 활동 내역이 없습니다.")
 
 st.markdown("---")
 
