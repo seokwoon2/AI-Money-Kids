@@ -128,7 +128,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         """, unsafe_allow_html=True)
         
         # 내 정보 버튼 추가
-        if st.button("👤 내 정보", key="side_info_top", use_container_width=True):
+        if st.button("내 정보", key="side_info_top", use_container_width=False):
             st.switch_page("pages/4_👤_내정보.py")
         
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)

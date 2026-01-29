@@ -167,11 +167,21 @@ with col1:
     with tab4:
         st.markdown("### 🔑 나의 부모 코드")
         st.info("💡 아이가 회원가입할 때 이 코드를 입력하면 가족으로 연결됩니다.")
-        st.markdown(f"""
-        <div style='background: #f0f4ff; padding: 20px; border-radius: 12px; text-align: center; border: 2px dashed #6366f1;'>
-            <span style='font-size: 24px; font-weight: 800; color: #6366f1; letter-spacing: 2px;'>{parent_code}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        
+        # 복사 기능을 위한 컬럼 배치
+        code_col, copy_col = st.columns([3, 1])
+        
+        with code_col:
+            st.markdown(f"""
+            <div style='background: #f0f4ff; padding: 15px; border-radius: 12px; text-align: center; border: 2px dashed #6366f1; user-select: text !important;'>
+                <span style='font-size: 24px; font-weight: 800; color: #6366f1; letter-spacing: 2px; -webkit-user-select: text; user-select: text;'>{parent_code}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with copy_col:
+            if st.button("📋 복사", use_container_width=True):
+                st.write(f'<script>navigator.clipboard.writeText("{parent_code}")</script>', unsafe_allow_html=True)
+                st.success("복사 완료!")
     
     st.markdown("---")
     
