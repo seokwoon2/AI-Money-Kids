@@ -1,102 +1,167 @@
-import requests
-import streamlit as st
 import os
-from dotenv import load_dotenv
-from typing import Optional, Dict
-
-# 환경변수 로드
-load_dotenv()
+import streamlit as st
+import requests
+from urllib.parse import urlencode
 
 class OAuthService:
-    """카카오 OAuth 로그인 서비스"""
-    
     def __init__(self):
-        # 로컬 .env 또는 Streamlit Secrets에서 키 가져오기
-        try:
-            # Streamlit Secrets 확인 (런타임에만 가능)
-            if hasattr(st, 'secrets'):
-                try:
-                    if "KAKAO_REST_API_KEY" in st.secrets:
-                        self.client_id = st.secrets["KAKAO_REST_API_KEY"]
-                        self.redirect_uri = st.secrets.get("KAKAO_REDIRECT_URI", "http://localhost:8501")
-                    else:
-                        # Secrets에 없으면 환경 변수에서 가져오기
-                        self.client_id = os.getenv("KAKAO_REST_API_KEY")
-                        self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
-                except (AttributeError, KeyError, RuntimeError):
-                    # Secrets 접근 실패 시 환경 변수 사용
-                    self.client_id = os.getenv("KAKAO_REST_API_KEY")
-                    self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
-            else:
-                # Streamlit이 초기화되지 않았으면 환경 변수만 사용
-                self.client_id = os.getenv("KAKAO_REST_API_KEY")
-                self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
-        except Exception:
-            # 모든 초기화 실패 시 기본값 설정
-            self.client_id = os.getenv("KAKAO_REST_API_KEY")
-            self.redirect_uri = os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501")
-
+        # 환경 감지 (로컬 .env 또는 Streamlit Cloud secrets)
+        if hasattr(st, 'secrets') and 'oauth' in st.secrets:
+            # Streamlit Cloud
+            self.kakao_key = st.secrets['oauth']['kakao_client_id']
+            self.kakao_redirect = st.secrets['oauth']['kakao_redirect_uri']
+            
+            self.naver_client_id = st.secrets['oauth']['naver_client_id']
+            self.naver_client_secret = st.secrets['oauth']['naver_client_secret']
+            self.naver_redirect = st.secrets['oauth']['naver_redirect_uri']
+            
+            self.google_client_id = st.secrets['oauth']['google_client_id']
+            self.google_client_secret = st.secrets['oauth']['google_client_secret']
+            self.google_redirect = st.secrets['oauth']['google_redirect_uri']
+        else:
+            # 로컬 .env
+            self.kakao_key = os.getenv('KAKAO_CLIENT_ID')
+            self.kakao_redirect = os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8501')
+            
+            self.naver_client_id = os.getenv('NAVER_CLIENT_ID')
+            self.naver_client_secret = os.getenv('NAVER_CLIENT_SECRET')
+            self.naver_redirect = os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8501')
+            
+            self.google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+            self.google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+            self.google_redirect = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8501')
+    
+    # =====================
+    # 카카오 로그인
+    # =====================
     def get_kakao_login_url(self) -> str:
-        """카카오 로그인 인가 코드 요청 URL 생성"""
-        return f"https://kauth.kakao.com/oauth/authorize?client_id={self.client_id}&redirect_uri={self.redirect_uri}&response_type=code"
-
-    def get_kakao_token(self, code: str) -> Optional[str]:
-        """인가 코드로 액세스 토큰 발급"""
+        """카카오 로그인 URL 생성"""
+        base_url = "https://kauth.kakao.com/oauth/authorize"
+        params = {
+            'client_id': self.kakao_key,
+            'redirect_uri': self.kakao_redirect,
+            'response_type': 'code'
+        }
+        return f"{base_url}?{urlencode(params)}"
+    
+    def get_kakao_token(self, code: str) -> dict:
+        """카카오 액세스 토큰 발급"""
         token_url = "https://kauth.kakao.com/oauth/token"
-        headers = {"Content-type": "application/x-www-form-urlencoded;charset=utf-8"}
         data = {
-            "grant_type": "authorization_code",
-            "client_id": self.client_id,
-            "redirect_uri": self.redirect_uri,
-            "code": code,
+            'grant_type': 'authorization_code',
+            'client_id': self.kakao_key,
+            'redirect_uri': self.kakao_redirect,
+            'code': code
         }
-        
         try:
-            response = requests.post(token_url, headers=headers, data=data)
+            response = requests.post(token_url, data=data)
             response.raise_for_status()
-            tokens = response.json()
-            return tokens.get("access_token")
+            return response.json()
         except Exception as e:
-            st.error(f"토큰 발급 실패: {str(e)}")
-            return None
-
-    def get_kakao_user_info(self, access_token: str) -> Optional[Dict]:
-        """액세스 토큰으로 사용자 정보 가져오기"""
+            st.error(f"카카오 토큰 발급 실패: {e}")
+            return {}
+    
+    def get_kakao_user_info(self, access_token: str) -> dict:
+        """카카오 사용자 정보 조회"""
         user_info_url = "https://kapi.kakao.com/v2/user/me"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
-        }
-        
+        headers = {'Authorization': f'Bearer {access_token}'}
         try:
             response = requests.get(user_info_url, headers=headers)
             response.raise_for_status()
-            user_info = response.json()
-            
-            # 기존 코드와의 호환성을 위해 원본 형식도 반환
-            # 하지만 정제된 형식도 함께 제공
-            return {
-                "id": str(user_info.get("id")),
-                "name": user_info.get("properties", {}).get("nickname", "사용자"),
-                "profile_image": user_info.get("properties", {}).get("profile_image"),
-                "email": user_info.get("kakao_account", {}).get("email"),
-                "provider": "kakao",
-                # 기존 코드 호환성
-                "properties": user_info.get("properties", {}),
-                "kakao_account": user_info.get("kakao_account", {})
-            }
+            return response.json()
         except Exception as e:
-            st.error(f"사용자 정보 가져오기 실패: {str(e)}")
-            return None
-
-    def kakao_logout(self, access_token: str) -> bool:
-        """카카오 로그아웃"""
-        logout_url = "https://kapi.kakao.com/v1/user/logout"
-        headers = {"Authorization": f"Bearer {access_token}"}
+            st.error(f"카카오 사용자 정보 조회 실패: {e}")
+            return {}
+    
+    # =====================
+    # 네이버 로그인
+    # =====================
+    def get_naver_login_url(self) -> str:
+        """네이버 로그인 URL 생성"""
+        import secrets
+        state = secrets.token_urlsafe(16)
+        st.session_state['naver_state'] = state
         
+        base_url = "https://nid.naver.com/oauth2.0/authorize"
+        params = {
+            'response_type': 'code',
+            'client_id': self.naver_client_id,
+            'redirect_uri': self.naver_redirect,
+            'state': state
+        }
+        return f"{base_url}?{urlencode(params)}"
+    
+    def get_naver_token(self, code: str, state: str) -> dict:
+        """네이버 액세스 토큰 발급"""
+        token_url = "https://nid.naver.com/oauth2.0/token"
+        params = {
+            'grant_type': 'authorization_code',
+            'client_id': self.naver_client_id,
+            'client_secret': self.naver_client_secret,
+            'code': code,
+            'state': state
+        }
         try:
-            response = requests.post(logout_url, headers=headers)
+            response = requests.get(token_url, params=params)
             response.raise_for_status()
-            return True
-        except Exception:
-            return False
+            return response.json()
+        except Exception as e:
+            st.error(f"네이버 토큰 발급 실패: {e}")
+            return {}
+    
+    def get_naver_user_info(self, access_token: str) -> dict:
+        """네이버 사용자 정보 조회"""
+        user_info_url = "https://openapi.naver.com/v1/nid/me"
+        headers = {'Authorization': f'Bearer {access_token}'}
+        try:
+            response = requests.get(user_info_url, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            st.error(f"네이버 사용자 정보 조회 실패: {e}")
+            return {}
+    
+    # =====================
+    # 구글 로그인
+    # =====================
+    def get_google_login_url(self) -> str:
+        """구글 로그인 URL 생성"""
+        base_url = "https://accounts.google.com/o/oauth2/v2/auth"
+        params = {
+            'client_id': self.google_client_id,
+            'redirect_uri': self.google_redirect,
+            'response_type': 'code',
+            'scope': 'openid email profile',
+            'access_type': 'online'
+        }
+        return f"{base_url}?{urlencode(params)}"
+    
+    def get_google_token(self, code: str) -> dict:
+        """구글 액세스 토큰 발급"""
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            'code': code,
+            'client_id': self.google_client_id,
+            'client_secret': self.google_client_secret,
+            'redirect_uri': self.google_redirect,
+            'grant_type': 'authorization_code'
+        }
+        try:
+            response = requests.post(token_url, data=data)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            st.error(f"구글 토큰 발급 실패: {e}")
+            return {}
+    
+    def get_google_user_info(self, access_token: str) -> dict:
+        """구글 사용자 정보 조회"""
+        user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        headers = {'Authorization': f'Bearer {access_token}'}
+        try:
+            response = requests.get(user_info_url, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            st.error(f"구글 사용자 정보 조회 실패: {e}")
+            return {}
