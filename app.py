@@ -523,22 +523,22 @@ def login_page():
                             st.rerun()
                     else:
                         st.error("❌ 아이디나 비밀번호가 틀렸습니다.")
-            
-            # 아이디 찾기 / 비밀번호 찾기 링크
-            st.markdown("<br>", unsafe_allow_html=True)
-            col_find1, col_find2 = st.columns(2)
-            with col_find1:
-                if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn", 
-                            help="이름과 부모 코드로 아이디를 찾습니다"):
-                    st.session_state.show_username_find = True
-                    st.session_state.show_password_reset = False
-                    st.rerun()
-            with col_find2:
-                if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn",
-                            help="아이디, 이름, 부모 코드로 비밀번호를 재설정합니다"):
-                    st.session_state.show_password_reset = True
-                    st.session_state.show_username_find = False
-                    st.rerun()
+        
+        # 아이디 찾기 / 비밀번호 찾기 링크 (폼 밖에 위치)
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_find1, col_find2 = st.columns(2)
+        with col_find1:
+            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn", 
+                        help="이름과 부모 코드로 아이디를 찾습니다"):
+                st.session_state.show_username_find = True
+                st.session_state.show_password_reset = False
+                st.rerun()
+        with col_find2:
+            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn",
+                        help="아이디, 이름, 부모 코드로 비밀번호를 재설정합니다"):
+                st.session_state.show_password_reset = True
+                st.session_state.show_username_find = False
+                st.rerun()
         
         # 아이디 찾기 섹션
         if st.session_state.get('show_username_find', False):
