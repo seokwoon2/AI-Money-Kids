@@ -317,6 +317,27 @@ def login_page():
             background: linear-gradient(135deg, #D0D0D0 0%, #ADADAD 100%) !important;
             transform: translateY(-1px) !important;
         }
+        
+        /* 주민등록번호 뒷자리 보안 스타일 */
+        input[key="signup_parent_ssn_back"] {
+            font-family: 'Courier New', monospace !important;
+            letter-spacing: 3px !important;
+            font-size: 18px !important;
+            text-align: center !important;
+        }
+        
+        /* 통신사 선택 스타일 */
+        .stSelectbox > div > div > select {
+            border-radius: 10px !important;
+            border: 2px solid #e0e0e0 !important;
+            padding: 12px 15px !important;
+        }
+        
+        /* 휴대폰번호 입력 필드 */
+        input[key="signup_phone"] {
+            font-family: 'Courier New', monospace !important;
+            letter-spacing: 1px !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -809,23 +830,110 @@ def login_page():
             
             # 부모님인 경우 주민등록번호와 휴대폰 인증 (폼 밖)
             if signup_user_type_value == 'parent':
-                signup_parent_ssn = st.text_input("주민등록번호 앞 6자리", key="signup_parent_ssn", 
-                                                 placeholder="YYMMDD", max_chars=6,
-                                                 help="생년월일 6자리 입력")
-                signup_phone = st.text_input("휴대폰번호", key="signup_phone", 
-                                             placeholder="010-1234-5678",
-                                             help="하이픈(-) 포함하여 입력")
+                st.markdown("#### 📋 본인 인증 정보")
+                
+                # 주민등록번호 입력 (앞 6자리 + 뒷 7자리)
+                st.markdown("**주민등록번호**")
+                st.info("🔒 보안을 위해 뒷자리는 마스킹 처리되며, 입력 내용이 화면에 표시되지 않습니다.")
+                
+                col_ssn1, col_ssn2 = st.columns([1, 1])
+                with col_ssn1:
+                    signup_parent_ssn_front = st.text_input("앞 6자리 (생년월일)", key="signup_parent_ssn_front", 
+                                                           placeholder="YYMMDD", max_chars=6,
+                                                           help="예: 900101",
+                                                           type="default")
+                    if signup_parent_ssn_front:
+                        if len(signup_parent_ssn_front) == 6 and signup_parent_ssn_front.isdigit():
+                            # 생년월일 유효성 검사
+                            year = int(signup_parent_ssn_front[:2])
+                            month = int(signup_parent_ssn_front[2:4])
+                            day = int(signup_parent_ssn_front[4:6])
+                            if 1 <= month <= 12 and 1 <= day <= 31:
+                                st.caption(f"✅ 입력됨: {signup_parent_ssn_front}")
+                            else:
+                                st.caption("⚠️ 올바른 날짜를 입력해주세요")
+                        else:
+                            st.caption("⚠️ 6자리 숫자를 입력해주세요")
+                
+                with col_ssn2:
+                    # 뒷자리는 마스킹 처리된 입력 (password 타입)
+                    signup_parent_ssn_back = st.text_input("뒷 7자리 (보안)", key="signup_parent_ssn_back", 
+                                                          placeholder="●●●●●●●", max_chars=7,
+                                                          help="숫자만 입력 (입력 시 ●로 표시됩니다)",
+                                                          type="password")
+                    if signup_parent_ssn_back:
+                        masked = "●" * len(signup_parent_ssn_back)
+                        if len(signup_parent_ssn_back) == 7 and signup_parent_ssn_back.isdigit():
+                            st.caption(f"✅ 입력됨: {masked} (보안 처리됨)")
+                        else:
+                            st.caption("⚠️ 7자리 숫자를 입력해주세요")
+                
+                # 주민등록번호 전체 조합
+                if signup_parent_ssn_front and signup_parent_ssn_back:
+                    if len(signup_parent_ssn_front) == 6 and len(signup_parent_ssn_back) == 7:
+                        if signup_parent_ssn_back.isdigit():
+                            signup_parent_ssn = signup_parent_ssn_front + signup_parent_ssn_back
+                        else:
+                            signup_parent_ssn = None
+                            st.warning("⚠️ 주민등록번호 뒷자리는 숫자만 입력 가능합니다.")
+                    else:
+                        signup_parent_ssn = None
+                else:
+                    signup_parent_ssn = None
+                
+                # 통신사 선택 및 휴대폰번호 입력
+                st.markdown("**휴대폰번호**")
+                col_carrier, col_phone = st.columns([1, 2])
+                with col_carrier:
+                    phone_carrier = st.selectbox("통신사", ["SKT", "KT", "LG U+", "알뜰폰"], key="signup_phone_carrier",
+                                                help="통신사를 선택해주세요",
+                                                index=0)
+                    # 통신사 아이콘 표시
+                    carrier_icons = {"SKT": "📱", "KT": "📲", "LG U+": "📶", "알뜰폰": "💳"}
+                    st.caption(f"{carrier_icons.get(phone_carrier, '📱')} {phone_carrier}")
+                
+                with col_phone:
+                    signup_phone = st.text_input("휴대폰번호 (숫자만)", key="signup_phone", 
+                                                 placeholder="01012345678",
+                                                 help="하이픈(-) 없이 숫자만 입력 (10-11자리)",
+                                                 max_chars=11)
+                    
+                    # 전화번호 포맷팅 표시
+                    if signup_phone:
+                        if signup_phone.isdigit():
+                            if len(signup_phone) == 11:
+                                formatted_phone = f"{signup_phone[:3]}-{signup_phone[3:7]}-{signup_phone[7:]}"
+                                st.caption(f"✅ 입력됨: {formatted_phone}")
+                            elif len(signup_phone) == 10:
+                                formatted_phone = f"{signup_phone[:3]}-{signup_phone[3:6]}-{signup_phone[6:]}"
+                                st.caption(f"✅ 입력됨: {formatted_phone}")
+                            else:
+                                st.caption("⚠️ 올바른 휴대폰번호를 입력해주세요 (10-11자리)")
+                        else:
+                            st.caption("⚠️ 숫자만 입력해주세요")
                 
                 # 휴대폰 인증 (폼 밖)
+                st.markdown("#### 📱 휴대폰 인증")
+                
+                # 전화번호가 올바르게 입력되었는지 확인
+                phone_valid = False
+                if signup_phone and signup_phone.isdigit() and len(signup_phone) in [10, 11]:
+                    phone_valid = True
+                    # 통신사와 함께 표시
+                    phone_display = f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:7]}-{signup_phone[7:]}" if len(signup_phone) == 11 else f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:6]}-{signup_phone[6:]}"
+                    st.info(f"인증 대상: {phone_display}")
+                
                 col_phone1, col_phone2 = st.columns([2, 1])
                 with col_phone1:
                     signup_verification_code = st.text_input("인증번호", key="signup_verification_code", 
                                                              placeholder="6자리 인증번호 입력",
-                                                             disabled=not sms_service.is_verified(signup_phone) if signup_phone else True)
+                                                             disabled=not sms_service.is_verified(signup_phone) if phone_valid and signup_phone else True,
+                                                             max_chars=6)
                 with col_phone2:
                     st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("인증번호\n발송", key="send_code_btn", use_container_width=True):
-                        if signup_phone:
+                    if st.button("인증번호\n발송", key="send_code_btn", use_container_width=True, disabled=not phone_valid):
+                        if phone_valid:
+                            # 통신사 정보와 함께 전화번호 전달
                             result = sms_service.send_verification_code(signup_phone)
                             if result['success']:
                                 st.success(result['message'])
@@ -834,10 +942,10 @@ def login_page():
                             else:
                                 st.error(result['message'])
                         else:
-                            st.warning("휴대폰번호를 먼저 입력해주세요.")
+                            st.warning("올바른 휴대폰번호를 먼저 입력해주세요.")
                 
                 # 인증번호 확인 버튼
-                if signup_verification_code:
+                if signup_verification_code and phone_valid:
                     if st.button("인증번호 확인", key="verify_code_btn", use_container_width=True):
                         result = sms_service.verify_code(signup_phone, signup_verification_code)
                         if result['success']:
@@ -893,10 +1001,41 @@ def login_page():
                         st.error("부모 코드가 올바르지 않습니다. (8자리)")
                     elif signup_user_type_value == 'parent':
                         # 부모님인 경우 주민등록번호와 휴대폰 인증 확인
-                        if not signup_parent_ssn_val or len(signup_parent_ssn_val) != 6:
+                        signup_parent_ssn_front_val = st.session_state.get('signup_parent_ssn_front', '')
+                        signup_parent_ssn_back_val = st.session_state.get('signup_parent_ssn_back', '')
+                        
+                        # 주민등록번호 전체 조합
+                        if signup_parent_ssn_front_val and signup_parent_ssn_back_val:
+                            if len(signup_parent_ssn_front_val) == 6 and len(signup_parent_ssn_back_val) == 7:
+                                if signup_parent_ssn_back_val.isdigit():
+                                    signup_parent_ssn_full = signup_parent_ssn_front_val + signup_parent_ssn_back_val
+                                else:
+                                    signup_parent_ssn_full = None
+                                    st.error("주민등록번호 뒷자리는 숫자만 입력 가능합니다.")
+                            else:
+                                signup_parent_ssn_full = None
+                        else:
+                            signup_parent_ssn_full = None
+                        
+                        # 전화번호 유효성 검사
+                        phone_valid_check = False
+                        if signup_phone_val and signup_phone_val.isdigit() and len(signup_phone_val) in [10, 11]:
+                            phone_valid_check = True
+                        
+                        if not signup_parent_ssn_front_val or len(signup_parent_ssn_front_val) != 6:
                             st.error("주민등록번호 앞 6자리를 입력해주세요.")
+                        elif not signup_parent_ssn_front_val.isdigit():
+                            st.error("주민등록번호 앞자리는 숫자만 입력 가능합니다.")
+                        elif not signup_parent_ssn_back_val or len(signup_parent_ssn_back_val) != 7:
+                            st.error("주민등록번호 뒷 7자리를 입력해주세요.")
+                        elif not signup_parent_ssn_back_val.isdigit():
+                            st.error("주민등록번호 뒷자리는 숫자만 입력 가능합니다.")
+                        elif not signup_parent_ssn_full:
+                            st.error("주민등록번호를 올바르게 입력해주세요.")
                         elif not signup_phone_val:
                             st.error("휴대폰번호를 입력해주세요.")
+                        elif not phone_valid_check:
+                            st.error("올바른 휴대폰번호를 입력해주세요. (10-11자리 숫자)")
                         elif not sms_service.is_verified(signup_phone_val):
                             st.error("휴대폰 인증을 완료해주세요.")
                         else:
@@ -905,14 +1044,16 @@ def login_page():
                                     st.error("이미 사용 중인 아이디입니다.")
                                 else:
                                     # 주민등록번호 중복 확인
-                                    existing_user = db.verify_parent_ssn(signup_parent_ssn_val, signup_phone_val)
+                                    existing_user = db.verify_parent_ssn(signup_parent_ssn_full, signup_phone_val)
                                     if existing_user:
                                         st.error("이미 등록된 주민등록번호입니다.")
                                     else:
+                                        # 통신사 정보도 함께 저장 (선택사항)
+                                        phone_carrier_val = st.session_state.get('signup_phone_carrier', '')
                                         user_id = db.create_user(
                                             signup_username, signup_password, signup_name, 
                                             None, signup_parent_code, signup_user_type_value,
-                                            signup_parent_ssn_val, signup_phone_val
+                                            signup_parent_ssn_full, signup_phone_val
                                         )
                                         st.session_state.logged_in = True
                                         st.session_state.user_id = user_id
