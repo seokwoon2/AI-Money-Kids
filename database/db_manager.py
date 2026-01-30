@@ -37,25 +37,44 @@ class DatabaseManager:
     
     # ========== 사용자 관리 ==========
     
-    def create_user(self, username: str, password: str, name: str, age: int, parent_code: str, user_type: str = 'child') -> int:
+    def create_user(self, username: str, password: str, name: str, age: int, parent_code: str, 
+                   user_type: str = 'child', parent_ssn: str = None, phone_number: str = None) -> int:
         """새 사용자 생성"""
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # 주민등록번호 암호화 (간단한 해시, 실제로는 더 강력한 암호화 필요)
+        if parent_ssn:
+            import hashlib
+            parent_ssn_hash = hashlib.sha256(parent_ssn.encode('utf-8')).hexdigest()
+        else:
+            parent_ssn_hash = None
         
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            # 기존 테이블에 user_type 컬럼이 없을 수 있으므로 ALTER TABLE 시도
+            # 기존 테이블에 컬럼이 없을 수 있으므로 ALTER TABLE 시도
             try:
                 cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'child'")
                 conn.commit()
             except sqlite3.OperationalError:
-                # 컬럼이 이미 존재하면 무시
+                pass
+            
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN parent_ssn TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN phone_number TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
                 pass
             
             cursor.execute("""
-                INSERT INTO users (username, password_hash, name, age, parent_code, user_type)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (username, password_hash, name, age, parent_code, user_type))
+                INSERT INTO users (username, password_hash, name, age, parent_code, user_type, parent_ssn, phone_number)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (username, password_hash, name, age, parent_code, user_type, parent_ssn_hash, phone_number))
             conn.commit()
             return cursor.lastrowid
         finally:
@@ -78,6 +97,51 @@ class DatabaseManager:
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+    
+    def get_user_by_phone(self, phone_number: str) -> Optional[Dict]:
+        """휴대폰번호로 사용자 조회"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            phone_clean = phone_number.replace('-', '').replace(' ', '')
+            cursor.execute("SELECT * FROM users WHERE phone_number = ? OR phone_number = ?", (phone_number, phone_clean))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+    
+    def get_users_by_phone(self, phone_number: str) -> List[Dict]:
+        """휴대폰번호로 모든 사용자 조회 (같은 번호로 여러 계정 가능)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            phone_clean = phone_number.replace('-', '').replace(' ', '')
+            cursor.execute("SELECT * FROM users WHERE phone_number = ? OR phone_number = ?", (phone_number, phone_clean))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    
+    def verify_parent_ssn(self, parent_ssn: str, phone_number: str) -> Optional[Dict]:
+        """부모 주민등록번호와 휴대폰번호로 부모 사용자 확인"""
+        import hashlib
+        parent_ssn_hash = hashlib.sha256(parent_ssn.encode('utf-8')).hexdigest()
+        phone_clean = phone_number.replace('-', '').replace(' ', '')
+        
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT * FROM users 
+                WHERE parent_ssn = ? 
+                AND (phone_number = ? OR phone_number = ?)
+                AND user_type = 'parent'
+                LIMIT 1
+            """, (parent_ssn_hash, phone_number, phone_clean))
             row = cursor.fetchone()
             return dict(row) if row else None
         finally:

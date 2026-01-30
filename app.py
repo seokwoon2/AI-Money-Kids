@@ -53,6 +53,10 @@ if 'show_username_find' not in st.session_state:
     st.session_state.show_username_find = False
 if 'password_reset_verified' not in st.session_state:
     st.session_state.password_reset_verified = False
+if 'saved_phone' not in st.session_state:
+    st.session_state.saved_phone = ""
+if 'sms_verification' not in st.session_state:
+    st.session_state.sms_verification = {}
 if 'show_found_usernames' not in st.session_state:
     st.session_state.show_found_usernames = False
 if 'found_usernames' not in st.session_state:
@@ -529,81 +533,205 @@ def login_page():
         col_find1, col_find2 = st.columns(2)
         with col_find1:
             if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn", 
-                        help="이름과 부모 코드로 아이디를 찾습니다"):
+                        help="휴대폰 인증으로 아이디를 찾습니다"):
                 st.session_state.show_username_find = True
                 st.session_state.show_password_reset = False
                 st.rerun()
         with col_find2:
             if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn",
-                        help="아이디, 이름, 부모 코드로 비밀번호를 재설정합니다"):
+                        help="아이디와 휴대폰 인증으로 임시 비밀번호를 발급받습니다"):
                 st.session_state.show_password_reset = True
                 st.session_state.show_username_find = False
                 st.rerun()
         
-        # 아이디 찾기 섹션
+        # 아이디 찾기 섹션 (휴대폰 인증 기반)
         if st.session_state.get('show_username_find', False):
             st.markdown("---")
             st.markdown("### 🔍 아이디 찾기")
+            st.info("💡 가입 시 등록한 휴대폰번호로 인증하여 아이디를 찾을 수 있습니다.")
+            
+            from services.sms_service import SMSService
+            sms_service = SMSService()
+            
+            # 휴대폰번호 입력 (폼 밖)
+            find_phone = st.text_input("휴대폰번호", placeholder="010-1234-5678", key="find_username_phone")
+            
+            # 인증번호 발송 및 확인 (폼 밖)
+            col_phone1, col_phone2 = st.columns([2, 1])
+            with col_phone1:
+                find_verification_code = st.text_input("인증번호", placeholder="6자리 인증번호 입력", 
+                                                      key="find_username_verification_code",
+                                                      disabled=not sms_service.is_verified(find_phone) if find_phone else True)
+            with col_phone2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("인증번호\n발송", key="find_send_code_btn", use_container_width=True):
+                    if find_phone:
+                        result = sms_service.send_verification_code(find_phone)
+                        if result['success']:
+                            st.success(result['message'])
+                            if 'code' in result:  # 개발 모드
+                                st.info(f"개발 모드 인증번호: {result['code']}")
+                        else:
+                            st.error(result['message'])
+                    else:
+                        st.warning("휴대폰번호를 먼저 입력해주세요.")
+            
+            # 인증번호 확인 버튼 (폼 밖)
+            if find_verification_code:
+                if st.button("인증번호 확인", key="find_verify_code_btn", use_container_width=True):
+                    result = sms_service.verify_code(find_phone, find_verification_code)
+                    if result['success']:
+                        st.success("✅ 인증이 완료되었습니다!")
+                    else:
+                        st.error(result['message'])
             
             with st.form("find_username_form"):
-                find_name = st.text_input("이름", placeholder="가입 시 입력한 이름을 입력하세요", key="find_username_name")
-                find_parent_code = st.text_input("부모 코드", placeholder="8자리 부모 코드를 입력하세요", key="find_username_code")
-                
-                find_submitted = st.form_submit_button("아이디 찾기", use_container_width=True)
+                find_submitted = st.form_submit_button("아이디 찾기", use_container_width=True, type="primary")
                 
                 if find_submitted:
-                    if find_name and find_parent_code:
-                        # 데이터베이스에서 사용자 찾기
-                        users = db.get_users_by_parent_code(find_parent_code)
-                        found_users = [u for u in users if u.get('name') == find_name]
-                        
-                        if found_users:
-                            usernames = [u['username'] for u in found_users]
-                            st.session_state.found_usernames = usernames
-                            st.session_state.show_found_usernames = True
-                            st.success(f"✅ 찾은 아이디: {', '.join(usernames)}")
+                    # 세션에서 값 가져오기
+                    find_phone_val = st.session_state.get('find_username_phone', '')
+                    
+                    if find_phone_val:
+                        if sms_service.is_verified(find_phone_val):
+                            # 휴대폰번호로 사용자 찾기
+                            users = db.get_users_by_phone(find_phone_val)
+                            
+                            if users:
+                                usernames = [u['username'] for u in users]
+                                st.session_state.found_usernames = usernames
+                                st.session_state.show_found_usernames = True
+                                st.success(f"✅ 찾은 아이디: {', '.join(usernames)}")
+                            else:
+                                st.error("❌ 해당 휴대폰번호로 등록된 아이디를 찾을 수 없습니다.")
                         else:
-                            st.error("❌ 일치하는 정보를 찾을 수 없습니다. 이름과 부모 코드를 확인해주세요.")
+                            st.error("❌ 휴대폰 인증을 먼저 완료해주세요.")
                     else:
-                        st.warning("⚠️ 이름과 부모 코드를 모두 입력해주세요.")
+                        st.warning("⚠️ 휴대폰번호를 입력해주세요.")
             
             if st.button("↩️ 로그인으로 돌아가기", use_container_width=True, key="back_from_find_username"):
                 st.session_state.show_username_find = False
                 st.session_state.show_found_usernames = False
+                if 'sms_verification' in st.session_state:
+                    find_phone_val = st.session_state.get('find_username_phone', '')
+                    if find_phone_val:
+                        sms_service.clear_verification(find_phone_val)
                 st.rerun()
         
-        # 비밀번호 찾기 섹션
+        # 비밀번호 찾기 섹션 (휴대폰 인증 기반)
         if st.session_state.get('show_password_reset', False):
             st.markdown("---")
             st.markdown("### 🔑 비밀번호 찾기")
+            st.info("💡 아이디와 가입 시 등록한 휴대폰번호로 인증하여 임시 비밀번호를 발급받을 수 있습니다.")
             
-            with st.form("find_password_form"):
+            from services.sms_service import SMSService
+            import secrets
+            import string
+            sms_service = SMSService()
+            
+            # 1단계: 아이디 입력 및 휴대폰 인증
+            if not st.session_state.get('password_reset_verified', False):
+                # 아이디와 휴대폰번호 입력 (폼 밖)
                 reset_username = st.text_input("아이디", placeholder="비밀번호를 찾을 아이디를 입력하세요", key="reset_password_username")
-                reset_name = st.text_input("이름", placeholder="가입 시 입력한 이름을 입력하세요", key="reset_password_name")
-                reset_parent_code = st.text_input("부모 코드", placeholder="8자리 부모 코드를 입력하세요", key="reset_password_code")
+                reset_phone = st.text_input("휴대폰번호", placeholder="010-1234-5678", key="reset_password_phone")
                 
-                reset_submitted = st.form_submit_button("비밀번호 재설정", use_container_width=True)
-                
-                if reset_submitted:
-                    if reset_username and reset_name and reset_parent_code:
-                        # 사용자 확인
-                        user = db.get_user_by_username(reset_username)
-                        
-                        if user and user.get('name') == reset_name and user.get('parent_code') == reset_parent_code:
-                            st.session_state.verified_user_id = user['id']
-                            st.session_state.saved_username = reset_username
-                            st.success("✅ 본인 확인이 완료되었습니다. 새 비밀번호를 입력해주세요.")
-                            st.session_state.show_password_reset = True
-                            st.session_state.password_reset_verified = True
+                # 인증번호 발송 및 확인 (폼 밖)
+                col_phone1, col_phone2 = st.columns([2, 1])
+                with col_phone1:
+                    reset_verification_code = st.text_input("인증번호", placeholder="6자리 인증번호 입력", 
+                                                           key="reset_password_verification_code",
+                                                           disabled=not sms_service.is_verified(reset_phone) if reset_phone else True)
+                with col_phone2:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("인증번호\n발송", key="reset_send_code_btn", use_container_width=True):
+                        if reset_phone:
+                            result = sms_service.send_verification_code(reset_phone)
+                            if result['success']:
+                                st.success(result['message'])
+                                if 'code' in result:  # 개발 모드
+                                    st.info(f"개발 모드 인증번호: {result['code']}")
+                            else:
+                                st.error(result['message'])
                         else:
-                            st.error("❌ 일치하는 정보를 찾을 수 없습니다. 입력한 정보를 확인해주세요.")
-                    else:
-                        st.warning("⚠️ 모든 정보를 입력해주세요.")
+                            st.warning("휴대폰번호를 먼저 입력해주세요.")
+                
+                # 인증번호 확인 버튼 (폼 밖)
+                if reset_verification_code:
+                    if st.button("인증번호 확인", key="reset_verify_code_btn", use_container_width=True):
+                        result = sms_service.verify_code(reset_phone, reset_verification_code)
+                        if result['success']:
+                            st.success("✅ 인증이 완료되었습니다!")
+                        else:
+                            st.error(result['message'])
+                
+                with st.form("find_password_form"):
+                    reset_submitted = st.form_submit_button("본인 확인", use_container_width=True, type="primary")
+                    
+                    if reset_submitted:
+                        # 세션에서 값 가져오기
+                        reset_username_val = st.session_state.get('reset_password_username', '')
+                        reset_phone_val = st.session_state.get('reset_password_phone', '')
+                        
+                        if reset_username_val and reset_phone_val:
+                            if sms_service.is_verified(reset_phone_val):
+                                # 사용자 확인
+                                user = db.get_user_by_username(reset_username_val)
+                                phone_clean = reset_phone_val.replace('-', '').replace(' ', '')
+                                
+                                if user and (user.get('phone_number') == reset_phone_val or user.get('phone_number') == phone_clean):
+                                    st.session_state.verified_user_id = user['id']
+                                    st.session_state.saved_username = reset_username_val
+                                    st.session_state.saved_phone = reset_phone_val
+                                    st.session_state.password_reset_verified = True
+                                    st.success("✅ 본인 확인이 완료되었습니다.")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ 아이디와 휴대폰번호가 일치하지 않습니다.")
+                            else:
+                                st.error("❌ 휴대폰 인증을 먼저 완료해주세요.")
+                        else:
+                            st.warning("⚠️ 아이디와 휴대폰번호를 모두 입력해주세요.")
             
-            # 비밀번호 재설정
+            # 2단계: 임시 비밀번호 발급 및 변경
             if st.session_state.get('password_reset_verified', False):
                 st.markdown("---")
-                st.markdown("#### 새 비밀번호 설정")
+                st.markdown("#### 임시 비밀번호 발급")
+                
+                # 임시 비밀번호 생성
+                if 'temp_password' not in st.session_state:
+                    temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+                    st.session_state.temp_password = temp_password
+                
+                st.info(f"**임시 비밀번호**: `{st.session_state.temp_password}`")
+                st.warning("⚠️ 임시 비밀번호를 안전한 곳에 저장하세요. 로그인 후 반드시 비밀번호를 변경해주세요.")
+                
+                # 임시 비밀번호로 변경
+                if st.button("임시 비밀번호로 변경하기", use_container_width=True, type="primary", key="apply_temp_password"):
+                    if st.session_state.verified_user_id:
+                        success = db.update_user_password(st.session_state.verified_user_id, st.session_state.temp_password)
+                        if success:
+                            st.success("✅ 임시 비밀번호로 변경되었습니다!")
+                            st.info(f"아이디: `{st.session_state.saved_username}` / 임시 비밀번호: `{st.session_state.temp_password}`")
+                            
+                            # 세션 정리
+                            st.session_state.show_password_reset = False
+                            st.session_state.password_reset_verified = False
+                            st.session_state.verified_user_id = None
+                            st.session_state.saved_username = ""
+                            st.session_state.saved_phone = ""
+                            if 'temp_password' in st.session_state:
+                                del st.session_state.temp_password
+                            if 'sms_verification' in st.session_state:
+                                sms_service.clear_verification(st.session_state.saved_phone)
+                            
+                            import time
+                            time.sleep(3)
+                            st.rerun()
+                        else:
+                            st.error("❌ 비밀번호 변경에 실패했습니다.")
+                
+                st.markdown("---")
+                st.markdown("#### 또는 새 비밀번호로 직접 변경")
                 
                 with st.form("reset_password_form"):
                     new_password = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호를 입력하세요", key="new_password")
@@ -619,10 +747,18 @@ def login_page():
                                         success = db.update_user_password(st.session_state.verified_user_id, new_password)
                                         if success:
                                             st.success("✅ 비밀번호가 성공적으로 변경되었습니다!")
+                                            
+                                            # 세션 정리
                                             st.session_state.show_password_reset = False
                                             st.session_state.password_reset_verified = False
                                             st.session_state.verified_user_id = None
                                             st.session_state.saved_username = ""
+                                            st.session_state.saved_phone = ""
+                                            if 'temp_password' in st.session_state:
+                                                del st.session_state.temp_password
+                                            if 'sms_verification' in st.session_state:
+                                                sms_service.clear_verification(st.session_state.saved_phone)
+                                            
                                             import time
                                             time.sleep(2)
                                             st.rerun()
@@ -640,16 +776,182 @@ def login_page():
                 st.session_state.password_reset_verified = False
                 st.session_state.verified_user_id = None
                 st.session_state.saved_username = ""
+                st.session_state.saved_phone = ""
+                if 'temp_password' in st.session_state:
+                    del st.session_state.temp_password
+                if 'sms_verification' in st.session_state and 'saved_phone' in st.session_state:
+                    sms_service.clear_verification(st.session_state.saved_phone)
                 st.rerun()
         
-        # 회원가입
-        st.markdown("""
-            <div style='text-align: center; padding: 15px; background: #FFE4E1; border-radius: 10px; margin-top: 20px;'>
-                <p style='margin: 0; color: #666;'>
-                    처음이신가요? <a href='#' style='color: #FF69B4; font-weight: bold; text-decoration: none;'>회원가입 →</a>
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
+        # 회원가입 버튼
+        if st.button("📝 회원가입하기", use_container_width=True, key="signup_btn"):
+            st.session_state.show_signup = True
+            st.session_state.show_username_find = False
+            st.session_state.show_password_reset = False
+            st.rerun()
+        
+        # 회원가입 섹션
+        if st.session_state.get('show_signup', False):
+            st.markdown("---")
+            st.markdown("### 📝 회원가입")
+            
+            from services.sms_service import SMSService
+            sms_service = SMSService()
+            
+            # 사용자 타입 선택
+            signup_user_type = st.radio(
+                "어떤 계정을 만들까요?",
+                ["👨‍👩‍👧 부모님", "👶 아이"],
+                key="signup_user_type",
+                horizontal=True
+            )
+            signup_user_type_value = 'parent' if "부모님" in signup_user_type else 'child'
+            
+            # 부모님인 경우 주민등록번호와 휴대폰 인증 (폼 밖)
+            if signup_user_type_value == 'parent':
+                signup_parent_ssn = st.text_input("주민등록번호 앞 6자리", key="signup_parent_ssn", 
+                                                 placeholder="YYMMDD", max_chars=6,
+                                                 help="생년월일 6자리 입력")
+                signup_phone = st.text_input("휴대폰번호", key="signup_phone", 
+                                             placeholder="010-1234-5678",
+                                             help="하이픈(-) 포함하여 입력")
+                
+                # 휴대폰 인증 (폼 밖)
+                col_phone1, col_phone2 = st.columns([2, 1])
+                with col_phone1:
+                    signup_verification_code = st.text_input("인증번호", key="signup_verification_code", 
+                                                             placeholder="6자리 인증번호 입력",
+                                                             disabled=not sms_service.is_verified(signup_phone) if signup_phone else True)
+                with col_phone2:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("인증번호\n발송", key="send_code_btn", use_container_width=True):
+                        if signup_phone:
+                            result = sms_service.send_verification_code(signup_phone)
+                            if result['success']:
+                                st.success(result['message'])
+                                if 'code' in result:  # 개발 모드에서만 표시
+                                    st.info(f"개발 모드 인증번호: {result['code']}")
+                            else:
+                                st.error(result['message'])
+                        else:
+                            st.warning("휴대폰번호를 먼저 입력해주세요.")
+                
+                # 인증번호 확인 버튼
+                if signup_verification_code:
+                    if st.button("인증번호 확인", key="verify_code_btn", use_container_width=True):
+                        result = sms_service.verify_code(signup_phone, signup_verification_code)
+                        if result['success']:
+                            st.success("✅ 인증이 완료되었습니다!")
+                        else:
+                            st.error(result['message'])
+                
+                # 부모 코드 생성
+                if st.button("🔑 새 부모 코드 만들기", use_container_width=True, key="generate_code_signup"):
+                    new_code = generate_parent_code()
+                    st.session_state['signup_parent_code'] = new_code
+                    st.success(f"생성된 부모 코드: **{new_code}**")
+            
+            with st.form("signup_form"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    signup_username = st.text_input("아이디", key="signup_username", placeholder="사용할 아이디")
+                    signup_password = st.text_input("비밀번호", type="password", key="signup_password", placeholder="비밀번호 (4자 이상)")
+                    signup_password_confirm = st.text_input("비밀번호 확인", type="password", key="signup_password_confirm", placeholder="비밀번호 다시 입력")
+                    signup_name = st.text_input("이름 (닉네임)", key="signup_name", placeholder="친구들이 부를 이름")
+                
+                with col2:
+                    if signup_user_type_value == 'parent':
+                        signup_parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", 
+                                                          placeholder="8자리 코드 (위에서 생성)",
+                                                          value=st.session_state.get('signup_parent_code', ''))
+                    else:
+                        # 아이인 경우
+                        birth_date = st.date_input("생년월일", value=date.today().replace(year=date.today().year - 10), key="signup_birth_date")
+                        age = calculate_age(birth_date)
+                        st.info(f"만나이: **{age}세**")
+                        
+                        signup_parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", 
+                                                          placeholder="부모님께 받은 8자리 코드")
+                
+                # 가입 완료 버튼
+                signup_submitted = st.form_submit_button("✨ 가입 완료!", use_container_width=True, type="primary")
+                
+                if signup_submitted:
+                    # 세션에서 값 가져오기
+                    signup_parent_ssn_val = st.session_state.get('signup_parent_ssn', '')
+                    signup_phone_val = st.session_state.get('signup_phone', '')
+                    
+                    # 유효성 검사
+                    if not signup_username or not signup_password or not signup_password_confirm or not signup_name or not signup_parent_code:
+                        st.error("모든 정보를 입력해주세요! 😊")
+                    elif signup_password != signup_password_confirm:
+                        st.error("비밀번호가 일치하지 않습니다. 🧐")
+                    elif len(signup_password) < 4:
+                        st.error("비밀번호는 최소 4자 이상이어야 합니다! 🔒")
+                    elif not validate_parent_code(signup_parent_code):
+                        st.error("부모 코드가 올바르지 않습니다. (8자리)")
+                    elif signup_user_type_value == 'parent':
+                        # 부모님인 경우 주민등록번호와 휴대폰 인증 확인
+                        if not signup_parent_ssn_val or len(signup_parent_ssn_val) != 6:
+                            st.error("주민등록번호 앞 6자리를 입력해주세요.")
+                        elif not signup_phone_val:
+                            st.error("휴대폰번호를 입력해주세요.")
+                        elif not sms_service.is_verified(signup_phone_val):
+                            st.error("휴대폰 인증을 완료해주세요.")
+                        else:
+                            try:
+                                if db.get_user_by_username(signup_username):
+                                    st.error("이미 사용 중인 아이디입니다.")
+                                else:
+                                    # 주민등록번호 중복 확인
+                                    existing_user = db.verify_parent_ssn(signup_parent_ssn_val, signup_phone_val)
+                                    if existing_user:
+                                        st.error("이미 등록된 주민등록번호입니다.")
+                                    else:
+                                        user_id = db.create_user(
+                                            signup_username, signup_password, signup_name, 
+                                            None, signup_parent_code, signup_user_type_value,
+                                            signup_parent_ssn_val, signup_phone_val
+                                        )
+                                        st.session_state.logged_in = True
+                                        st.session_state.user_id = user_id
+                                        st.session_state.user_name = signup_name
+                                        st.session_state.show_login_success = True
+                                        st.session_state.show_signup = False
+                                        st.success("🎉 환영합니다! 가입이 완료되었습니다!")
+                                        st.balloons()
+                                        import time
+                                        time.sleep(1)
+                                        st.rerun()
+                            except Exception as e:
+                                st.error(f"오류가 발생했습니다: {str(e)}")
+                    else:
+                        # 아이인 경우
+                        try:
+                            if db.get_user_by_username(signup_username):
+                                st.error("이미 사용 중인 아이디입니다.")
+                            else:
+                                user_id = db.create_user(
+                                    signup_username, signup_password, signup_name, 
+                                    age, signup_parent_code, signup_user_type_value
+                                )
+                                st.session_state.logged_in = True
+                                st.session_state.user_id = user_id
+                                st.session_state.user_name = signup_name
+                                st.session_state.show_login_success = True
+                                st.session_state.show_signup = False
+                                st.success("🎉 환영합니다! 가입이 완료되었습니다!")
+                                st.balloons()
+                                import time
+                                time.sleep(1)
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"오류가 발생했습니다: {str(e)}")
+            
+            if st.button("↩️ 로그인으로 돌아가기", use_container_width=True, key="back_from_signup"):
+                st.session_state.show_signup = False
+                st.rerun()
 
 
 def main_page():

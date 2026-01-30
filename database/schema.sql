@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     age INTEGER,
     user_type TEXT NOT NULL DEFAULT 'child',  -- 'parent' or 'child'
     parent_code TEXT NOT NULL,
+    parent_ssn TEXT,  -- 부모 주민등록번호 (암호화 저장)
+    phone_number TEXT,  -- 휴대폰번호
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
