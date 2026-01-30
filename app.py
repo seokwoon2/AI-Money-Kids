@@ -599,7 +599,7 @@ def show_signup_page():
     """회원가입 페이지 - 간소화된 디자인"""
     hide_sidebar_navigation()
     
-    # CSS 스타일 적용
+    # CSS 스타일 적용 (로그인 페이지와 일치)
     st.markdown("""
         <style>
         .stApp { 
@@ -623,100 +623,77 @@ def show_signup_page():
         .section-title:first-of-type {
             margin-top: 0;
         }
-        .user-type-card {
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            margin-bottom: 10px;
-        }
-        .user-type-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .user-type-card.selected {
-            border: 3px solid #FF69B4;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3);
-        }
-        .parent-card {
-            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-        }
-        .child-card {
-            background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%);
-        }
-        .signup-button {
-            background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
-            color: white;
-            font-weight: bold;
-            border-radius: 12px;
-            padding: 15px;
-            width: 100%;
-            border: none;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3);
-            transition: all 0.3s ease;
-        }
-        .signup-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255,105,180,0.4);
-        }
         .login-link-box {
             background: #f5f5f5;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             text-align: center;
             margin-top: 20px;
             color: #666;
         }
-        .stTextInput>div>div>input {
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            padding: 12px 15px;
+        /* 입력 필드 스타일 */
+        .stTextInput > div > div > input {
+            border-radius: 10px !important;
+            border: 2px solid #e0e0e0 !important;
+            padding: 12px 15px !important;
         }
-        .stTextInput>div>div>input:focus {
-            border-color: #FF69B4;
-            box-shadow: 0 0 0 3px rgba(255,105,180,0.1);
+        .stTextInput > div > div > input:focus {
+            border-color: #FF69B4 !important;
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1) !important;
+        }
+        /* 버튼 스타일 */
+        .stButton > button {
+            width: 100% !important;
+            background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%) !important;
+            color: white !important;
+            border-radius: 12px !important;
+            padding: 14px !important;
+            font-weight: bold !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255,105,180,0.4) !important;
+        }
+        /* 카드 버튼 스타일 */
+        button[key="parent_select_btn"] {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
+            border: 2px solid #e0e0e0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #333 !important;
+            height: auto !important;
+            transition: all 0.3s ease !important;
+        }
+        button[key="parent_select_btn"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(33,150,243,0.3) !important;
+        }
+        button[key="child_select_btn"] {
+            background: linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 100%) !important;
+            border: 2px solid #e0e0e0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #333 !important;
+            height: auto !important;
+            transition: all 0.3s ease !important;
+        }
+        button[key="child_select_btn"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(244,143,177,0.3) !important;
         }
         .info-text {
             font-size: 12px;
             color: #888;
             margin-top: 5px;
-        }
-        /* 카드 버튼 스타일 */
-        .user-type-button {
-            padding: 20px !important;
-            border-radius: 12px !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            height: auto !important;
-            transition: all 0.3s ease !important;
-        }
-        .parent-button {
-            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
-            border: 2px solid #e0e0e0 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-        }
-        .parent-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(33,150,243,0.3) !important;
-        }
-        .parent-button.selected {
-            border: 3px solid #FF69B4 !important;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
-        }
-        .child-button {
-            background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%) !important;
-            border: 2px solid #e0e0e0 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-        }
-        .child-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(244,143,177,0.3) !important;
-        }
-        .child-button.selected {
-            border: 3px solid #FF69B4 !important;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -745,6 +722,8 @@ def show_signup_page():
         if 'signup_user_type' not in st.session_state:
             st.session_state.signup_user_type = None
         
+        signup_user_type_value = st.session_state.signup_user_type
+        
         # 섹션 1: 기본 정보
         st.markdown('<div class="section-title">👤 기본 정보</div>', unsafe_allow_html=True)
         
@@ -753,27 +732,29 @@ def show_signup_page():
         
         col_type1, col_type2 = st.columns(2)
         with col_type1:
-            parent_selected = st.session_state.signup_user_type == 'parent'
+            parent_selected = signup_user_type_value == 'parent'
             if st.button("👨‍👩‍👧 부모님", key="parent_select_btn", use_container_width=True):
                 st.session_state.signup_user_type = 'parent'
                 st.rerun()
         
         with col_type2:
-            child_selected = st.session_state.signup_user_type == 'child'
+            child_selected = signup_user_type_value == 'child'
             if st.button("👶 아이", key="child_select_btn", use_container_width=True):
                 st.session_state.signup_user_type = 'child'
                 st.rerun()
         
-        # 카드 버튼 스타일 적용 (동적 클래스 추가)
-        parent_class = "parent-button selected" if parent_selected else "parent-button"
-        child_class = "child-button selected" if child_selected else "child-button"
+        # 카드 버튼 스타일 동적 적용
+        parent_border = '3px solid #FF69B4' if parent_selected else '2px solid #e0e0e0'
+        parent_shadow = '0 4px 12px rgba(255,105,180,0.3)' if parent_selected else '0 2px 4px rgba(0,0,0,0.1)'
+        child_border = '3px solid #FF69B4' if child_selected else '2px solid #e0e0e0'
+        child_shadow = '0 4px 12px rgba(255,105,180,0.3)' if child_selected else '0 2px 4px rgba(0,0,0,0.1)'
         
         st.markdown(f"""
             <style>
             button[key="parent_select_btn"] {{
                 background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
-                border: {'3px solid #FF69B4' if parent_selected else '2px solid #e0e0e0'} !important;
-                box-shadow: {'0 4px 12px rgba(255,105,180,0.3)' if parent_selected else '0 2px 4px rgba(0,0,0,0.1)'} !important;
+                border: {parent_border} !important;
+                box-shadow: {parent_shadow} !important;
                 padding: 20px !important;
                 border-radius: 12px !important;
                 font-size: 16px !important;
@@ -787,9 +768,9 @@ def show_signup_page():
                 box-shadow: 0 6px 16px rgba(33,150,243,0.3) !important;
             }}
             button[key="child_select_btn"] {{
-                background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%) !important;
-                border: {'3px solid #FF69B4' if child_selected else '2px solid #e0e0e0'} !important;
-                box-shadow: {'0 4px 12px rgba(255,105,180,0.3)' if child_selected else '0 2px 4px rgba(0,0,0,0.1)'} !important;
+                background: linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 100%) !important;
+                border: {child_border} !important;
+                box-shadow: {child_shadow} !important;
                 padding: 20px !important;
                 border-radius: 12px !important;
                 font-size: 16px !important;
@@ -805,13 +786,14 @@ def show_signup_page():
             </style>
         """, unsafe_allow_html=True)
         
-        signup_user_type_value = st.session_state.signup_user_type
-        
         # 사용자 유형 선택 안내
         if not signup_user_type_value:
             st.info("👆 위에서 사용자 유형을 선택해주세요")
         
         with st.form("signup_form", clear_on_submit=False):
+            # 폼 내부에서 세션 상태 다시 읽기
+            signup_user_type_value = st.session_state.get('signup_user_type')
+            
             signup_username = st.text_input(
                 "아이디", 
                 key="signup_username", 
@@ -870,20 +852,34 @@ def show_signup_page():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown(f"<div style='padding-top: 10px; color: #666;'>만 {signup_age}세</div>", unsafe_allow_html=True)
                 
+                # 부모 코드 안내 박스 (노란색 강조)
+                st.markdown("""
+                    <div style='background: #FFF9C4; padding: 15px; border-radius: 10px; margin: 15px 0; border: 2px solid #FFD700;'>
+                        <p style='margin: 0; color: #F57C00; font-weight: bold; font-size: 14px;'>
+                            🎁 부모님께 받은 코드를 입력하세요
+                        </p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
                 signup_parent_code = st.text_input(
-                    "🔑 부모 코드", 
+                    "부모 코드", 
                     key="signup_parent_code", 
-                    placeholder="부모님께 받은 코드",
-                    help="부모님이 생성한 코드를 입력해주세요"
+                    placeholder="예: ABC12345",
+                    help="부모님이 생성한 8자리 코드를 입력해주세요"
                 )
-                st.markdown('<p class="info-text">💡 부모님이 생성한 코드를 입력해주세요</p>', unsafe_allow_html=True)
-            else:
+            elif signup_user_type_value == 'parent':
                 # 부모인 경우 이름만 입력
+                st.markdown('<div class="section-title">👤 이름</div>', unsafe_allow_html=True)
                 signup_name = st.text_input(
                     "이름 (닉네임)", 
                     key="signup_name", 
                     placeholder="친구들이 부를 이름"
                 )
+                signup_age = None
+                signup_parent_code = None  # 부모는 자동 생성됨
+            else:
+                # 사용자 유형이 선택되지 않은 경우
+                signup_name = None
                 signup_age = None
                 signup_parent_code = None
             
@@ -951,7 +947,7 @@ def show_signup_page():
                                 username=signup_username,
                                 password=signup_password,
                                 name=signup_name,
-                                age=signup_age if signup_user_type_value == 'child' else None,
+                                age=int(signup_age) if signup_user_type_value == 'child' and signup_age else None,
                                 parent_code=signup_parent_code,
                                 user_type=signup_user_type_value,
                                 parent_ssn=None,  # 제거됨
@@ -965,12 +961,12 @@ def show_signup_page():
                             st.session_state.username = signup_username
                             st.session_state.user_type = signup_user_type_value
                             if signup_age:
-                                st.session_state.age = signup_age
+                                st.session_state.age = int(signup_age)
                             st.session_state.show_login_success = True
                             st.session_state.current_auth_screen = 'login'
                             st.session_state.show_signup = False
                             
-                            st.success("🎉 가입 완료! 환영합니다!")
+                            st.success("🎉 회원가입 완료! 환영합니다!")
                             st.balloons()
                             import time
                             time.sleep(1.5)
@@ -980,287 +976,16 @@ def show_signup_page():
         
         # 하단 로그인 링크
         st.markdown("""
-            <div class="login-link-box">
-                이미 계정이 있으신가요? 
-                <a href="#" onclick="window.location.reload();" style="color: #FF69B4; text-decoration: none; font-weight: bold;">
-                    로그인 →
-                </a>
+            <div style='text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px; margin-top: 20px;'>
+                <p style='margin: 0; color: #666;'>
+                    이미 계정이 있으신가요? 
+                    <a href='#' onclick="window.location.reload();" style='color: #FF69B4; font-weight: bold; text-decoration: none;'>로그인 →</a>
+                </p>
             </div>
         """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown("""
-            <div style='text-align: center; padding: 30px 0 20px 0;'>
-                <div style='font-size: 60px;'>📝</div>
-                <h1 style='color: #FF69B4; font-size: 28px; margin: 10px 0;'>회원가입</h1>
-                <p style='color: #888; font-size: 14px;'>AI Money Friends에 오신 것을 환영합니다!</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        from services.sms_service import SMSService
-        sms_service = SMSService()
-        
-        # 사용자 타입 선택
-        signup_user_type = st.radio(
-            "어떤 계정을 만들까요?",
-            ["👨‍👩‍👧 부모님", "👶 아이"],
-            key="signup_user_type",
-            horizontal=True
-        )
-        signup_user_type_value = 'parent' if "부모님" in signup_user_type else 'child'
-        
-        # 부모님인 경우 주민등록번호와 휴대폰 인증
-        if signup_user_type_value == 'parent':
-            st.markdown("#### 📋 본인 인증 정보")
-            
-            # 주민등록번호 입력
-            st.markdown("**주민등록번호**")
-            st.info("🔒 보안을 위해 뒷자리는 마스킹 처리되며, 입력 내용이 화면에 표시되지 않습니다.")
-            
-            col_ssn1, col_ssn2 = st.columns([1, 1])
-            with col_ssn1:
-                signup_parent_ssn_front = st.text_input("앞 6자리 (생년월일)", key="signup_parent_ssn_front", 
-                                                     placeholder="YYMMDD", max_chars=6,
-                                                     help="예: 900101",
-                                                     type="default")
-                if signup_parent_ssn_front:
-                    if len(signup_parent_ssn_front) == 6 and signup_parent_ssn_front.isdigit():
-                        year = int(signup_parent_ssn_front[:2])
-                        month = int(signup_parent_ssn_front[2:4])
-                        day = int(signup_parent_ssn_front[4:6])
-                        if 1 <= month <= 12 and 1 <= day <= 31:
-                            st.caption(f"✅ 입력됨: {signup_parent_ssn_front}")
-                        else:
-                            st.caption("⚠️ 올바른 날짜를 입력해주세요")
-                    else:
-                        st.caption("⚠️ 6자리 숫자를 입력해주세요")
-            
-            with col_ssn2:
-                signup_parent_ssn_back = st.text_input("뒷 7자리 (보안)", key="signup_parent_ssn_back", 
-                                                      placeholder="●●●●●●●", max_chars=7,
-                                                      help="숫자만 입력 (입력 시 ●로 표시됩니다)",
-                                                      type="password")
-                if signup_parent_ssn_back:
-                    masked = "●" * len(signup_parent_ssn_back)
-                    if len(signup_parent_ssn_back) == 7 and signup_parent_ssn_back.isdigit():
-                        st.caption(f"✅ 입력됨: {masked} (보안 처리됨)")
-                    else:
-                        st.caption("⚠️ 7자리 숫자를 입력해주세요")
-            
-            # 통신사 선택 및 휴대폰번호 입력
-            st.markdown("**휴대폰번호**")
-            col_carrier, col_phone = st.columns([1, 2])
-            with col_carrier:
-                phone_carrier = st.selectbox("통신사", ["SKT", "KT", "LG U+", "알뜰폰"], key="signup_phone_carrier",
-                                            help="통신사를 선택해주세요",
-                                            index=0)
-                carrier_icons = {"SKT": "📱", "KT": "📲", "LG U+": "📶", "알뜰폰": "💳"}
-                st.caption(f"{carrier_icons.get(phone_carrier, '📱')} {phone_carrier}")
-            
-            with col_phone:
-                signup_phone = st.text_input("휴대폰번호 (숫자만)", key="signup_phone", 
-                                             placeholder="01012345678",
-                                             help="하이픈(-) 없이 숫자만 입력 (10-11자리)",
-                                             max_chars=11)
-                
-                if signup_phone:
-                    if signup_phone.isdigit():
-                        if len(signup_phone) == 11:
-                            formatted_phone = f"{signup_phone[:3]}-{signup_phone[3:7]}-{signup_phone[7:]}"
-                            st.caption(f"✅ 입력됨: {formatted_phone}")
-                        elif len(signup_phone) == 10:
-                            formatted_phone = f"{signup_phone[:3]}-{signup_phone[3:6]}-{signup_phone[6:]}"
-                            st.caption(f"✅ 입력됨: {formatted_phone}")
-                        else:
-                            st.caption("⚠️ 올바른 휴대폰번호를 입력해주세요 (10-11자리)")
-                    else:
-                        st.caption("⚠️ 숫자만 입력해주세요")
-            
-            # 휴대폰 인증
-            st.markdown("#### 📱 휴대폰 인증")
-            
-            phone_valid = False
-            if signup_phone and signup_phone.isdigit() and len(signup_phone) in [10, 11]:
-                phone_valid = True
-                phone_display = f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:7]}-{signup_phone[7:]}" if len(signup_phone) == 11 else f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:6]}-{signup_phone[6:]}"
-                st.info(f"인증 대상: {phone_display}")
-            
-            # 발송된 인증번호 표시
-            sent_code_key = f'signup_verification_code_{signup_phone}' if signup_phone else None
-            sent_code = st.session_state.get(sent_code_key) if sent_code_key else None
-            
-            if phone_valid and signup_phone and sent_code:
-                st.markdown(f"""
-                    <div style='
-                        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-                        border: 3px solid #2196F3;
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin: 15px 0;
-                        text-align: center;
-                        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-                    '>
-                        <div style='font-size: 16px; color: #1976D2; margin-bottom: 10px; font-weight: bold;'>
-                            📱 발송된 인증번호
-                        </div>
-                        <div style='
-                            font-size: 32px;
-                            font-weight: bold;
-                            color: #0D47A1;
-                            letter-spacing: 5px;
-                            font-family: "Courier New", monospace;
-                            margin: 15px 0;
-                            padding: 15px;
-                            background: white;
-                            border-radius: 8px;
-                            border: 2px dashed #2196F3;
-                        '>{sent_code}</div>
-                        <div style='font-size: 12px; color: #666; margin-top: 10px;'>
-                            ⚠️ 개발 모드: 실제 SMS는 발송되지 않습니다<br>
-                            위 인증번호를 입력란에 입력해주세요
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            col_phone1, col_phone2 = st.columns([2, 1])
-            with col_phone1:
-                signup_verification_code = st.text_input("인증번호", key="signup_verification_code", 
-                                                         placeholder="6자리 인증번호 입력",
-                                                         disabled=not sms_service.is_verified(signup_phone) if phone_valid and signup_phone else True,
-                                                         max_chars=6)
-            with col_phone2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                send_code_clicked = st.button("인증번호\n발송", key="send_code_btn", use_container_width=True, disabled=not phone_valid)
-                
-                if send_code_clicked:
-                    if phone_valid:
-                        result = sms_service.send_verification_code(signup_phone)
-                        if result['success']:
-                            if 'code' in result:
-                                st.session_state[sent_code_key] = result['code']
-                            st.success("✅ 인증번호가 발송되었습니다!")
-                            st.rerun()
-                        else:
-                            st.error(result['message'])
-                    else:
-                        st.warning("올바른 휴대폰번호를 먼저 입력해주세요.")
-            
-            if signup_verification_code:
-                if st.button("인증번호 확인", key="verify_code_btn", use_container_width=True):
-                    result = sms_service.verify_code(signup_phone, signup_verification_code)
-                    if result['success']:
-                        st.success("✅ 인증이 완료되었습니다!")
-                    else:
-                        st.error(result['message'])
-            
-            # 부모 코드 생성
-            if st.button("🔑 새 부모 코드 만들기", use_container_width=True, key="generate_code_signup"):
-                new_code = generate_parent_code()
-                st.session_state['signup_parent_code'] = new_code
-                st.success(f"생성된 부모 코드: **{new_code}**")
-        
-        with st.form("signup_form"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                signup_username = st.text_input("아이디", key="signup_username", placeholder="사용할 아이디")
-                signup_password = st.text_input("비밀번호", type="password", key="signup_password", placeholder="비밀번호 (4자 이상)")
-                signup_password_confirm = st.text_input("비밀번호 확인", type="password", key="signup_password_confirm", placeholder="비밀번호 다시 입력")
-                signup_name = st.text_input("이름 (닉네임)", key="signup_name", placeholder="친구들이 부를 이름")
-            
-            with col2:
-                if signup_user_type_value == 'parent':
-                    signup_parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", 
-                                                      placeholder="8자리 코드 (위에서 생성)",
-                                                      value=st.session_state.get('signup_parent_code', ''))
-                else:
-                    birth_date = st.date_input("생년월일", value=date.today().replace(year=date.today().year - 10), key="signup_birth_date")
-                    age = calculate_age(birth_date)
-                    st.info(f"만나이: **{age}세**")
-                    
-                    signup_parent_code = st.text_input("🔑 부모 코드", key="signup_parent_code", 
-                                                      placeholder="부모님께 받은 8자리 코드")
-            
-            signup_submitted = st.form_submit_button("✨ 가입 완료!", use_container_width=True, type="primary")
-            
-            if signup_submitted:
-                signup_parent_ssn_front_val = st.session_state.get('signup_parent_ssn_front', '')
-                signup_parent_ssn_back_val = st.session_state.get('signup_parent_ssn_back', '')
-                signup_phone_val = st.session_state.get('signup_phone', '')
-                
-                if not signup_username or not signup_password or not signup_password_confirm or not signup_name or not signup_parent_code:
-                    st.error("모든 정보를 입력해주세요! 😊")
-                elif signup_password != signup_password_confirm:
-                    st.error("비밀번호가 일치하지 않습니다. 🧐")
-                elif len(signup_password) < 4:
-                    st.error("비밀번호는 최소 4자 이상이어야 합니다! 🔒")
-                elif not validate_parent_code(signup_parent_code):
-                    st.error("부모 코드가 올바르지 않습니다. (8자리)")
-                elif signup_user_type_value == 'parent':
-                    if not signup_parent_ssn_front_val or len(signup_parent_ssn_front_val) != 6:
-                        st.error("주민등록번호 앞 6자리를 입력해주세요.")
-                    elif not signup_parent_ssn_front_val.isdigit():
-                        st.error("주민등록번호 앞자리는 숫자만 입력 가능합니다.")
-                    elif not signup_parent_ssn_back_val or len(signup_parent_ssn_back_val) != 7:
-                        st.error("주민등록번호 뒷 7자리를 입력해주세요.")
-                    elif not signup_parent_ssn_back_val.isdigit():
-                        st.error("주민등록번호 뒷자리는 숫자만 입력 가능합니다.")
-                    elif not signup_phone_val:
-                        st.error("휴대폰번호를 입력해주세요.")
-                    elif not (signup_phone_val.isdigit() and len(signup_phone_val) in [10, 11]):
-                        st.error("올바른 휴대폰번호를 입력해주세요. (10-11자리 숫자)")
-                    elif not sms_service.is_verified(signup_phone_val):
-                        st.error("휴대폰 인증을 완료해주세요.")
-                    else:
-                        try:
-                            if db.get_user_by_username(signup_username):
-                                st.error("이미 사용 중인 아이디입니다.")
-                            else:
-                                signup_parent_ssn_full = signup_parent_ssn_front_val + signup_parent_ssn_back_val
-                                existing_user = db.verify_parent_ssn(signup_parent_ssn_full, signup_phone_val)
-                                if existing_user:
-                                    st.error("이미 등록된 주민등록번호입니다.")
-                                else:
-                                    user_id = db.create_user(
-                                        signup_username, signup_password, signup_name, 
-                                        None, signup_parent_code, signup_user_type_value,
-                                        signup_parent_ssn_full, signup_phone_val
-                                    )
-                                    st.session_state.logged_in = True
-                                    st.session_state.user_id = user_id
-                                    st.session_state.user_name = signup_name
-                                    st.session_state.show_login_success = True
-                                    st.session_state.current_auth_screen = 'login'
-                                    st.session_state.show_signup = False
-                                    st.success("🎉 환영합니다! 가입이 완료되었습니다!")
-                                    st.balloons()
-                                    import time
-                                    time.sleep(1)
-                                    st.rerun()
-                        except Exception as e:
-                            st.error(f"오류가 발생했습니다: {str(e)}")
-                else:
-                    try:
-                        if db.get_user_by_username(signup_username):
-                            st.error("이미 사용 중인 아이디입니다.")
-                        else:
-                            user_id = db.create_user(
-                                signup_username, signup_password, signup_name, 
-                                age, signup_parent_code, signup_user_type_value
-                            )
-                            st.session_state.logged_in = True
-                            st.session_state.user_id = user_id
-                            st.session_state.user_name = signup_name
-                            st.session_state.show_login_success = True
-                            st.session_state.current_auth_screen = 'login'
-                            st.session_state.show_signup = False
-                            st.success("🎉 환영합니다! 가입이 완료되었습니다!")
-                            st.balloons()
-                            import time
-                            time.sleep(1)
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"오류가 발생했습니다: {str(e)}")
+
 
 def login_page():
     """로그인 페이지 - 3개 소셜 로그인 지원"""
