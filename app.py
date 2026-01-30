@@ -583,6 +583,43 @@ def login_page():
                 find_verification_code = st.text_input("인증번호", placeholder="6자리 인증번호 입력", 
                                                       key="find_username_verification_code",
                                                       disabled=not sms_service.is_verified(find_phone) if find_phone else True)
+            # 발송된 인증번호 표시 (개발 모드) - 먼저 표시
+            find_sent_code_key = f'find_verification_code_{find_phone}' if find_phone else None
+            find_sent_code = st.session_state.get(find_sent_code_key) if find_sent_code_key else None
+            
+            if find_phone and find_sent_code:
+                st.markdown(f"""
+                    <div style='
+                        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+                        border: 3px solid #2196F3;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin: 15px 0;
+                        text-align: center;
+                        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+                    '>
+                        <div style='font-size: 16px; color: #1976D2; margin-bottom: 10px; font-weight: bold;'>
+                            📱 발송된 인증번호
+                        </div>
+                        <div style='
+                            font-size: 32px;
+                            font-weight: bold;
+                            color: #0D47A1;
+                            letter-spacing: 5px;
+                            font-family: "Courier New", monospace;
+                            margin: 15px 0;
+                            padding: 15px;
+                            background: white;
+                            border-radius: 8px;
+                            border: 2px dashed #2196F3;
+                        '>{find_sent_code}</div>
+                        <div style='font-size: 12px; color: #666; margin-top: 10px;'>
+                            ⚠️ 개발 모드: 실제 SMS는 발송되지 않습니다<br>
+                            위 인증번호를 입력란에 입력해주세요
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
             with col_phone2:
                 st.markdown("<br>", unsafe_allow_html=True)
                 find_send_clicked = st.button("인증번호\n발송", key="find_send_code_btn", use_container_width=True)
@@ -593,32 +630,13 @@ def login_page():
                         if result['success']:
                             # 세션에 인증번호 저장
                             if 'code' in result:
-                                st.session_state[f'find_verification_code_{find_phone}'] = result['code']
+                                st.session_state[find_sent_code_key] = result['code']
                             st.success("✅ 인증번호가 발송되었습니다!")
                             st.rerun()
                         else:
                             st.error(result['message'])
                     else:
                         st.warning("휴대폰번호를 먼저 입력해주세요.")
-                
-                # 발송된 인증번호 표시 (개발 모드)
-                if find_phone:
-                    sent_code = st.session_state.get(f'find_verification_code_{find_phone}')
-                    if sent_code:
-                        st.markdown(f"""
-                            <div style='
-                                background: #E3F2FD;
-                                border: 2px solid #2196F3;
-                                border-radius: 8px;
-                                padding: 12px;
-                                margin-top: 10px;
-                                text-align: center;
-                            '>
-                                <strong>📱 발송된 인증번호</strong><br>
-                                <span style='font-size: 24px; font-weight: bold; color: #1976D2; letter-spacing: 3px;'>{sent_code}</span><br>
-                                <small style='color: #666;'>개발 모드: 실제 SMS는 발송되지 않습니다</small>
-                            </div>
-                        """, unsafe_allow_html=True)
             
             # 인증번호 확인 버튼 (폼 밖)
             if find_verification_code:
@@ -685,6 +703,43 @@ def login_page():
                     reset_verification_code = st.text_input("인증번호", placeholder="6자리 인증번호 입력", 
                                                            key="reset_password_verification_code",
                                                            disabled=not sms_service.is_verified(reset_phone) if reset_phone else True)
+                # 발송된 인증번호 표시 (개발 모드) - 먼저 표시
+                reset_sent_code_key = f'reset_verification_code_{reset_phone}' if reset_phone else None
+                reset_sent_code = st.session_state.get(reset_sent_code_key) if reset_sent_code_key else None
+                
+                if reset_phone and reset_sent_code:
+                    st.markdown(f"""
+                        <div style='
+                            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+                            border: 3px solid #2196F3;
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin: 15px 0;
+                            text-align: center;
+                            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+                        '>
+                            <div style='font-size: 16px; color: #1976D2; margin-bottom: 10px; font-weight: bold;'>
+                                📱 발송된 인증번호
+                            </div>
+                            <div style='
+                                font-size: 32px;
+                                font-weight: bold;
+                                color: #0D47A1;
+                                letter-spacing: 5px;
+                                font-family: "Courier New", monospace;
+                                margin: 15px 0;
+                                padding: 15px;
+                                background: white;
+                                border-radius: 8px;
+                                border: 2px dashed #2196F3;
+                            '>{reset_sent_code}</div>
+                            <div style='font-size: 12px; color: #666; margin-top: 10px;'>
+                                ⚠️ 개발 모드: 실제 SMS는 발송되지 않습니다<br>
+                                위 인증번호를 입력란에 입력해주세요
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                
                 with col_phone2:
                     st.markdown("<br>", unsafe_allow_html=True)
                     reset_send_clicked = st.button("인증번호\n발송", key="reset_send_code_btn", use_container_width=True)
@@ -695,32 +750,13 @@ def login_page():
                             if result['success']:
                                 # 세션에 인증번호 저장
                                 if 'code' in result:
-                                    st.session_state[f'reset_verification_code_{reset_phone}'] = result['code']
+                                    st.session_state[reset_sent_code_key] = result['code']
                                 st.success("✅ 인증번호가 발송되었습니다!")
                                 st.rerun()
                             else:
                                 st.error(result['message'])
                         else:
                             st.warning("휴대폰번호를 먼저 입력해주세요.")
-                    
-                    # 발송된 인증번호 표시 (개발 모드)
-                    if reset_phone:
-                        sent_code = st.session_state.get(f'reset_verification_code_{reset_phone}')
-                        if sent_code:
-                            st.markdown(f"""
-                                <div style='
-                                    background: #E3F2FD;
-                                    border: 2px solid #2196F3;
-                                    border-radius: 8px;
-                                    padding: 12px;
-                                    margin-top: 10px;
-                                    text-align: center;
-                                '>
-                                    <strong>📱 발송된 인증번호</strong><br>
-                                    <span style='font-size: 24px; font-weight: bold; color: #1976D2; letter-spacing: 3px;'>{sent_code}</span><br>
-                                    <small style='color: #666;'>개발 모드: 실제 SMS는 발송되지 않습니다</small>
-                                </div>
-                            """, unsafe_allow_html=True)
                 
                 # 인증번호 확인 버튼 (폼 밖)
                 if reset_verification_code:
@@ -969,6 +1005,43 @@ def login_page():
                     phone_display = f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:7]}-{signup_phone[7:]}" if len(signup_phone) == 11 else f"{phone_carrier} {signup_phone[:3]}-{signup_phone[3:6]}-{signup_phone[6:]}"
                     st.info(f"인증 대상: {phone_display}")
                 
+                # 발송된 인증번호 표시 (개발 모드) - 먼저 표시
+                sent_code_key = f'signup_verification_code_{signup_phone}' if signup_phone else None
+                sent_code = st.session_state.get(sent_code_key) if sent_code_key else None
+                
+                if phone_valid and signup_phone and sent_code:
+                    st.markdown(f"""
+                        <div style='
+                            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+                            border: 3px solid #2196F3;
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin: 15px 0;
+                            text-align: center;
+                            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+                        '>
+                            <div style='font-size: 16px; color: #1976D2; margin-bottom: 10px; font-weight: bold;'>
+                                📱 발송된 인증번호
+                            </div>
+                            <div style='
+                                font-size: 32px;
+                                font-weight: bold;
+                                color: #0D47A1;
+                                letter-spacing: 5px;
+                                font-family: "Courier New", monospace;
+                                margin: 15px 0;
+                                padding: 15px;
+                                background: white;
+                                border-radius: 8px;
+                                border: 2px dashed #2196F3;
+                            '>{sent_code}</div>
+                            <div style='font-size: 12px; color: #666; margin-top: 10px;'>
+                                ⚠️ 개발 모드: 실제 SMS는 발송되지 않습니다<br>
+                                위 인증번호를 입력란에 입력해주세요
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                
                 col_phone1, col_phone2 = st.columns([2, 1])
                 with col_phone1:
                     signup_verification_code = st.text_input("인증번호", key="signup_verification_code", 
@@ -986,32 +1059,13 @@ def login_page():
                             if result['success']:
                                 # 세션에 인증번호 저장 (개발 모드용)
                                 if 'code' in result:
-                                    st.session_state[f'signup_verification_code_{signup_phone}'] = result['code']
+                                    st.session_state[sent_code_key] = result['code']
                                 st.success("✅ 인증번호가 발송되었습니다!")
                                 st.rerun()
                             else:
                                 st.error(result['message'])
                         else:
                             st.warning("올바른 휴대폰번호를 먼저 입력해주세요.")
-                    
-                    # 발송된 인증번호 표시 (개발 모드)
-                    if phone_valid and signup_phone:
-                        sent_code = st.session_state.get(f'signup_verification_code_{signup_phone}')
-                        if sent_code:
-                            st.markdown(f"""
-                                <div style='
-                                    background: #E3F2FD;
-                                    border: 2px solid #2196F3;
-                                    border-radius: 8px;
-                                    padding: 12px;
-                                    margin-top: 10px;
-                                    text-align: center;
-                                '>
-                                    <strong>📱 발송된 인증번호</strong><br>
-                                    <span style='font-size: 24px; font-weight: bold; color: #1976D2; letter-spacing: 3px;'>{sent_code}</span><br>
-                                    <small style='color: #666;'>개발 모드: 실제 SMS는 발송되지 않습니다</small>
-                                </div>
-                            """, unsafe_allow_html=True)
                 
                 # 인증번호 확인 버튼
                 if signup_verification_code and phone_valid:
