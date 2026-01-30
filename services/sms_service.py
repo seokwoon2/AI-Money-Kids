@@ -92,10 +92,13 @@ class SMSService:
         #     }
         
         # 개발 환경: 인증번호를 직접 반환 (실제로는 SMS로 발송)
+        # 실제 SMS 발송 코드는 여기에 추가 가능
+        # 예: CoolSMS, 알리고 등의 API 호출
+        
         return {
             'success': True,
             'code': verification_code,  # 개발 환경에서만 표시
-            'message': f'인증번호가 발송되었습니다. (개발 모드: {verification_code})'
+            'message': '인증번호가 발송되었습니다.'
         }
     
     def verify_code(self, phone_number: str, input_code: str) -> Dict[str, any]:
