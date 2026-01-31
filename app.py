@@ -1178,6 +1178,46 @@ def login_page():
             border-color: #c0c0c0 !important;
         }
         
+        /* 비활성화된 소셜 로그인 버튼 스타일 */
+        button[key="kakao_disabled"],
+        button[key="naver_disabled"],
+        button[key="google_disabled"],
+        button[key="kakao_error"],
+        button[key="naver_error"],
+        button[key="google_error"] {
+            width: 100% !important;
+            height: 50px !important;
+            border-radius: 12px !important;
+            font-size: 15px !important;
+            font-weight: bold !important;
+            margin: 8px 0 !important;
+            transition: all 0.3s !important;
+        }
+        
+        button[key="kakao_disabled"],
+        button[key="kakao_error"] {
+            background: #FEE500 !important;
+            color: #000 !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3) !important;
+        }
+        
+        button[key="naver_disabled"],
+        button[key="naver_error"] {
+            background: #03C75A !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3) !important;
+        }
+        
+        button[key="google_disabled"],
+        button[key="google_error"] {
+            background: white !important;
+            color: #333 !important;
+            border: 1px solid #dadce0 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        }
+        
         /* 입력 필드 */
         .stTextInput > div > div > input {
             border-radius: 8px !important;
@@ -1265,23 +1305,31 @@ def login_page():
         """, unsafe_allow_html=True)
         
         # 섹션 1: 간편 로그인
-        st.markdown('<p class="section-title">✨ 간편 로그인</p>', unsafe_allow_html=True)
+        st.markdown("""
+            <h3 style='text-align: center; color: #666; font-size: 16px; font-weight: bold; margin: 25px 0 15px 0;'>
+                ✨ 간편 로그인
+            </h3>
+        """, unsafe_allow_html=True)
         
-        # 소셜 로그인 버튼
+        # 소셜 로그인 버튼 (OAuth 키가 없어도 항상 표시)
         try:
             from services.oauth_service import OAuthService
             oauth = OAuthService()
             
-            # 카카오
+            # 카카오 로그인 버튼
             kakao_url = oauth.get_kakao_login_url()
             if kakao_url:
                 st.markdown(f"""
                     <a href="{kakao_url}" target="_self" class="social-login-btn kakao-btn">
-                        🟡 카카오로 시작하기
+                        🟡 카카오로 3초에 시작하기
                     </a>
                 """, unsafe_allow_html=True)
+            else:
+                # OAuth 키가 없어도 버튼은 표시 (클릭 시 안내 메시지)
+                if st.button("🟡 카카오로 3초에 시작하기", key="kakao_disabled", use_container_width=True):
+                    st.info("💡 카카오 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
             
-            # 네이버
+            # 네이버 로그인 버튼
             naver_url = oauth.get_naver_login_url()
             if naver_url:
                 st.markdown(f"""
@@ -1289,30 +1337,45 @@ def login_page():
                         🟢 네이버로 시작하기
                     </a>
                 """, unsafe_allow_html=True)
+            else:
+                # OAuth 키가 없어도 버튼은 표시 (클릭 시 안내 메시지)
+                if st.button("🟢 네이버로 시작하기", key="naver_disabled", use_container_width=True):
+                    st.info("💡 네이버 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
             
-            # 구글
+            # 구글 로그인 버튼
             google_url = oauth.get_google_login_url()
             if google_url:
                 st.markdown(f"""
                     <a href="{google_url}" target="_self" class="social-login-btn google-btn">
-                        🔵 구글로 시작하기
+                        🔴 구글로 시작하기
                     </a>
                 """, unsafe_allow_html=True)
+            else:
+                # OAuth 키가 없어도 버튼은 표시 (클릭 시 안내 메시지)
+                if st.button("🔴 구글로 시작하기", key="google_disabled", use_container_width=True):
+                    st.info("💡 구글 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
         except Exception:
-            # 에러 발생 시 조용히 무시 (경고 메시지 표시 안 함)
-            pass
+            # 에러 발생 시에도 버튼은 표시
+            if st.button("🟡 카카오로 3초에 시작하기", key="kakao_error", use_container_width=True):
+                st.info("💡 카카오 로그인 설정이 필요합니다.")
+            if st.button("🟢 네이버로 시작하기", key="naver_error", use_container_width=True):
+                st.info("💡 네이버 로그인 설정이 필요합니다.")
+            if st.button("🔴 구글로 시작하기", key="google_error", use_container_width=True):
+                st.info("💡 구글 로그인 설정이 필요합니다.")
         
         # 구분선: "──────── 또는 ────────"
         st.markdown("""
-            <div style='display: flex; align-items: center; margin: 25px 0 20px 0;'>
-                <div style='flex: 1; height: 1px; background: #ddd;'></div>
-                <span style='padding: 0 15px; color: #999; font-size: 14px;'>또는</span>
-                <div style='flex: 1; height: 1px; background: #ddd;'></div>
+            <div style='text-align: center; margin: 25px 0 20px 0;'>
+                <span style='color: #ccc; font-size: 14px;'>──────── 또는 ────────</span>
             </div>
         """, unsafe_allow_html=True)
         
         # 섹션 2: 아이디로 로그인
-        st.markdown('<p class="section-title">📝 아이디로 로그인</p>', unsafe_allow_html=True)
+        st.markdown("""
+            <h3 style='text-align: center; color: #666; font-size: 16px; font-weight: bold; margin-bottom: 15px;'>
+                📝 아이디로 로그인
+            </h3>
+        """, unsafe_allow_html=True)
         
         with st.form("login_form"):
             username = st.text_input("아이디", placeholder="아이디를 입력하세요", label_visibility="collapsed")
