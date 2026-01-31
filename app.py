@@ -980,7 +980,7 @@ def show_signup_page():
 
 
 def login_page():
-    """로그인 페이지 - 현대적이고 사용자 친화적인 디자인"""
+    """로그인 페이지 (간결한 버전)"""
     
     # 화면 전환 확인
     if st.session_state.get('current_auth_screen') == 'signup':
@@ -996,188 +996,22 @@ def login_page():
     # 사이드바 숨기기
     hide_sidebar_navigation()
     
-    # CSS 스타일 적용
+    # 전체 배경 스타일
     st.markdown("""
         <style>
-        .stApp { 
-            background-color: #f9f9f9; 
-            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+        .stApp {
+            background-color: #f9f9f9;
         }
-        
-        /* 로그인 카드 컨테이너 */
-        .login-container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            padding: 40px 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        
-        /* 돼지 애니메이션 */
-        @keyframes pigBounce {
-            0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
-            10% { transform: translateY(-10px) rotate(-3deg) scale(1.05); }
-            20% { transform: translateY(-15px) rotate(3deg) scale(1.08); }
-            30% { transform: translateY(-18px) rotate(-2deg) scale(1.1); }
-            40% { transform: translateY(-15px) rotate(2deg) scale(1.08); }
-            50% { transform: translateY(-10px) rotate(-1deg) scale(1.05); }
-            60% { transform: translateY(-5px) rotate(1deg) scale(1.02); }
-            70% { transform: translateY(-2px) rotate(0deg) scale(1.01); }
-            80% { transform: translateY(0px) rotate(0deg) scale(1); }
-        }
-        
-        .pig-animation {
-            display: inline-block !important;
-            animation: pigBounce 2.5s ease-in-out infinite !important;
-            transform-origin: center center !important;
-            will-change: transform !important;
-        }
-        
-        .pig-animation:hover {
-            animation-duration: 1s !important;
-        }
-        
-        /* 섹션 제목 */
-        .section-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #555;
-            margin: 25px 0 15px 0;
-            text-align: center;
-        }
-        
-        /* 소셜 로그인 버튼 */
-        .social-login-btn {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 50px !important;
-            padding: 0 !important;
-            margin-bottom: 12px !important;
-            border-radius: 12px !important;
-            font-size: 15px !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            text-decoration: none !important;
-            transition: all 0.3s !important;
-            border: none !important;
-        }
-        
-        .social-login-btn img {
-            margin-right: 8px !important;
-            vertical-align: middle !important;
-        }
-        
-        .social-login-btn:hover {
-            transform: translateY(-2px) !important;
-        }
-        
-        /* 카카오 버튼 */
-        .kakao-btn {
-            background: #FEE500 !important;
-            color: #000 !important;
-            box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3) !important;
-        }
-        
-        .kakao-btn:hover {
-            box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4) !important;
-        }
-        
-        /* 네이버 버튼 */
-        .naver-btn {
-            background: #03C75A !important;
-            color: white !important;
-            box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3) !important;
-        }
-        
-        .naver-btn:hover {
-            box-shadow: 0 4px 12px rgba(3, 199, 90, 0.4) !important;
-        }
-        
-        /* 구글 버튼 */
-        .google-btn {
-            background: white !important;
-            color: #333 !important;
-            border: 1px solid #dadce0 !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        .google-btn:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-            border-color: #c0c0c0 !important;
-        }
-        
-        /* 비활성화된 소셜 로그인 버튼 스타일 */
-        button[key="kakao_disabled"],
-        button[key="naver_disabled"],
-        button[key="google_disabled"],
-        button[key="kakao_error"],
-        button[key="naver_error"],
-        button[key="google_error"] {
-            width: 100% !important;
-            height: 50px !important;
-            border-radius: 12px !important;
-            font-size: 15px !important;
-            font-weight: bold !important;
-            margin-bottom: 12px !important;
-            transition: all 0.3s !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        
-        button[key="kakao_disabled"],
-        button[key="kakao_error"] {
-            background: #FEE500 !important;
-            color: #000 !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3) !important;
-        }
-        
-        button[key="naver_disabled"],
-        button[key="naver_error"] {
-            background: #03C75A !important;
-            color: white !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3) !important;
-        }
-        
-        button[key="google_disabled"],
-        button[key="google_error"] {
-            background: white !important;
-            color: #333 !important;
-            border: 1px solid #dadce0 !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        /* 입력 필드 */
         .stTextInput > div > div > input {
-            border-radius: 8px !important;
-            border: 2px solid #e0e0e0 !important;
-            padding: 12px 15px !important;
-            font-size: 15px !important;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            font-size: 14px;
         }
-        
         .stTextInput > div > div > input:focus {
-            border-color: #FF69B4 !important;
-            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1) !important;
-            outline: none !important;
+            border-color: #FF69B4;
+            box-shadow: 0 0 0 1px #FF69B4;
         }
-        
-        /* 입력 필드 간격 */
-        .stTextInput {
-            margin-bottom: 12px !important;
-        }
-        
-        /* 라디오 버튼 */
-        .stRadio > div {
-            flex-direction: row !important;
-            gap: 15px !important;
-        }
-        
-        /* 로그인 버튼 */
         .stButton > button {
             width: 100% !important;
             background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%) !important;
@@ -1185,194 +1019,135 @@ def login_page():
             border-radius: 12px !important;
             height: 45px !important;
             font-weight: bold !important;
-            font-size: 16px !important;
             border: none !important;
-            box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
             transition: all 0.3s !important;
         }
-        
         .stButton > button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(255, 105, 180, 0.4) !important;
-        }
-        
-        /* 아이디/비밀번호 찾기 버튼 */
-        button[key="find_username_btn"],
-        button[key="find_password_btn"] {
-            background: linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 100%) !important;
-            color: #333 !important;
-            font-size: 14px !important;
-            padding: 10px !important;
-        }
-        
-        button[key="find_username_btn"]:hover,
-        button[key="find_password_btn"]:hover {
-            background: linear-gradient(135deg, #D0D0D0 0%, #ADADAD 100%) !important;
-            transform: translateY(-1px) !important;
-        }
-        
-        /* 회원가입 링크 박스 */
-        .signup-link-box {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
+            box-shadow: 0 6px 16px rgba(255,105,180,0.4) !important;
         }
         </style>
     """, unsafe_allow_html=True)
     
     # 중앙 정렬 컨테이너
     col1, col2, col3 = st.columns([1, 2, 1])
-    
     with col2:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
-        # 상단: 돼지 아이콘 + 제목 + 부제목 (중앙 정렬)
+        # ========== 헤더 (돼지 아이콘 + 제목) ==========
         st.markdown("""
-            <div style='text-align: center; padding-bottom: 30px;'>
-                <div class='pig-animation' style='font-size: 80px; display: inline-block; cursor: pointer;'>🐷</div>
-                <h1 style='color: #FF69B4; font-size: 32px; margin: 15px 0 5px 0; font-weight: bold;'>AI Money Friends</h1>
-                <p style='color: #888; font-size: 14px; margin: 0;'>아이들의 경제 교육 친구</p>
+            <div style='text-align: center; padding: 20px 0;'>
+                <div style='font-size: 80px; margin-bottom: 10px;'>🐷</div>
+                <h1 style='color: #FF69B4; font-size: 32px; font-weight: 700; margin: 0;'>
+                    AI Money Friends
+                </h1>
+                <p style='color: #888; font-size: 14px; margin-top: 8px;'>
+                    아이들의 경제 교육 친구
+                </p>
             </div>
         """, unsafe_allow_html=True)
         
-        # 섹션 1: 간편 로그인
+        # ========== 간편 로그인 섹션 ==========
         st.markdown("""
-            <h3 style='text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; font-weight: 600;'>
+            <h3 style='text-align: center; color: #666; font-size: 16px; margin: 25px 0 20px 0; font-weight: 600;'>
                 ✨ 간편 로그인
             </h3>
         """, unsafe_allow_html=True)
         
-        # 소셜 로그인 버튼 (OAuth 키가 없어도 항상 표시)
+        # OAuth 서비스 초기화
         try:
             from services.oauth_service import OAuthService
-            oauth = OAuthService()
+            oauth_service = OAuthService()
             
-            # 카카오 로그인 버튼
-            kakao_url = oauth.get_kakao_login_url()
-            kakao_button_html = """
-                <button style="
-                    width: 100%;
-                    padding: 15px;
-                    background: #FEE500;
-                    color: #000000;
-                    border: none;
-                    border-radius: 12px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    margin-bottom: 12px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';" 
-                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
-                    </svg>
-                    카카오로 3초에 시작하기
-                </button>
-            """
-            
+            # 카카오 버튼 (노란색, 1개만!)
+            kakao_url = oauth_service.get_kakao_login_url()
             if kakao_url:
-                st.markdown(f'<a href="{kakao_url}" target="_self" style="text-decoration: none;">{kakao_button_html}</a>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <a href="{kakao_url}" target="_self" style="text-decoration: none;">
+                        <button style="
+                            width: 100%;
+                            padding: 15px;
+                            background: #FEE500;
+                            color: #000000;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-bottom: 12px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            transition: all 0.2s;
+                        " onmouseover="this.style.transform='translateY(-2px)'" 
+                           onmouseout="this.style.transform='translateY(0)'">
+                            🟡 카카오로 3초에 시작하기
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(kakao_button_html, unsafe_allow_html=True)
-                if st.button("", key="kakao_click_handler", type="secondary", use_container_width=True):
-                    st.warning("⚠️ 카카오 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
+                st.button("🟡 카카오로 3초에 시작하기", key="kakao_btn", use_container_width=True, disabled=True)
             
-            # 네이버 로그인 버튼
-            naver_url = oauth.get_naver_login_url()
-            naver_button_html = """
-                <button style="
-                    width: 100%;
-                    padding: 15px;
-                    background: #03C75A;
-                    color: white;
-                    border: none;
-                    border-radius: 12px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    margin-bottom: 12px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';" 
-                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
-                    </svg>
-                    네이버로 시작하기
-                </button>
-            """
-            
+            # 네이버 버튼 (초록색, 1개만!)
+            naver_url = oauth_service.get_naver_login_url()
             if naver_url:
-                st.markdown(f'<a href="{naver_url}" target="_self" style="text-decoration: none;">{naver_button_html}</a>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <a href="{naver_url}" target="_self" style="text-decoration: none;">
+                        <button style="
+                            width: 100%;
+                            padding: 15px;
+                            background: #03C75A;
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-bottom: 12px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            transition: all 0.2s;
+                        " onmouseover="this.style.transform='translateY(-2px)'" 
+                           onmouseout="this.style.transform='translateY(0)'">
+                            🟢 네이버로 시작하기
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(naver_button_html, unsafe_allow_html=True)
-                if st.button("", key="naver_click_handler", type="secondary", use_container_width=True):
-                    st.warning("⚠️ 네이버 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
+                st.button("🟢 네이버로 시작하기", key="naver_btn", use_container_width=True, disabled=True)
             
-            # 구글 로그인 버튼
-            google_url = oauth.get_google_login_url()
-            google_button_html = """
-                <button style="
-                    width: 100%;
-                    padding: 15px;
-                    background: white;
-                    color: #202124;
-                    border: 1px solid #dadce0;
-                    border-radius: 12px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    margin-bottom: 20px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';" 
-                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-                    <svg width="20" height="20" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    구글로 시작하기
-                </button>
-            """
-            
+            # 구글 버튼 (흰색, 1개만!)
+            google_url = oauth_service.get_google_login_url()
             if google_url:
-                st.markdown(f'<a href="{google_url}" target="_self" style="text-decoration: none;">{google_button_html}</a>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <a href="{google_url}" target="_self" style="text-decoration: none;">
+                        <button style="
+                            width: 100%;
+                            padding: 15px;
+                            background: white;
+                            color: #202124;
+                            border: 1px solid #dadce0;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-bottom: 20px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            transition: all 0.2s;
+                        " onmouseover="this.style.transform='translateY(-2px)'" 
+                           onmouseout="this.style.transform='translateY(0)'">
+                            🔴 구글로 시작하기
+                        </button>
+                    </a>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(google_button_html, unsafe_allow_html=True)
-                if st.button("", key="google_click_handler", type="secondary", use_container_width=True):
-                    st.warning("⚠️ 구글 로그인 설정이 필요합니다. 관리자에게 문의하세요.")
+                st.button("🔴 구글로 시작하기", key="google_btn", use_container_width=True, disabled=True)
         except Exception:
             # 에러 발생 시에도 버튼은 표시
-            if st.button("🟡 카카오로 3초에 시작하기", key="kakao_error", use_container_width=True):
-                st.warning("⚠️ 카카오 로그인 설정이 필요합니다.")
-            if st.button("🟢 네이버로 시작하기", key="naver_error", use_container_width=True):
-                st.warning("⚠️ 네이버 로그인 설정이 필요합니다.")
-            if st.button("🔴 구글로 시작하기", key="google_error", use_container_width=True):
-                st.warning("⚠️ 구글 로그인 설정이 필요합니다.")
+            st.button("🟡 카카오로 3초에 시작하기", key="kakao_error", use_container_width=True, disabled=True)
+            st.button("🟢 네이버로 시작하기", key="naver_error", use_container_width=True, disabled=True)
+            st.button("🔴 구글로 시작하기", key="google_error", use_container_width=True, disabled=True)
         
-        # 구분선: "또는" (더 얇고 세련된 라인)
+        # ========== 구분선 ==========
         st.markdown("""
             <div style='text-align: center; margin: 30px 0; position: relative;'>
-                <hr style='border: none; border-top: 1px solid #e0e0e0; margin: 0;'>
+                <hr style='border: none; border-top: 1px solid #e0e0e0;'>
                 <span style='
                     position: absolute;
                     top: -10px;
@@ -1386,7 +1161,7 @@ def login_page():
             </div>
         """, unsafe_allow_html=True)
         
-        # 섹션 2: 아이디로 로그인
+        # ========== 아이디로 로그인 섹션 ==========
         st.markdown("""
             <h3 style='text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; font-weight: 600;'>
                 📝 아이디로 로그인
@@ -1394,21 +1169,33 @@ def login_page():
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("아이디", placeholder="아이디를 입력하세요", label_visibility="collapsed")
-            password = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요", label_visibility="collapsed")
+            username = st.text_input(
+                "아이디",
+                placeholder="아이디를 입력하세요",
+                label_visibility="collapsed",
+                key="login_username"
+            )
             
+            password = st.text_input(
+                "비밀번호",
+                type="password",
+                placeholder="비밀번호를 입력하세요",
+                label_visibility="collapsed",
+                key="login_password"
+            )
+            
+            # 사용자 유형 선택
             col_a, col_b = st.columns(2)
             with col_a:
-                user_type = st.radio("", ["부모님", "아이"], horizontal=True, label_visibility="collapsed")
+                user_type = st.radio("", ["부모님", "아이"], horizontal=True, label_visibility="collapsed", key="user_type_radio")
             
             age = None
             if user_type == "아이":
                 with col_b:
-                    age = st.number_input("나이", 5, 18, 10, label_visibility="collapsed")
+                    age = st.number_input("나이", 5, 18, 10, label_visibility="collapsed", key="login_age")
             
-            # 로그인 버튼 위 15px 여백
-            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("🚀 로그인하기")
+            # 로그인 버튼
+            submitted = st.form_submit_button("🚀 로그인하기", use_container_width=True)
             
             if submitted and username and password:
                 with st.spinner("로그인 중..."):
@@ -1438,27 +1225,25 @@ def login_page():
                     else:
                         st.error("❌ 아이디나 비밀번호가 틀렸습니다.")
         
-        # 아이디 찾기 / 비밀번호 찾기 링크 (폼 밖에 위치, 20px 위 여백)
+        # 하단 링크
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         col_find1, col_find2 = st.columns(2)
         with col_find1:
-            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn", 
-                        help="휴대폰 인증으로 아이디를 찾습니다"):
+            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn"):
                 st.session_state.current_auth_screen = 'find_username'
                 st.session_state.show_username_find = True
                 st.session_state.show_password_reset = False
                 st.rerun()
         with col_find2:
-            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn",
-                        help="아이디와 휴대폰 인증으로 임시 비밀번호를 발급받습니다"):
+            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn"):
                 st.session_state.current_auth_screen = 'find_password'
                 st.session_state.show_password_reset = True
                 st.session_state.show_username_find = False
                 st.rerun()
         
-        # 회원가입 링크 (연한 회색 박스, 중앙 정렬)
+        # 회원가입 링크
         st.markdown("""
-            <div class="signup-link-box">
+            <div style='text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;'>
                 <p style='margin: 0; color: #666;'>
                     계정이 없으신가요? 
                     <span style='color: #FF69B4; font-weight: bold;'>회원가입하기 →</span>
@@ -1466,15 +1251,12 @@ def login_page():
             </div>
         """, unsafe_allow_html=True)
         
-        # 회원가입 버튼 (카드 안에 위치)
         if st.button("📝 회원가입하기", use_container_width=True, key="signup_btn"):
             st.session_state.current_auth_screen = 'signup'
             st.session_state.show_signup = True
             st.session_state.show_username_find = False
             st.session_state.show_password_reset = False
             st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
 
 
 def main_page():
