@@ -73,15 +73,19 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.markdown("""
             <div style='text-align: center; padding: 20px 0;'>
                 <div style='font-size: 60px;'>🐷</div>
-                <h2 style='color: #FF69B4; margin: 10px 0;'>AI Money Friends</h2>
+                <h2 style='color: #FF69B4; margin: 10px 0; font-size: 24px;'>
+                    AI Money Friends
+                </h2>
             </div>
         """, unsafe_allow_html=True)
         
         st.markdown("---")
         
-        # 메뉴 항목
-        menu_items = []
+        # 세션 상태 초기화
+        if 'current_page' not in st.session_state:
+            st.session_state['current_page'] = 'home'
         
+        # 메뉴 항목 (부모/아이에 따라 다름)
         if user_type == 'parent':
             menu_items = [
                 ("🏠", "홈", "home"),
@@ -98,94 +102,69 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 ("🤖", "AI 친구", "ai_chat"),
                 ("📚", "학습", "learning"),
             ]
+        else:
+            menu_items = [
+                ("🏠", "홈", "home"),
+            ]
         
         # 메뉴 버튼 렌더링
         current_page = st.session_state.get('current_page', 'home')
         
-        # 부모 메뉴
-        if user_type == 'parent':
-            if st.button("🏠 홈", key="menu_home", use_container_width=True, 
-                        type="primary" if current_page == 'home' else "secondary"):
-                st.session_state['current_page'] = 'home'
-                st.switch_page("app.py")
+        for icon, label, key in menu_items:
+            is_active = current_page == key
             
-            if os.path.exists("pages/2_📊_부모_대시보드.py"):
-                if st.button("👶 자녀 관리", key="menu_children", use_container_width=True,
-                            type="primary" if current_page == 'children' else "secondary"):
-                    st.session_state['current_page'] = 'children'
-                    st.switch_page("pages/2_📊_부모_대시보드.py")
+            # 페이지 경로 매핑
+            page_paths = {
+                'home': 'app.py',
+                'children': 'pages/2_📊_부모_대시보드.py',
+                'allowance': 'pages/9_💵_용돈_관리.py',
+                'report': 'pages/3_💼_부모_상담실.py',
+                'settings': 'pages/4_👤_내정보.py',
+                'my_money': 'pages/9_💵_용돈_관리.py',
+                'missions': 'pages/7_🎯_금융_미션.py',
+                'ai_chat': 'pages/1_💬_아이_채팅.py',
+                'learning': 'pages/8_📖_금융_스토리.py',
+            }
             
-            if os.path.exists("pages/9_💵_용돈_관리.py"):
-                if st.button("💰 용돈 관리", key="menu_allowance", use_container_width=True,
-                            type="primary" if current_page == 'allowance' else "secondary"):
-                    st.session_state['current_page'] = 'allowance'
-                    st.switch_page("pages/9_💵_용돈_관리.py")
+            page_path = page_paths.get(key)
             
-            if os.path.exists("pages/3_💼_부모_상담실.py"):
-                if st.button("📊 리포트", key="menu_report", use_container_width=True,
-                            type="primary" if current_page == 'report' else "secondary"):
-                    st.session_state['current_page'] = 'report'
-                    st.switch_page("pages/3_💼_부모_상담실.py")
-            
-            if os.path.exists("pages/4_👤_내정보.py"):
-                if st.button("⚙️ 설정", key="menu_settings", use_container_width=True,
-                            type="primary" if current_page == 'settings' else "secondary"):
-                    st.session_state['current_page'] = 'settings'
-                    st.switch_page("pages/4_👤_내정보.py")
-        
-        # 아이 메뉴
-        elif user_type == 'child':
-            if st.button("🏠 홈", key="menu_home", use_container_width=True,
-                        type="primary" if current_page == 'home' else "secondary"):
-                st.session_state['current_page'] = 'home'
-                st.switch_page("app.py")
-            
-            if os.path.exists("pages/9_💵_용돈_관리.py"):
-                if st.button("💰 내 용돈", key="menu_my_money", use_container_width=True,
-                            type="primary" if current_page == 'my_money' else "secondary"):
-                    st.session_state['current_page'] = 'my_money'
-                    st.switch_page("pages/9_💵_용돈_관리.py")
-            
-            if os.path.exists("pages/7_🎯_금융_미션.py"):
-                if st.button("🎯 미션", key="menu_missions", use_container_width=True,
-                            type="primary" if current_page == 'missions' else "secondary"):
-                    st.session_state['current_page'] = 'missions'
-                    st.switch_page("pages/7_🎯_금융_미션.py")
-            
-            if os.path.exists("pages/1_💬_아이_채팅.py"):
-                if st.button("🤖 AI 친구", key="menu_ai_chat", use_container_width=True,
-                            type="primary" if current_page == 'ai_chat' else "secondary"):
-                    st.session_state['current_page'] = 'ai_chat'
-                    st.switch_page("pages/1_💬_아이_채팅.py")
-            
-            if os.path.exists("pages/8_📖_금융_스토리.py"):
-                if st.button("📚 학습", key="menu_learning", use_container_width=True,
-                            type="primary" if current_page == 'learning' else "secondary"):
-                    st.session_state['current_page'] = 'learning'
-                    st.switch_page("pages/8_📖_금융_스토리.py")
+            if st.button(
+                f"{icon} {label}",
+                key=f"menu_{key}",
+                use_container_width=True,
+                type="primary" if is_active else "secondary"
+            ):
+                st.session_state['current_page'] = key
+                if page_path and os.path.exists(page_path):
+                    st.switch_page(page_path)
+                elif key == 'home':
+                    st.switch_page("app.py")
+                st.rerun()
         
         st.markdown("---")
         
         # 로그아웃 버튼
-        if st.button("🚪 로그아웃", use_container_width=True, type="secondary"):
-            # 카카오 로그아웃 처리
-            if hasattr(st.session_state, 'access_token') and st.session_state.access_token:
-                try:
-                    from services.oauth_service import OAuthService
-                    oauth_service = OAuthService()
-                    oauth_service.kakao_logout(st.session_state.access_token)
-                except Exception:
-                    pass  # 카카오 로그아웃 실패해도 계속 진행
-            
-            # 세션 상태 초기화
-            st.session_state.logged_in = False
-            st.session_state.user_id = None
-            st.session_state.user_name = None
-            st.session_state.user_info = None
-            st.session_state.access_token = None
-            
-            # 메인 페이지로 이동
-            st.switch_page("app.py")
+        if st.session_state.get('logged_in'):
+            if st.button("🚪 로그아웃", use_container_width=True, type="secondary"):
+                # 카카오 로그아웃 처리
+                if hasattr(st.session_state, 'access_token') and st.session_state.access_token:
+                    try:
+                        from services.oauth_service import OAuthService
+                        oauth_service = OAuthService()
+                        oauth_service.kakao_logout(st.session_state.access_token)
+                    except Exception:
+                        pass  # 카카오 로그아웃 실패해도 계속 진행
+                
+                # 세션 상태 초기화
+                for key in list(st.session_state.keys()):
+                    if key not in ['current_auth_screen']:  # 인증 화면 상태는 유지
+                        del st.session_state[key]
+                
+                st.session_state.logged_in = False
+                st.session_state.current_auth_screen = 'login'
+                
+                # 메인 페이지로 이동
+                st.switch_page("app.py")
 
 def hide_sidebar_navigation():
     st.markdown("<style>[data-testid='stSidebarNav'] {display: none !important;}</style>", unsafe_allow_html=True)

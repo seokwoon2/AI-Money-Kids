@@ -735,7 +735,7 @@ def show_signup_page():
         
         with col1:
             if st.button(
-                "👨‍👩‍👧\n부모님",
+                "👨‍👩‍👧\n\n부모님",
                 key="select_parent",
                 use_container_width=True,
                 type="primary" if st.session_state.get('signup_user_type') == 'parent' else "secondary"
@@ -745,7 +745,7 @@ def show_signup_page():
         
         with col2:
             if st.button(
-                "👶\n아이",
+                "👶\n\n아이",
                 key="select_child",
                 use_container_width=True,
                 type="primary" if st.session_state.get('signup_user_type') == 'child' else "secondary"
@@ -965,16 +965,17 @@ def show_signup_page():
                 <span style='color: #666; font-size: 14px;'>
                     💬 이미 계정이 있으신가요?
                 </span><br>
-                <a href='?page=login' style='
-                    color: #FF69B4;
-                    font-weight: 600;
-                    text-decoration: none;
-                    font-size: 15px;
-                '>
+                <span style='color: #FF69B4; font-weight: 600; font-size: 15px; cursor: pointer;'>
                     로그인하기 →
-                </a>
+                </span>
             </div>
         """, unsafe_allow_html=True)
+        
+        # 로그인 페이지로 이동
+        if st.button("로그인 페이지로 이동", key="go_to_login", use_container_width=True, type="secondary"):
+            st.session_state.current_auth_screen = 'login'
+            st.session_state.show_signup = False
+            st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
 
