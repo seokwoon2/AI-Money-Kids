@@ -605,11 +605,11 @@ def show_signup_page():
     if 'signup_data' not in st.session_state:
         st.session_state['signup_data'] = {}
     
-    # 전체 배경 스타일 (로그인 페이지와 동일)
+    # 전체 배경 스타일 (로그인 페이지와 동일한 색상 시스템)
     st.markdown("""
         <style>
         .stApp {
-            background-color: #f9f9f9;
+            background-color: #F8F9FA;
             font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
         }
         .signup-container {
@@ -621,65 +621,54 @@ def show_signup_page():
             box-shadow: 0 4px 6px rgba(0,0,0,0.07);
         }
         .section-title {
-            color: #666;
+            color: #636E72 !important;
             font-size: 16px;
             font-weight: 600;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            text-align: left;
+            margin: 25px 0 15px 0;
         }
         .stTextInput > div > div > input {
             border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #DFE6E9;
             padding: 12px;
             font-size: 14px;
+            transition: all 0.2s;
         }
         .stTextInput > div > div > input:focus {
-            border-color: #FF69B4;
-            box-shadow: 0 0 0 1px #FF69B4;
+            border-color: #0984E3 !important;
+            box-shadow: 0 0 0 2px rgba(9, 132, 227, 0.1) !important;
         }
         .stNumberInput > div > div > input {
             border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #DFE6E9;
             padding: 12px;
             font-size: 14px;
+            transition: all 0.2s;
         }
         .stNumberInput > div > div > input:focus {
-            border-color: #FF69B4;
-            box-shadow: 0 0 0 1px #FF69B4;
+            border-color: #0984E3 !important;
+            box-shadow: 0 0 0 2px rgba(9, 132, 227, 0.1) !important;
         }
-        .user-type-card {
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: white;
-        }
-        .user-type-card:hover {
-            border-color: #FF69B4;
-            box-shadow: 0 4px 8px rgba(255,105,180,0.2);
-        }
-        .user-type-card.selected {
-            border-color: #FF69B4;
-            background: #FFF5FA;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3);
-        }
-        .stButton > button {
+        .stButton > button[kind="primary"] {
             width: 100% !important;
-            background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%) !important;
+            background: linear-gradient(135deg, #00B894 0%, #55EFC4 100%) !important;
             color: white !important;
             border-radius: 12px !important;
             height: 50px !important;
-            font-weight: bold !important;
+            font-weight: 600 !important;
             border: none !important;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
-            transition: all 0.3s !important;
+            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3) !important;
+            transition: all 0.2s !important;
         }
-        .stButton > button:hover {
+        .stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(255,105,180,0.4) !important;
+            box-shadow: 0 6px 16px rgba(0, 184, 148, 0.4) !important;
+        }
+        /* 부모님/아이 선택 버튼 (보라색) */
+        button[key="select_parent"],
+        button[key="select_child"] {
+            height: 70px !important;
+            font-size: 16px !important;
+            white-space: pre-line !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -696,7 +685,7 @@ def show_signup_page():
                 <h1 style='color: #FF69B4; font-size: 32px; font-weight: 700; margin: 0;'>
                     AI Money Friends
                 </h1>
-                <p style='color: #888; font-size: 14px; margin-top: 8px;'>
+                <p style='color: #B2BEC3; font-size: 14px; margin-top: 8px;'>
                     아이들의 경제 교육 친구
                 </p>
             </div>
@@ -959,10 +948,10 @@ def show_signup_page():
                 text-align: center;
                 margin-top: 25px;
                 padding: 15px;
-                background: #f5f5f5;
+                background: #F1F3F5;
                 border-radius: 8px;
             '>
-                <span style='color: #666; font-size: 14px;'>
+                <span style='color: #636E72; font-size: 14px;'>
                     💬 이미 계정이 있으신가요?
                 </span><br>
                 <span style='color: #FF69B4; font-weight: 600; font-size: 15px; cursor: pointer;'>
@@ -997,36 +986,37 @@ def login_page():
     # 사이드바 숨기기
     hide_sidebar_navigation()
     
-    # 전체 배경 스타일
+    # 전체 배경 스타일 (색상 밸런스 개선)
     st.markdown("""
         <style>
         .stApp {
-            background-color: #f9f9f9;
+            background-color: #F8F9FA;
         }
         .stTextInput > div > div > input {
             border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #DFE6E9;
             padding: 12px;
             font-size: 14px;
+            transition: all 0.2s;
         }
         .stTextInput > div > div > input:focus {
-            border-color: #FF69B4;
-            box-shadow: 0 0 0 1px #FF69B4;
+            border-color: #0984E3 !important;
+            box-shadow: 0 0 0 2px rgba(9, 132, 227, 0.1) !important;
         }
-        .stButton > button {
+        .stButton > button[kind="primary"] {
             width: 100% !important;
-            background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%) !important;
+            background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%) !important;
             color: white !important;
             border-radius: 12px !important;
             height: 45px !important;
-            font-weight: bold !important;
+            font-weight: 600 !important;
             border: none !important;
-            box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
-            transition: all 0.3s !important;
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3) !important;
+            transition: all 0.2s !important;
         }
-        .stButton > button:hover {
+        .stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 6px 16px rgba(255,105,180,0.4) !important;
+            box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -1041,15 +1031,15 @@ def login_page():
                 <h1 style='color: #FF69B4; font-size: 32px; font-weight: 700; margin: 0;'>
                     AI Money Friends
                 </h1>
-                <p style='color: #888; font-size: 14px; margin-top: 8px;'>
+                <p style='color: #B2BEC3; font-size: 14px; margin-top: 8px;'>
                     아이들의 경제 교육 친구
                 </p>
             </div>
         """, unsafe_allow_html=True)
         
-        # ========== 간편 로그인 섹션 ==========
+        # ========== 간편 로그인 섹션 (회색 제목) ==========
         st.markdown("""
-            <h3 style='text-align: center; color: #666; font-size: 16px; margin: 25px 0 20px 0; font-weight: 600;'>
+            <h3 style='text-align: center; color: #636E72; font-size: 16px; margin: 25px 0 20px 0; font-weight: 600;'>
                 ✨ 간편 로그인
             </h3>
         """, unsafe_allow_html=True)
@@ -1075,10 +1065,10 @@ def login_page():
                             font-weight: 600;
                             cursor: pointer;
                             margin-bottom: 12px;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                             transition: all 0.2s;
-                        " onmouseover="this.style.transform='translateY(-2px)'" 
-                           onmouseout="this.style.transform='translateY(0)'">
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(254,229,0,0.3)';" 
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.08)';">
                             🟡 카카오로 3초에 시작하기
                         </button>
                     </a>
@@ -1102,10 +1092,10 @@ def login_page():
                             font-weight: 600;
                             cursor: pointer;
                             margin-bottom: 12px;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                             transition: all 0.2s;
-                        " onmouseover="this.style.transform='translateY(-2px)'" 
-                           onmouseout="this.style.transform='translateY(0)'">
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(3,199,90,0.3)';" 
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.08)';">
                             🟢 네이버로 시작하기
                         </button>
                     </a>
@@ -1122,17 +1112,17 @@ def login_page():
                             width: 100%;
                             padding: 15px;
                             background: white;
-                            color: #202124;
-                            border: 1px solid #dadce0;
+                            color: #2D3436;
+                            border: 1px solid #DFE6E9;
                             border-radius: 12px;
                             font-size: 16px;
                             font-weight: 600;
                             cursor: pointer;
                             margin-bottom: 20px;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                             transition: all 0.2s;
-                        " onmouseover="this.style.transform='translateY(-2px)'" 
-                           onmouseout="this.style.transform='translateY(0)'">
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)';" 
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.08)';">
                             🔴 구글로 시작하기
                         </button>
                     </a>
@@ -1148,23 +1138,23 @@ def login_page():
         # ========== 구분선 ==========
         st.markdown("""
             <div style='text-align: center; margin: 30px 0; position: relative;'>
-                <hr style='border: none; border-top: 1px solid #e0e0e0;'>
+                <hr style='border: none; border-top: 1px solid #DFE6E9;'>
                 <span style='
                     position: absolute;
                     top: -10px;
                     left: 50%;
                     transform: translateX(-50%);
-                    background: #f9f9f9;
+                    background: #F8F9FA;
                     padding: 0 15px;
-                    color: #999;
+                    color: #B2BEC3;
                     font-size: 13px;
                 '>또는</span>
             </div>
         """, unsafe_allow_html=True)
         
-        # ========== 아이디로 로그인 섹션 ==========
+        # ========== 아이디로 로그인 섹션 (회색 제목) ==========
         st.markdown("""
-            <h3 style='text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; font-weight: 600;'>
+            <h3 style='text-align: center; color: #636E72; font-size: 16px; margin-bottom: 20px; font-weight: 600;'>
                 📝 아이디로 로그인
             </h3>
         """, unsafe_allow_html=True)
@@ -1195,8 +1185,8 @@ def login_page():
                 with col_b:
                     age = st.number_input("나이", 5, 18, 10, label_visibility="collapsed", key="login_age")
             
-            # 로그인 버튼
-            submitted = st.form_submit_button("🚀 로그인하기", use_container_width=True)
+            # 로그인 버튼 (보라색 그라데이션)
+            submitted = st.form_submit_button("🚀 로그인하기", use_container_width=True, type="primary")
             
             if submitted and username and password:
                 with st.spinner("로그인 중..."):
@@ -1226,17 +1216,17 @@ def login_page():
                     else:
                         st.error("❌ 아이디나 비밀번호가 틀렸습니다.")
         
-        # 하단 링크
+        # 하단 링크 (회색)
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         col_find1, col_find2 = st.columns(2)
         with col_find1:
-            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn"):
+            if st.button("🔍 아이디 찾기", use_container_width=True, key="find_username_btn", type="secondary"):
                 st.session_state.current_auth_screen = 'find_username'
                 st.session_state.show_username_find = True
                 st.session_state.show_password_reset = False
                 st.rerun()
         with col_find2:
-            if st.button("🔑 비밀번호 찾기", use_container_width=True, key="find_password_btn"):
+            if st.button("✏️ 비밀번호 찾기", use_container_width=True, key="find_password_btn", type="secondary"):
                 st.session_state.current_auth_screen = 'find_password'
                 st.session_state.show_password_reset = True
                 st.session_state.show_username_find = False
@@ -1244,8 +1234,8 @@ def login_page():
         
         # 회원가입 링크
         st.markdown("""
-            <div style='text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;'>
-                <p style='margin: 0; color: #666;'>
+            <div style='text-align: center; margin-top: 20px; padding: 15px; background: #F1F3F5; border-radius: 8px;'>
+                <p style='margin: 0; color: #636E72;'>
                     계정이 없으신가요? 
                     <span style='color: #FF69B4; font-weight: bold;'>회원가입하기 →</span>
                 </p>

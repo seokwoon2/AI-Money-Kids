@@ -43,26 +43,46 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         margin-bottom: 5px !important;
     }
     
+    /* 활성 메뉴: 보라색 */
     .stSidebar .stButton > button[type="primary"] {
-        background-color: #FF69B4 !important;
+        background-color: #6C5CE7 !important;
         color: white !important;
-        box-shadow: 0 2px 8px rgba(255, 105, 180, 0.3) !important;
+        box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3) !important;
+        border: none !important;
     }
     
+    /* 비활성 메뉴: 회색 */
     .stSidebar .stButton > button[type="secondary"] {
         background-color: transparent !important;
-        color: #4a5568 !important;
-        border: 1px solid #e0e0e0 !important;
+        color: #B2BEC3 !important;
+        border: 1px solid #DFE6E9 !important;
     }
     
+    /* 호버 효과 */
     .stSidebar .stButton > button:hover {
         transform: translateX(4px) !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
     }
     
     .stSidebar .stButton > button[type="secondary"]:hover {
-        background-color: #f7fafc !important;
-        border-color: #FF69B4 !important;
+        background-color: #F1F3F5 !important;
+        border-color: #6C5CE7 !important;
+        color: #636E72 !important;
+    }
+    
+    /* 로그아웃 버튼: 빨간색 */
+    button[key*="menu_logout"],
+    button[key*="로그아웃"] {
+        background-color: #FF7675 !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(255, 118, 117, 0.3) !important;
+    }
+    
+    button[key*="menu_logout"]:hover,
+    button[key*="로그아웃"]:hover {
+        background-color: #FF6B6B !important;
+        box-shadow: 0 4px 12px rgba(255, 118, 117, 0.4) !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -73,7 +93,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.markdown("""
             <div style='text-align: center; padding: 20px 0;'>
                 <div style='font-size: 60px;'>🐷</div>
-                <h2 style='color: #FF69B4; margin: 10px 0; font-size: 24px;'>
+                <h2 style='color: #FF69B4; margin: 10px 0; font-size: 24px; font-weight: 700;'>
                     AI Money Friends
                 </h2>
             </div>
@@ -145,7 +165,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         
         # 로그아웃 버튼
         if st.session_state.get('logged_in'):
-            if st.button("🚪 로그아웃", use_container_width=True, type="secondary"):
+            if st.button("🚪 로그아웃", use_container_width=True, key="menu_logout", type="secondary"):
                 # 카카오 로그아웃 처리
                 if hasattr(st.session_state, 'access_token') and st.session_state.access_token:
                     try:
