@@ -718,11 +718,13 @@ def show_signup_page():
             </div>
         """, unsafe_allow_html=True)
         
-        # 사용자 타입 초기화
-        if 'signup_user_type' not in st.session_state:
-            st.session_state.signup_user_type = None
+        # 사용자 타입 초기화 (안전한 방식)
+        signup_user_type_value = st.session_state.get('signup_user_type', None)
         
-        signup_user_type_value = st.session_state.signup_user_type
+        # 타입 검증 및 기본값 설정
+        if signup_user_type_value not in ['parent', 'child', None]:
+            signup_user_type_value = None
+            st.session_state.signup_user_type = None
         
         # 섹션 1: 기본 정보
         st.markdown('<div class="section-title">👤 기본 정보</div>', unsafe_allow_html=True)
@@ -732,13 +734,15 @@ def show_signup_page():
         
         col_type1, col_type2 = st.columns(2)
         with col_type1:
-            parent_selected = signup_user_type_value == 'parent'
+            # 안전한 비교 연산
+            parent_selected = (signup_user_type_value is not None and signup_user_type_value == 'parent')
             if st.button("👨‍👩‍👧 부모님", key="parent_select_btn", use_container_width=True):
                 st.session_state.signup_user_type = 'parent'
                 st.rerun()
         
         with col_type2:
-            child_selected = signup_user_type_value == 'child'
+            # 안전한 비교 연산
+            child_selected = (signup_user_type_value is not None and signup_user_type_value == 'child')
             if st.button("👶 아이", key="child_select_btn", use_container_width=True):
                 st.session_state.signup_user_type = 'child'
                 st.rerun()
@@ -786,13 +790,17 @@ def show_signup_page():
             </style>
         """, unsafe_allow_html=True)
         
-        # 사용자 유형 선택 안내
-        if not signup_user_type_value:
+        # 사용자 유형 선택 안내 (안전한 체크)
+        if signup_user_type_value is None or signup_user_type_value not in ['parent', 'child']:
             st.info("👆 위에서 사용자 유형을 선택해주세요")
         
         with st.form("signup_form", clear_on_submit=False):
-            # 폼 내부에서 세션 상태 다시 읽기
-            signup_user_type_value = st.session_state.get('signup_user_type')
+            # 폼 내부에서 세션 상태 다시 읽기 (안전한 방식)
+            signup_user_type_value = st.session_state.get('signup_user_type', None)
+            
+            # 타입 검증
+            if signup_user_type_value not in ['parent', 'child', None]:
+                signup_user_type_value = None
             
             signup_username = st.text_input(
                 "아이디", 
@@ -829,7 +837,7 @@ def show_signup_page():
             st.markdown('<p class="info-text">(선택) 비밀번호 찾기에 사용됩니다</p>', unsafe_allow_html=True)
             
             # 섹션 4: 아이 정보 (아이 선택 시만 표시)
-            if signup_user_type_value == 'child':
+            if signup_user_type_value is not None and signup_user_type_value == 'child':
                 st.markdown('<div class="section-title">👶 아이 정보</div>', unsafe_allow_html=True)
                 
                 signup_name = st.text_input(
@@ -906,21 +914,31 @@ def show_signup_page():
                 if not signup_name:
                     errors.append("이름을 입력해주세요.")
                 
-                if not signup_user_type_value:
+                if not signup_user_type_value or signup_user_type_value not in ['parent', 'child']:
                     errors.append("사용자 유형을 선택해주세요.")
                 
                 if signup_user_type_value == 'child':
-                    if not signup_age or signup_age < 5 or signup_age > 18:
+                    # 나이 검증 (안전한 방식)
+                    try:
+                        age_int = int(signup_age) if signup_age is not None else None
+                        if age_int is None or age_int < 5 or age_int > 18:
+                            errors.append("나이는 5세부터 18세까지 입력해주세요.")
+                    except (ValueError, TypeError):
                         errors.append("나이는 5세부터 18세까지 입력해주세요.")
-                    if not signup_parent_code:
+                    
+                    # 부모 코드 검증 (안전한 방식)
+                    if not signup_parent_code or not isinstance(signup_parent_code, str):
                         errors.append("부모 코드를 입력해주세요.")
                     elif not validate_parent_code(signup_parent_code):
                         errors.append("부모 코드가 올바르지 않습니다. (8자리)")
                     else:
                         # 부모 코드 유효성 확인
-                        parent_user = db.get_parent_by_code(signup_parent_code)
-                        if not parent_user:
-                            errors.append("유효하지 않은 부모 코드입니다.")
+                        try:
+                            parent_user = db.get_parent_by_code(signup_parent_code)
+                            if not parent_user:
+                                errors.append("유효하지 않은 부모 코드입니다.")
+                        except Exception as e:
+                            errors.append(f"부모 코드 확인 중 오류가 발생했습니다: {str(e)}")
                 
                 # 이메일 형식 검증 (선택 사항이므로 비어있어도 OK)
                 if signup_email:
@@ -938,30 +956,44 @@ def show_signup_page():
                         if db.get_user_by_username(signup_username):
                             st.error("❌ 이미 사용 중인 아이디입니다.")
                         else:
-                            # 부모인 경우 부모 코드 자동 생성
-                            if signup_user_type_value == 'parent':
-                                signup_parent_code = generate_parent_code()
-                            
-                            # 사용자 생성
-                            user_id = db.create_user(
-                                username=signup_username,
-                                password=signup_password,
-                                name=signup_name,
-                                age=int(signup_age) if signup_user_type_value == 'child' and signup_age else None,
-                                parent_code=signup_parent_code,
-                                user_type=signup_user_type_value,
-                                parent_ssn=None,  # 제거됨
-                                phone_number=None  # 제거됨
-                            )
-                            
-                            # 자동 로그인 처리
-                            st.session_state.logged_in = True
-                            st.session_state.user_id = user_id
-                            st.session_state.user_name = signup_name
-                            st.session_state.username = signup_username
-                            st.session_state.user_type = signup_user_type_value
-                            if signup_age:
-                                st.session_state.age = int(signup_age)
+                            # 사용자 유형 재확인 (안전성 체크)
+                            if signup_user_type_value not in ['parent', 'child']:
+                                st.error("❌ 사용자 유형이 올바르지 않습니다.")
+                            else:
+                                # 부모인 경우 부모 코드 자동 생성
+                                if signup_user_type_value == 'parent':
+                                    signup_parent_code = generate_parent_code()
+                                
+                                # 나이 처리 (안전한 방식)
+                                age_value = None
+                                if signup_user_type_value == 'child' and signup_age is not None:
+                                    try:
+                                        age_value = int(signup_age)
+                                        if age_value < 5 or age_value > 18:
+                                            age_value = None
+                                    except (ValueError, TypeError):
+                                        age_value = None
+                                
+                                # 사용자 생성
+                                user_id = db.create_user(
+                                    username=signup_username,
+                                    password=signup_password,
+                                    name=signup_name,
+                                    age=age_value,
+                                    parent_code=signup_parent_code,
+                                    user_type=signup_user_type_value,
+                                    parent_ssn=None,  # 제거됨
+                                    phone_number=None  # 제거됨
+                                )
+                                
+                                # 자동 로그인 처리
+                                st.session_state.logged_in = True
+                                st.session_state.user_id = user_id
+                                st.session_state.user_name = signup_name
+                                st.session_state.username = signup_username
+                                st.session_state.user_type = signup_user_type_value
+                                if age_value:
+                                    st.session_state.age = age_value
                             st.session_state.show_login_success = True
                             st.session_state.current_auth_screen = 'login'
                             st.session_state.show_signup = False
