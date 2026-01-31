@@ -599,7 +599,7 @@ def show_signup_page():
     """회원가입 페이지 - 간소화된 디자인"""
     hide_sidebar_navigation()
     
-    # CSS 스타일 적용 (로그인 페이지와 일치)
+    # CSS 스타일 적용 (개선된 버전)
     st.markdown("""
         <style>
         .stApp { 
@@ -613,6 +613,7 @@ def show_signup_page():
             padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        /* 섹션 제목 스타일 */
         .section-title {
             font-size: 16px;
             font-weight: bold;
@@ -623,15 +624,17 @@ def show_signup_page():
         .section-title:first-of-type {
             margin-top: 0;
         }
-        .login-link-box {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
+        h3 {
+            color: #333 !important;
+            margin-top: 30px !important;
+            margin-bottom: 15px !important;
+            padding-bottom: 10px !important;
+            border-bottom: 2px solid #f0f0f0 !important;
         }
-        /* 입력 필드 스타일 */
+        /* 입력 필드 스타일 및 간격 */
+        .stTextInput, .stNumberInput {
+            margin-bottom: 15px !important;
+        }
         .stTextInput > div > div > input {
             border-radius: 10px !important;
             border: 2px solid #e0e0e0 !important;
@@ -641,59 +644,50 @@ def show_signup_page():
             border-color: #FF69B4 !important;
             box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1) !important;
         }
-        /* 버튼 스타일 */
+        /* 버튼 기본 스타일 */
         .stButton > button {
+            border-radius: 12px !important;
+            padding: 16px !important;
+            font-weight: bold !important;
+            transition: all 0.3s !important;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        /* 가입 완료 버튼 스타일 */
+        button[type="submit"] {
             width: 100% !important;
             background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%) !important;
             color: white !important;
             border-radius: 12px !important;
-            padding: 14px !important;
+            height: 50px !important;
             font-weight: bold !important;
             border: none !important;
             box-shadow: 0 4px 12px rgba(255,105,180,0.3) !important;
             transition: all 0.3s ease !important;
         }
-        .stButton > button:hover {
-            transform: translateY(-2px);
+        button[type="submit"]:hover {
+            transform: translateY(-2px) !important;
             box-shadow: 0 6px 16px rgba(255,105,180,0.4) !important;
         }
-        /* 카드 버튼 스타일 */
-        button[key="parent_select_btn"] {
-            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
-            border: 2px solid #e0e0e0 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            padding: 20px !important;
-            border-radius: 12px !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            color: #333 !important;
-            height: auto !important;
-            transition: all 0.3s ease !important;
-        }
-        button[key="parent_select_btn"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(33,150,243,0.3) !important;
-        }
-        button[key="child_select_btn"] {
-            background: linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 100%) !important;
-            border: 2px solid #e0e0e0 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            padding: 20px !important;
-            border-radius: 12px !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            color: #333 !important;
-            height: auto !important;
-            transition: all 0.3s ease !important;
-        }
-        button[key="child_select_btn"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(244,143,177,0.3) !important;
+        .login-link-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
         }
         .info-text {
             font-size: 12px;
             color: #888;
             margin-top: 5px;
+        }
+        /* Info 박스 스타일 */
+        .stAlert {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+            border-left: 4px solid #4CAF50 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -718,7 +712,10 @@ def show_signup_page():
             </div>
         """, unsafe_allow_html=True)
         
-        # 사용자 타입 초기화 (안전한 방식)
+        # 세션 초기화
+        if 'signup_user_type' not in st.session_state:
+            st.session_state['signup_user_type'] = None
+        
         signup_user_type_value = st.session_state.get('signup_user_type', None)
         
         # 타입 검증 및 기본값 설정
@@ -726,73 +723,105 @@ def show_signup_page():
             signup_user_type_value = None
             st.session_state.signup_user_type = None
         
-        # 섹션 1: 기본 정보
-        st.markdown('<div class="section-title">👤 기본 정보</div>', unsafe_allow_html=True)
+        # 섹션 1: 기본 정보 (25px 위 여백)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 👤 기본 정보")
         
-        # 섹션 2: 사용자 유형 선택 (카드 버튼) - 폼 밖에 위치
-        st.markdown('<div class="section-title">👨‍👩‍👧 사용자 유형</div>', unsafe_allow_html=True)
+        # 섹션 2: 사용자 유형 선택 (카드 버튼) - 폼 밖에 위치 (30px 위 여백)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 👨‍👩‍👧 사용자 유형")
         
-        col_type1, col_type2 = st.columns(2)
-        with col_type1:
-            # 안전한 비교 연산
-            parent_selected = (signup_user_type_value is not None and signup_user_type_value == 'parent')
-            if st.button("👨‍👩‍👧 부모님", key="parent_select_btn", use_container_width=True):
-                st.session_state.signup_user_type = 'parent'
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("👨‍👩‍👧 부모님", key="btn_parent", use_container_width=True):
+                st.session_state['signup_user_type'] = 'parent'
                 st.rerun()
         
-        with col_type2:
-            # 안전한 비교 연산
-            child_selected = (signup_user_type_value is not None and signup_user_type_value == 'child')
-            if st.button("👶 아이", key="child_select_btn", use_container_width=True):
-                st.session_state.signup_user_type = 'child'
+        with col2:
+            if st.button("👶 아이", key="btn_child", use_container_width=True):
+                st.session_state['signup_user_type'] = 'child'
                 st.rerun()
         
-        # 카드 버튼 스타일 동적 적용
-        parent_border = '3px solid #FF69B4' if parent_selected else '2px solid #e0e0e0'
-        parent_shadow = '0 4px 12px rgba(255,105,180,0.3)' if parent_selected else '0 2px 4px rgba(0,0,0,0.1)'
-        child_border = '3px solid #FF69B4' if child_selected else '2px solid #e0e0e0'
-        child_shadow = '0 4px 12px rgba(255,105,180,0.3)' if child_selected else '0 2px 4px rgba(0,0,0,0.1)'
+        # 선택 상태 확인
+        selected_type = st.session_state.get('signup_user_type')
+        parent_selected = (selected_type == 'parent')
+        child_selected = (selected_type == 'child')
         
+        # 버튼 스타일 동적 적용 (선택 상태에 따라 명확한 차이)
+        if parent_selected:
+            parent_bg = 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)'
+            parent_color = 'white'
+            parent_border = '3px solid #1565C0'
+            parent_shadow = '0 4px 12px rgba(33, 150, 243, 0.4)'
+        else:
+            parent_bg = '#E3F2FD'
+            parent_color = '#1976D2'
+            parent_border = '2px solid #BBDEFB'
+            parent_shadow = '0 2px 4px rgba(0,0,0,0.1)'
+        
+        if child_selected:
+            child_bg = 'linear-gradient(135deg, #FF69B4 0%, #FF1493 100%)'
+            child_color = 'white'
+            child_border = '3px solid #C71585'
+            child_shadow = '0 4px 12px rgba(255, 105, 180, 0.4)'
+        else:
+            child_bg = '#FFE4E1'
+            child_color = '#FF1493'
+            child_border = '2px solid #FFB6C1'
+            child_shadow = '0 2px 4px rgba(0,0,0,0.1)'
+        
+        # 버튼 스타일 동적 적용
         st.markdown(f"""
             <style>
-            button[key="parent_select_btn"] {{
-                background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
+            button[key="btn_parent"] {{
+                background: {parent_bg} !important;
+                color: {parent_color} !important;
                 border: {parent_border} !important;
                 box-shadow: {parent_shadow} !important;
-                padding: 20px !important;
+                padding: 16px !important;
                 border-radius: 12px !important;
                 font-size: 16px !important;
                 font-weight: bold !important;
-                color: #333 !important;
-                height: auto !important;
+                height: 60px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 transition: all 0.3s ease !important;
             }}
-            button[key="parent_select_btn"]:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(33,150,243,0.3) !important;
+            button[key="btn_parent"]:hover {{
+                transform: translateY(-2px) !important;
+                box-shadow: {'0 6px 16px rgba(33, 150, 243, 0.5)' if parent_selected else '0 4px 12px rgba(33,150,243,0.3)'} !important;
             }}
-            button[key="child_select_btn"] {{
-                background: linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 100%) !important;
+            button[key="btn_child"] {{
+                background: {child_bg} !important;
+                color: {child_color} !important;
                 border: {child_border} !important;
                 box-shadow: {child_shadow} !important;
-                padding: 20px !important;
+                padding: 16px !important;
                 border-radius: 12px !important;
                 font-size: 16px !important;
                 font-weight: bold !important;
-                color: #333 !important;
-                height: auto !important;
+                height: 60px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 transition: all 0.3s ease !important;
             }}
-            button[key="child_select_btn"]:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(244,143,177,0.3) !important;
+            button[key="btn_child"]:hover {{
+                transform: translateY(-2px) !important;
+                box-shadow: {'0 6px 16px rgba(255, 105, 180, 0.5)' if child_selected else '0 4px 12px rgba(244,143,177,0.3)'} !important;
             }}
             </style>
         """, unsafe_allow_html=True)
         
-        # 사용자 유형 선택 안내 (안전한 체크)
-        if signup_user_type_value is None or signup_user_type_value not in ['parent', 'child']:
-            st.info("👆 위에서 사용자 유형을 선택해주세요")
+        # 선택 표시
+        if selected_type:
+            icon = "👨‍👩‍👧" if selected_type == 'parent' else "👶"
+            text = "부모님" if selected_type == 'parent' else "아이"
+            st.info(f"✅ {icon} **{text}**으로 가입합니다")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("signup_form", clear_on_submit=False):
             # 폼 내부에서 세션 상태 다시 읽기 (안전한 방식)
@@ -809,25 +838,24 @@ def show_signup_page():
                 help="4자 이상 입력해주세요"
             )
             
-            col_pw1, col_pw2 = st.columns(2)
-            with col_pw1:
-                signup_password = st.text_input(
-                    "비밀번호", 
-                    type="password", 
-                    key="signup_password", 
-                    placeholder="비밀번호 (6자 이상)",
-                    help="6자 이상 입력해주세요"
-                )
-            with col_pw2:
-                signup_password_confirm = st.text_input(
-                    "비밀번호 확인", 
-                    type="password", 
-                    key="signup_password_confirm", 
-                    placeholder="비밀번호 다시 입력"
-                )
+            signup_password = st.text_input(
+                "비밀번호", 
+                type="password", 
+                key="signup_password", 
+                placeholder="비밀번호 (6자 이상)",
+                help="6자 이상 입력해주세요"
+            )
             
-            # 섹션 3: 이메일 (선택 사항)
-            st.markdown('<div class="section-title">📱 연락처 (선택)</div>', unsafe_allow_html=True)
+            signup_password_confirm = st.text_input(
+                "비밀번호 확인", 
+                type="password", 
+                key="signup_password_confirm", 
+                placeholder="비밀번호 다시 입력"
+            )
+            
+            # 섹션 3: 이메일 (선택 사항) - 30px 위 여백
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### 📱 연락처 (선택)")
             signup_email = st.text_input(
                 "이메일", 
                 key="signup_email", 
@@ -836,35 +864,40 @@ def show_signup_page():
             )
             st.markdown('<p class="info-text">(선택) 비밀번호 찾기에 사용됩니다</p>', unsafe_allow_html=True)
             
-            # 섹션 4: 아이 정보 (아이 선택 시만 표시)
-            if signup_user_type_value is not None and signup_user_type_value == 'child':
-                st.markdown('<div class="section-title">👶 아이 정보</div>', unsafe_allow_html=True)
+            # 섹션 4: 아이 정보 (아이 선택 시에만 표시)
+            if st.session_state.get('signup_user_type') == 'child':
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("### 👶 아이 정보")
                 
                 signup_name = st.text_input(
-                    "이름 (닉네임)", 
+                    "이름", 
                     key="signup_name", 
                     placeholder="친구들이 부를 이름"
                 )
                 
-                col_age1, col_age2 = st.columns([2, 1])
-                with col_age1:
-                    signup_age = st.number_input(
-                        "나이", 
-                        key="signup_age", 
-                        min_value=5, 
-                        max_value=18, 
-                        value=10,
-                        help="5세부터 18세까지"
-                    )
-                with col_age2:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='padding-top: 10px; color: #666;'>만 {signup_age}세</div>", unsafe_allow_html=True)
+                signup_age = st.number_input(
+                    "나이", 
+                    key="signup_age", 
+                    min_value=5, 
+                    max_value=18, 
+                    value=10,
+                    help="5세부터 18세까지"
+                )
                 
-                # 부모 코드 안내 박스 (노란색 강조)
+                # 부모 코드 안내 박스 (노란색 강조 - 개선된 스타일)
                 st.markdown("""
-                    <div style='background: #FFF9C4; padding: 15px; border-radius: 10px; margin: 15px 0; border: 2px solid #FFD700;'>
-                        <p style='margin: 0; color: #F57C00; font-weight: bold; font-size: 14px;'>
+                    <div style='
+                        background: #FFF9C4; 
+                        padding: 15px; 
+                        border-radius: 10px; 
+                        border-left: 4px solid #FFC107;
+                        margin: 15px 0;
+                    '>
+                        <p style='margin: 0; color: #F57C00; font-weight: bold;'>
                             🎁 부모님께 받은 코드를 입력하세요
+                        </p>
+                        <p style='margin: 5px 0 0 0; color: #666; font-size: 13px;'>
+                            부모님이 앱에서 생성한 8자리 코드입니다
                         </p>
                     </div>
                 """, unsafe_allow_html=True)
@@ -875,9 +908,10 @@ def show_signup_page():
                     placeholder="예: ABC12345",
                     help="부모님이 생성한 8자리 코드를 입력해주세요"
                 )
-            elif signup_user_type_value == 'parent':
+            elif st.session_state.get('signup_user_type') == 'parent':
                 # 부모인 경우 이름만 입력
-                st.markdown('<div class="section-title">👤 이름</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("### 👤 이름")
                 signup_name = st.text_input(
                     "이름 (닉네임)", 
                     key="signup_name", 
@@ -891,7 +925,8 @@ def show_signup_page():
                 signup_age = None
                 signup_parent_code = None
             
-            # 가입 버튼
+            # 가입 버튼 (30px 위 여백)
+            st.markdown("<br>", unsafe_allow_html=True)
             signup_submitted = st.form_submit_button(
                 "✨ 가입 완료!", 
                 use_container_width=True, 
@@ -1006,7 +1041,7 @@ def show_signup_page():
                     except Exception as e:
                         st.error(f"❌ 오류가 발생했습니다: {str(e)}")
         
-        # 하단 로그인 링크
+        # 하단 로그인 링크 (20px 위 여백)
         st.markdown("""
             <div style='text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px; margin-top: 20px;'>
                 <p style='margin: 0; color: #666;'>
