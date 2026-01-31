@@ -138,21 +138,18 @@ class OAuthService:
     # =====================
     # 카카오 로그인
     # =====================
-    def get_kakao_login_url(self) -> str:
+    def get_kakao_login_url(self) -> Optional[str]:
         """
         카카오 로그인 URL 생성
         
         Returns:
-            str: 카카오 로그인 인가 URL
-            
-        Raises:
-            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+            Optional[str]: 카카오 로그인 인가 URL (설정되지 않은 경우 None)
         """
         if not self.kakao_key:
-            raise ValueError("카카오 클라이언트 ID가 설정되지 않았습니다. Streamlit Secrets 또는 .env 파일을 확인해주세요.")
+            return None
         
         if not self.kakao_redirect:
-            raise ValueError("카카오 리다이렉트 URI가 설정되지 않았습니다.")
+            return None
         
         base_url = "https://kauth.kakao.com/oauth/authorize"
         params = {
@@ -234,21 +231,18 @@ class OAuthService:
     # =====================
     # 네이버 로그인
     # =====================
-    def get_naver_login_url(self) -> str:
+    def get_naver_login_url(self) -> Optional[str]:
         """
         네이버 로그인 URL 생성
         
         Returns:
-            str: 네이버 로그인 인가 URL
-            
-        Raises:
-            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+            Optional[str]: 네이버 로그인 인가 URL (설정되지 않은 경우 None)
         """
         if not self.naver_client_id:
-            raise ValueError("네이버 클라이언트 ID가 설정되지 않았습니다.")
+            return None
         
         if not self.naver_redirect:
-            raise ValueError("네이버 리다이렉트 URI가 설정되지 않았습니다.")
+            return None
         
         import secrets
         state = secrets.token_urlsafe(16)
@@ -338,21 +332,18 @@ class OAuthService:
     # =====================
     # 구글 로그인
     # =====================
-    def get_google_login_url(self) -> str:
+    def get_google_login_url(self) -> Optional[str]:
         """
         구글 로그인 URL 생성
         
         Returns:
-            str: 구글 로그인 인가 URL
-            
-        Raises:
-            ValueError: 클라이언트 ID나 리다이렉트 URI가 설정되지 않은 경우
+            Optional[str]: 구글 로그인 인가 URL (설정되지 않은 경우 None)
         """
         if not self.google_client_id:
-            raise ValueError("구글 클라이언트 ID가 설정되지 않았습니다.")
+            return None
         
         if not self.google_redirect:
-            raise ValueError("구글 리다이렉트 URI가 설정되지 않았습니다.")
+            return None
         
         base_url = "https://accounts.google.com/o/oauth2/v2/auth"
         params = {
