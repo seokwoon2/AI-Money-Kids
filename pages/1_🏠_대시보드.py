@@ -30,6 +30,127 @@ def _compute_balance(db: DatabaseManager, user_id: int) -> dict:
         "balance": float(total_allowance - total_saving - total_spend),
     }
 
+def _inject_dashboard_css():
+    st.markdown(
+        """
+        <style>
+            :root{
+                --bg:#f5f6fb;
+                --card:#ffffff;
+                --text:#111827;
+                --muted:#6b7280;
+                --border:rgba(17,24,39,0.08);
+                --shadow:0 18px 45px rgba(17,24,39,0.08);
+                --shadow2:0 10px 24px rgba(17,24,39,0.06);
+                --brand1:#667eea;
+                --brand2:#764ba2;
+            }
+
+            /* page background + container width */
+            .stApp { background: var(--bg) !important; }
+            .block-container { max-width: 1200px !important; padding-top: 0.9rem !important; }
+
+            /* remove default chrome for app-like feel */
+            [data-testid="stToolbar"], #MainMenu, footer, header { display:none !important; }
+
+            /* typography */
+            h1, h2, h3 { letter-spacing: -0.3px; color: var(--text); }
+            .amf-kicker { color: var(--muted); font-weight: 800; font-size: 12px; }
+            .amf-title { font-size: 28px; font-weight: 950; margin: 0; }
+            .amf-sub { margin-top: 6px; color: var(--muted); font-weight: 800; font-size: 13px; }
+
+            /* app bar */
+            .amf-appbar {
+                display:flex;
+                align-items:flex-start;
+                justify-content:space-between;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+            .amf-chip {
+                display:inline-flex;
+                align-items:center;
+                gap:8px;
+                padding: 7px 12px;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.92);
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow2);
+                font-weight: 900;
+                font-size: 12px;
+                color: #374151;
+                white-space: nowrap;
+            }
+            .amf-chip strong { color: var(--text); }
+
+            /* metric cards */
+            [data-testid="stMetric"]{
+                background: var(--card) !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 18px !important;
+                padding: 14px 14px !important;
+                box-shadow: var(--shadow2) !important;
+            }
+            [data-testid="stMetricLabel"] { color: var(--muted) !important; font-weight: 900 !important; }
+            [data-testid="stMetricValue"] { color: var(--text) !important; font-weight: 950 !important; letter-spacing: -0.4px; }
+
+            /* containers with border=True */
+            div[data-testid="stVerticalBlockBorderWrapper"]{
+                border-radius: 18px !important;
+                border: 1px solid var(--border) !important;
+                background: var(--card) !important;
+                box-shadow: var(--shadow2) !important;
+            }
+
+            /* buttons */
+            .stButton > button{
+                border-radius: 14px !important;
+                font-weight: 900 !important;
+                padding: 10px 14px !important;
+            }
+            .stButton > button[kind="primary"], button[kind="primary"], button[data-testid="baseButton-primary"]{
+                background: linear-gradient(135deg, var(--brand1), var(--brand2)) !important;
+                border: none !important;
+                color: white !important;
+                box-shadow: 0 12px 26px rgba(102,126,234,0.22) !important;
+            }
+            .stButton > button[kind="primary"]:hover, button[kind="primary"]:hover, button[data-testid="baseButton-primary"]:hover{
+                transform: translateY(-1px);
+                box-shadow: 0 16px 34px rgba(102,126,234,0.30) !important;
+            }
+
+            /* info/warning/success */
+            [data-testid="stAlert"]{
+                border-radius: 16px !important;
+                border: 1px solid var(--border) !important;
+                box-shadow: var(--shadow2) !important;
+            }
+
+            /* progress bar */
+            [data-testid="stProgress"] > div > div{
+                background: linear-gradient(135deg, var(--brand1), var(--brand2)) !important;
+            }
+
+            /* tab list pill (used elsewhere) */
+            .stTabs [data-baseweb="tab-list"]{
+                background:#eef0f5;
+                border-radius: 16px;
+                padding: 6px;
+                gap: 8px;
+            }
+            .stTabs [data-baseweb="tab"]{
+                border-radius: 14px;
+                font-weight: 900;
+            }
+            .stTabs [aria-selected="true"]{
+                background: white;
+                box-shadow: 0 10px 22px rgba(17,24,39,0.08);
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 def main():
     if not _guard_login():
@@ -50,27 +171,49 @@ def main():
     user_type = (user or {}).get("user_type", st.session_state.get("user_type", "child"))
 
     render_sidebar_menu(user_id, user_name, user_type)
+    _inject_dashboard_css()
 
-    # 공용 헤더
-    st.markdown(
-        f"""
-        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px;">
-            <div>
-                <div style="font-size:28px; font-weight:900; letter-spacing:-0.3px; color:#111827;">
-                    안녕하세요, {user_name}님 👋
-                </div>
-                <div style="margin-top:4px; color:#6b7280; font-weight:800; font-size:13px;">
-                    오늘도 한 걸음씩 돈 관리 실력을 키워봐요
-                </div>
+    # app bar (title + date + notifications)
+    unread = db.get_notifications(user_id, unread_only=True, limit=20)
+    unread_count = len(unread)
+    left, right = st.columns([0.74, 0.26])
+    with left:
+        st.markdown(
+            f"""
+            <div class="amf-appbar">
+              <div>
+                <div class="amf-kicker">AI Money Friends</div>
+                <div class="amf-title">안녕하세요, {user_name}님 👋</div>
+                <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
+              </div>
             </div>
-            <div style="background:rgba(255,255,255,0.9); border:1px solid rgba(17,24,39,0.08);
-                        padding:6px 10px; border-radius:999px; font-weight:900; font-size:12px; color:#374151;">
-                📅 {datetime.now().strftime("%Y.%m.%d")}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+    with right:
+        top1, top2 = st.columns([1, 1])
+        with top1:
+            st.markdown(f"<div class='amf-chip'>📅 <strong>{datetime.now().strftime('%Y.%m.%d')}</strong></div>", unsafe_allow_html=True)
+        with top2:
+            label = f"🔔 {unread_count}" if unread_count else "🔔"
+            with st.popover(label, use_container_width=True):
+                st.markdown("**알림**")
+                if not unread:
+                    st.caption("새 알림이 없어요.")
+                else:
+                    for n in unread[:8]:
+                        lvl = (n.get("level") or "info").lower()
+                        title = n.get("title") or ""
+                        body = n.get("body") or ""
+                        if lvl == "success":
+                            st.success(f"**{title}**\n\n{body}")
+                        elif lvl == "warning":
+                            st.warning(f"**{title}**\n\n{body}")
+                        else:
+                            st.info(f"**{title}**\n\n{body}")
+                        if st.button("읽음", key=f"read_notif_{n['id']}", use_container_width=True):
+                            db.mark_notification_read(int(n["id"]))
+                            st.rerun()
 
     st.divider()
 
@@ -90,6 +233,7 @@ def main():
             total_saving += cstats["total_saving"]
             total_spend += cstats["total_spend"]
 
+        st.markdown("### 👨‍👩‍👧 가족 요약")
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.metric("연결된 자녀", f"{len(children)}명")
@@ -118,10 +262,10 @@ def main():
                 elif b.get("behavior_type") == "impulse_buying":
                     month_impulse += float(b.get("amount") or 0)
 
-        col_a, col_b = st.columns([1.2, 1])
+        col_a, col_b = st.columns([1.15, 0.85])
         with col_a:
-            st.subheader("📉 이번 달 지출 통계")
-            st.caption("계획 지출 + 충동 구매 기반의 요약이에요.")
+            st.subheader("📉 이번 달 지출")
+            st.caption("‘계획 지출/충동 구매’ 기반의 통계예요.")
             m1, m2, m3 = st.columns(3)
             with m1:
                 st.metric("계획 지출", f"{int(month_spend):,}원")
@@ -138,14 +282,15 @@ def main():
                 st.warning(f"대기 중 요청 {len(pending)}건")
                 for r in pending[:3]:
                     amount = int(r.get("amount") or 0)
-                    st.write(f"- {r.get('child_name')} · {amount:,}원 · {r.get('request_type')}")
+                    rt = "용돈" if r.get("request_type") == "allowance" else "지출"
+                    st.markdown(f"- **{r.get('child_name')}** · {amount:,}원 · {rt}")
                 if st.button("📝 요청 승인으로 이동", use_container_width=True):
                     st.switch_page("pages/4_📝_요청_승인.py")
 
         st.divider()
 
         # 3) 최근 미션 완료 현황(가족) - 간단: 최근 7일 완료 수
-        st.subheader("✅ 최근 미션 완료")
+        st.subheader("✅ 최근 7일 미션 완료")
         # mission_assignments는 새로 추가된 테이블: 직접 SQL로 최근 완료 수 요약
         conn = db._get_connection()  # internal 사용(페이지 전용)
         cur = conn.cursor()
@@ -196,15 +341,21 @@ def main():
         # 아이용 대시보드
         cstats = _compute_balance(db, user_id)
 
+        # hero card
         st.markdown(
             f"""
-            <div style="background:linear-gradient(135deg, #667eea, #764ba2);
-                        padding:18px 16px; border-radius:18px; color:white;">
-                <div style="font-weight:800; opacity:0.9;">내 잔액</div>
-                <div style="font-size:44px; font-weight:900; letter-spacing:-0.6px; margin-top:4px;">
+            <div style="
+                background: linear-gradient(135deg, var(--brand1), var(--brand2));
+                padding: 18px 16px;
+                border-radius: 20px;
+                color: white;
+                box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+            ">
+                <div style="font-weight:900; opacity:0.92;">내 잔액</div>
+                <div style="font-size:46px; font-weight:950; letter-spacing:-0.8px; margin-top:2px;">
                     {int(cstats["balance"]):,}원
                 </div>
-                <div style="margin-top:6px; opacity:0.9; font-weight:700; font-size:13px;">
+                <div style="margin-top:6px; opacity:0.9; font-weight:800; font-size:13px;">
                     저축 {int(cstats["total_saving"]):,}원 · 지출 {int(cstats["total_spend"]):,}원
                 </div>
             </div>
@@ -219,7 +370,7 @@ def main():
         db.assign_daily_missions_if_needed(user_id, today)
         missions = db.get_missions_for_user(user_id, date_str=today, active_only=True)
 
-        left, right = st.columns([1.2, 1])
+        left, right = st.columns([1.15, 0.85])
         with left:
             st.subheader("✅ 오늘의 미션")
             if not missions:
