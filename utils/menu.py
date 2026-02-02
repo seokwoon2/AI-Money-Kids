@@ -22,26 +22,49 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
 
-    /* 사이드바 접힘(>>) 컨트롤을 '메뉴'처럼 보이게 */
-    [data-testid="collapsedControl"] {
+    /* 사이드바 접힘(»») 컨트롤을 '메뉴'처럼 보이게 */
+    button[data-testid="collapsedControl"] {
         background: rgba(255,255,255,0.92) !important;
         border: 1px solid rgba(17,24,39,0.08) !important;
         border-radius: 999px !important;
         padding: 8px 12px !important;
         box-shadow: 0 10px 24px rgba(0,0,0,0.12) !important;
         backdrop-filter: blur(8px);
+        width: auto !important;
+        height: auto !important;
+        margin: 8px !important;
+        gap: 8px !important;
     }
-    [data-testid="collapsedControl"]::after {
-        content: " 메뉴";
+    /* 기본 «» 아이콘 숨기고 텍스트로 교체 */
+    button[data-testid="collapsedControl"] svg,
+    button[data-testid="collapsedControl"] span,
+    button[data-testid="collapsedControl"] div {
+        display: none !important;
+    }
+    button[data-testid="collapsedControl"]::before {
+        content: "☰";
+        font-weight: 900;
+        color: #111827;
+        letter-spacing: -0.2px;
+        margin-right: 6px;
+    }
+    button[data-testid="collapsedControl"]::after {
+        content: "메뉴";
         font-weight: 800;
         color: #111827;
         letter-spacing: -0.2px;
-        margin-left: 6px;
     }
     /* 사이드바 펼친 상태의 접기 버튼도 통일감 */
     button[data-testid="stSidebarCollapseButton"] {
         border-radius: 10px !important;
     }
+
+    /* 상단 Streamlit 툴바가 너무 눈에 띄면 약하게(메뉴가 주인공) */
+    [data-testid="stToolbar"] {
+        opacity: 0.15;
+        transition: opacity .15s ease;
+    }
+    [data-testid="stToolbar"]:hover { opacity: 1; }
     
     /* 사이드바 전체 배경 및 스타일 */
     section[data-testid="stSidebar"] {
