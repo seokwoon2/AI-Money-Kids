@@ -1166,28 +1166,19 @@ def login_page():
             unsafe_allow_html=True,
         )
 
-        user_type = st.session_state.get("selected_user_type", "parent")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button(
-                "👨‍👩‍👧 부모님",
-                key="login_type_parent_btn",
-                use_container_width=True,
-                type="primary" if user_type == "parent" else "secondary",
-            ):
-                st.session_state["selected_user_type"] = "parent"
-                st.rerun()
-        with c2:
-            if st.button(
-                "👶 아이",
-                key="login_type_child_btn",
-                use_container_width=True,
-                type="primary" if user_type == "child" else "secondary",
-            ):
-                st.session_state["selected_user_type"] = "child"
-                st.rerun()
+        # 요즘 스타일: 세그먼트 컨트롤(네이티브)로 선택
+        current = st.session_state.get("selected_user_type", "parent")
+        default_label = "👨‍👩‍👧 부모님" if current == "parent" else "👶 아이"
+        picked = st.segmented_control(
+            label="로그인 유형",
+            options=["👨‍👩‍👧 부모님", "👶 아이"],
+            default=default_label,
+            key="login_type_segmented",
+            label_visibility="collapsed",
+        )
+        user_type = "child" if picked == "👶 아이" else "parent"
+        st.session_state["selected_user_type"] = user_type
 
-        user_type = st.session_state.get("selected_user_type", "parent")
         if user_type == "parent":
             st.markdown('<div class="login-hint">👨‍👩‍👧 부모님으로 로그인합니다</div>', unsafe_allow_html=True)
         else:
