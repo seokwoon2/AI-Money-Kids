@@ -970,202 +970,234 @@ def show_signup_page():
 
 
 def login_page():
-    """로그인 페이지 - 정상 동작(카드/정렬) 버전"""
+    """로그인 페이지 - 최종 완성"""
 
-    # 화면 전환
-    if st.session_state.get('current_auth_screen') == 'signup':
+    # 화면 전환 (구버전 플래그 + 신버전 current_auth_screen 둘 다 지원)
+    if st.session_state.get("current_auth_screen") == "signup" or st.session_state.get("show_signup", False):
         show_signup_page()
         return
-    if st.session_state.get('current_auth_screen') == 'find_username':
+    if st.session_state.get("current_auth_screen") == "find_username" or st.session_state.get("show_find_username", False):
         show_find_username_page()
         return
-    if st.session_state.get('current_auth_screen') == 'find_password':
+    if st.session_state.get("current_auth_screen") == "find_password" or st.session_state.get("show_find_password", False):
         show_find_password_page()
         return
 
-    # 로그인 페이지 전용 CSS
+    # 전체 스타일 (로그인 전용)
     st.markdown(
         """
         <style>
-            /* 사이드바/헤더 숨기기 (로그인에서만) */
-            [data-testid="stSidebar"] { display: none !important; }
-            header { display: none !important; }
-
-            /* 배경 */
-            .stApp {
+            /* 상단/하단 보라색 '삼각형' 같은 잔상 방지: 컨테이너 배경을 통일 */
+            html, body, [data-testid="stAppViewContainer"] {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             }
-
-            /* 전체 여백 최소화 + 가운데 정렬 */
-            .block-container {
-                max-width: 100% !important;
-                padding: 0 !important;
+            [data-testid="stAppViewContainer"] > .main {
+                background: transparent !important;
             }
 
-            /* 로그인 카드(폼) */
+            /* 사이드바/헤더/푸터 제거 */
+            [data-testid="stSidebar"] { display: none !important; }
+            header { display: none !important; }
+            footer { display: none !important; }
+
+            /* Streamlit 기본 여백 제거 */
+            .main > div { padding: 0 !important; }
+            .block-container { padding: 0 !important; max-width: 100% !important; }
+
+            /* 카드(폼) */
             div[data-testid="stForm"] {
-                background: #fff;
-                border-radius: 20px;
-                padding: 2.2rem 2rem;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.28);
-                border: 1px solid rgba(255,255,255,0.2);
+                background: #fff !important;
+                border-radius: 24px !important;
+                padding: 3rem 2rem !important;
+                max-width: 420px !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.25) !important;
+                overflow: hidden !important; /* 모서리 각져보임 방지 */
             }
 
-            /* 헤더 텍스트 */
-            .login-logo { text-align: center; font-size: 64px; margin: 0.2rem 0 0.6rem 0; }
-            .login-title { text-align:center; font-size: 26px; font-weight: 800; color:#1f2937; margin:0; }
-            .login-subtitle { text-align:center; font-size: 14px; color:#6b7280; margin: 0.4rem 0 1.2rem 0; }
-            .section-header { font-size: 16px; font-weight: 800; color:#111827; margin: 1.1rem 0 0.7rem 0; }
+            /* 헤더 */
+            .login-header-section { text-align: center; margin-bottom: 2rem; }
+            .login-pig-icon {
+                font-size: 72px;
+                margin-bottom: 0.75rem;
+                display: inline-block;
+                animation: float 3s ease-in-out infinite;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+            .login-main-title { font-size: 28px; font-weight: 800; color: #2D3436; margin-bottom: 0.5rem; }
+            .login-sub-title { font-size: 15px; color: #636E72; }
+
+            /* 섹션 제목 */
+            .section-title-text { font-size: 16px; font-weight: 800; color: #2D3436; margin: 1.5rem 0 1rem 0; }
 
             /* 소셜 버튼 */
-            .social-login-btn {
-                display:block;
+            .social-button-link { display:block; text-decoration:none; margin-bottom: 10px; }
+            .social-button {
                 width:100%;
-                padding: 14px 16px;
+                padding: 15px 20px;
+                border: none;
                 border-radius: 12px;
                 font-size: 15px;
                 font-weight: 800;
                 text-align:center;
-                text-decoration:none;
-                border: none;
                 cursor:pointer;
-                transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+                transition: all .2s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             }
-            .social-login-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
-            .social-login-btn:active { transform: translateY(0px); box-shadow: none; }
-
-            .btn-kakao { background: #FEE500; color:#000; }
-            .btn-naver { background: #03C75A; color:#fff; }
-            .btn-google { background: #fff; color:#374151; border: 1.5px solid #e5e7eb; }
-            .btn-disabled { opacity: 0.45; cursor: not-allowed; }
+            .social-button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+            .social-btn-kakao { background: linear-gradient(135deg, #FEE500 0%, #FFEB3B 100%); color:#3C1E1E; }
+            .social-btn-naver { background: linear-gradient(135deg, #03C75A 0%, #00E676 100%); color:#fff; }
+            .social-btn-google { background: #fff; color:#5F6368; border: 2px solid #E0E0E0; }
+            .social-disabled { opacity: .45; cursor: not-allowed; }
 
             /* 구분선 */
-            .divider-or {
-                text-align:center;
-                margin: 1.2rem 0;
-                position: relative;
-            }
-            .divider-or::before {
-                content:'';
-                position:absolute;
-                left:0; right:0; top:50%;
-                height:1px;
-                background:#e5e7eb;
-            }
-            .divider-or span {
-                position: relative;
-                background: #fff;
-                padding: 0 0.9rem;
-                color:#9ca3af;
-                font-size: 13px;
-                font-weight: 700;
-            }
+            .or-divider { display:flex; align-items:center; margin: 1.5rem 0; }
+            .or-divider::before, .or-divider::after { content:''; flex:1; border-bottom: 1px solid #E0E0E0; }
+            .or-divider span { padding: 0 1rem; color:#999; font-size: 13px; font-weight: 700; }
 
             /* 입력 */
             .stTextInput > div > div > input {
                 border-radius: 12px !important;
-                border: 1.5px solid #e5e7eb !important;
-                padding: 12px 14px !important;
+                border: 2px solid #E0E0E0 !important;
+                padding: 12px 16px !important;
                 font-size: 15px !important;
-                background: #fff !important;
+                transition: all 0.2s !important;
             }
             .stTextInput > div > div > input:focus {
                 border-color: #667eea !important;
-                box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
+                box-shadow: 0 0 0 3px rgba(102,126,234,0.1) !important;
             }
             .stTextInput > label { display:none; }
 
-            /* 라디오 */
-            div[role="radiogroup"] label { font-weight: 800 !important; }
+            /* 유저 타입 라벨 */
+            .user-type-label { font-size: 13px; color:#666; margin: 1rem 0 .5rem 0; }
 
             /* 버튼 */
             .stButton > button {
                 border-radius: 12px !important;
-                font-weight: 900 !important;
-                padding: 12px 14px !important;
+                font-weight: 800 !important;
+                padding: 11px 20px !important;
                 font-size: 15px !important;
+                transition: transform .12s ease, box-shadow .12s ease !important;
             }
-            .stButton > button[kind="primary"] {
+            .stButton > button:hover { transform: translateY(-1px); }
+
+            /* Primary 버튼 */
+            button[kind="primary"] {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                color: white !important;
                 border: none !important;
-                color: #fff !important;
+            }
+            button[kind="primary"]:hover { box-shadow: 0 6px 20px rgba(102,126,234,0.35) !important; }
+
+            /* 선택 표시 */
+            .selected-user-type {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #fff;
+                padding: 12px;
+                border-radius: 12px;
+                text-align: center;
+                margin: 0.75rem 0;
+                font-weight: 800;
+                font-size: 14px;
             }
 
-            /* 모바일 */
+            /* 하단 섹션 */
+            .bottom-links-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #E0E0E0; }
+
+            /* 반응형 */
             @media (max-width: 768px) {
-                div[data-testid="stForm"] { padding: 1.8rem 1.3rem; border-radius: 18px; }
-                .login-logo { font-size: 56px; }
+                div[data-testid="stForm"] { padding: 2rem 1.5rem !important; }
             }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # 가운데 정렬 레이아웃
-    left, mid, right = st.columns([1, 1.2, 1])
+    # 가운데 정렬
+    _, mid, _ = st.columns([1, 1.1, 1])
     with mid:
-        # OAuth URL 준비 (없으면 버튼 비활성)
+        # OAuth URL 준비 (없어도 버튼은 표시)
         kakao_url = None
         naver_url = None
         google_url = None
         try:
-            from services.oauth_service import OAuthService
-
-            oauth_service = OAuthService()
-            kakao_url = oauth_service.get_kakao_login_url()
-            naver_url = oauth_service.get_naver_login_url()
-            google_url = oauth_service.get_google_login_url()
+            oauth_service = get_oauth_service()
+            kakao_url = getattr(oauth_service, "get_kakao_login_url", lambda: None)()
+            naver_url = getattr(oauth_service, "get_naver_login_url", lambda: None)()
+            google_url = getattr(oauth_service, "get_google_login_url", lambda: None)()
         except Exception:
             pass
 
-        with st.form("login_form"):
+        # 폼(카드)
+        with st.form("login_form_final"):
             st.markdown(
                 """
-                <div class="login-logo">🐷</div>
-                <div class="login-title">AI Money Friends</div>
-                <div class="login-subtitle">아이들의 경제 교육 친구</div>
+                <div class="login-header-section">
+                    <div class="login-pig-icon">🐷</div>
+                    <div class="login-main-title">AI Money Friends</div>
+                    <div class="login-sub-title">아이들의 경제 교육 친구</div>
+                </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            st.markdown('<div class="section-header">✨ 간편 로그인</div>', unsafe_allow_html=True)
+            # ======== 간편 로그인 ========
+            st.markdown('<div class="section-title-text">✨ 간편 로그인</div>', unsafe_allow_html=True)
 
-            def _social_btn(url: str | None, css_class: str, label: str) -> None:
-                if url:
+            def _social_link(url: str | None, css: str, label: str) -> None:
+                if url and url != "#":
                     st.markdown(
-                        f'<a href="{url}" target="_self" style="text-decoration:none;"><div class="social-login-btn {css_class}">{label}</div></a>',
+                        f'<a href="{url}" target="_self" class="social-button-link"><button class="social-button {css}">{label}</button></a>',
                         unsafe_allow_html=True,
                     )
                 else:
                     st.markdown(
-                        f'<div class="social-login-btn {css_class} btn-disabled">{label} (준비중)</div>',
+                        f'<div class="social-button-link"><button class="social-button {css} social-disabled" disabled>{label} (준비중)</button></div>',
                         unsafe_allow_html=True,
                     )
 
-            _social_btn(kakao_url, "btn-kakao", "🟡 카카오로 시작하기")
-            _social_btn(naver_url, "btn-naver", "🟢 네이버로 시작하기")
-            _social_btn(google_url, "btn-google", "🔴 구글로 시작하기")
+            _social_link(kakao_url, "social-btn-kakao", "🟡 카카오로 3초에 시작하기")
+            _social_link(naver_url, "social-btn-naver", "🟢 네이버로 시작하기")
+            _social_link(google_url, "social-btn-google", "🔴 구글로 시작하기")
 
-            st.markdown('<div class="divider-or"><span>또는</span></div>', unsafe_allow_html=True)
+            st.markdown('<div class="or-divider"><span>또는</span></div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">📝 아이디로 로그인</div>', unsafe_allow_html=True)
-            username = st.text_input("ID", key="login_username", placeholder="아이디를 입력하세요")
-            password = st.text_input("PW", key="login_password", type="password", placeholder="비밀번호를 입력하세요")
+            # ======== 아이디 로그인 ========
+            st.markdown('<div class="section-title-text">📝 아이디로 로그인</div>', unsafe_allow_html=True)
 
-            user_type_label = st.radio(
-                "로그인 유형",
-                options=["👨‍👩‍👧 부모님", "👶 아이"],
-                horizontal=True,
-                index=0 if st.session_state.get("login_user_type", "parent") == "parent" else 1,
-                label_visibility="collapsed",
-            )
-            user_type = "parent" if "부모님" in user_type_label else "child"
-            st.session_state["login_user_type"] = user_type
+            username = st.text_input("아이디", key="login_username", placeholder="아이디를 입력하세요")
+            password = st.text_input("비밀번호", type="password", key="login_password", placeholder="비밀번호를 입력하세요")
 
-            submitted = st.form_submit_button("🚀 로그인하기", type="primary", use_container_width=True)
+            st.markdown('<div class="user-type-label">로그인 유형을 선택하세요</div>', unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                pick_parent = st.form_submit_button("👨‍👩‍👧 부모님", use_container_width=True, type="secondary")
+            with col2:
+                pick_child = st.form_submit_button("👶 아이", use_container_width=True, type="secondary")
 
-        # 로그인 처리 (폼 밖에서 처리해도 됨)
-        if submitted:
+            if pick_parent:
+                st.session_state["selected_user_type"] = "parent"
+                st.session_state["login_user_type"] = "parent"
+            if pick_child:
+                st.session_state["selected_user_type"] = "child"
+                st.session_state["login_user_type"] = "child"
+
+            user_type = st.session_state.get("selected_user_type") or st.session_state.get("login_user_type") or "parent"
+
+            if user_type == "parent":
+                st.markdown('<div class="selected-user-type">👨‍👩‍👧 부모님으로 로그인합니다</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="selected-user-type">👶 아이로 로그인합니다</div>', unsafe_allow_html=True)
+
+            do_login = st.form_submit_button("🚀 로그인하기", use_container_width=True, type="primary")
+
+        # 로그인 처리 (기존 DB 로직 유지)
+        if do_login:
             if not username or not password:
                 st.error("⚠️ 아이디와 비밀번호를 입력하세요")
             else:
@@ -1181,27 +1213,33 @@ def login_page():
                         st.session_state["username"] = username
                         st.session_state["user_type"] = user_type
                         st.session_state.show_login_success = True
+
                         st.success("✅ 로그인 성공!")
+                        st.balloons()
                         import time
 
-                        time.sleep(0.6)
+                        time.sleep(0.9)
                         st.rerun()
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다")
 
-        # 하단 링크
-        c1, c2 = st.columns(2)
-        with c1:
+        # 하단 링크 (카드 밖이지만, 동일 컬럼이라 자연스럽게 이어짐)
+        st.markdown('<div class="bottom-links-section"></div>', unsafe_allow_html=True)
+        col_a, col_b = st.columns(2)
+        with col_a:
             if st.button("🔍 아이디 찾기", key="btn_find_id", use_container_width=True):
                 st.session_state.current_auth_screen = "find_username"
+                st.session_state["show_find_username"] = True
                 st.rerun()
-        with c2:
+        with col_b:
             if st.button("🔑 비밀번호 찾기", key="btn_find_pw", use_container_width=True):
                 st.session_state.current_auth_screen = "find_password"
+                st.session_state["show_find_password"] = True
                 st.rerun()
 
         if st.button("📝 회원가입하기", key="btn_signup", use_container_width=True):
             st.session_state.current_auth_screen = "signup"
+            st.session_state.show_signup = True
             st.rerun()
 
 
