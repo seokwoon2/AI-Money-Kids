@@ -131,11 +131,11 @@ def handle_oauth_callback():
                         st.session_state['show_login_success'] = True
                         
                         st.success(f"🎉 환영합니다, {nickname}님!")
-                    st.balloons()
-                    st.query_params.clear()
-                    import time
-                    time.sleep(1)
-                    st.rerun()
+                        st.balloons()
+                        st.query_params.clear()
+                        import time
+                        time.sleep(1)
+                        st.rerun()
                     else:
                         st.error("카카오 사용자 정보를 가져올 수 없습니다.")
                 else:
@@ -226,7 +226,7 @@ def show_find_username_page():
     """아이디 찾기 페이지"""
     hide_sidebar_navigation()
     
-        st.markdown("""
+    st.markdown("""
         <style>
         .stApp { background-color: #f9f9f9; }
         .back-button-container {
@@ -1648,32 +1648,34 @@ def child_dashboard(user_name):
         if st.button("거래 기록 보기 📋", key="main_history", use_container_width=True):
             try:
                 if os.path.exists("pages/9_💵_용돈_관리.py"):
-            from utils.menu import add_to_recent
+                    from utils.menu import add_to_recent
                     try:
-            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
+                        add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
                     except: pass
-            st.switch_page("pages/9_💵_용돈_관리.py")
+                    st.switch_page("pages/9_💵_용돈_관리.py")
                 else:
                     st.info("거래 내역 페이지가 준비 중입니다. 곧 만나요! 💫")
+            except Exception as e:
+                st.error(f"페이지 이동 중 오류가 발생했습니다: {str(e)}")
             except Exception as e:
                 st.info("거래 내역 페이지가 준비 중입니다. 곧 만나요! 💫")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""<div class="dash-card card-coral"><div class="card-title">❓ 오늘의 퀴즈</div><p style="font-size: 18px; font-weight:700; margin-top:20px;">매일매일 지식이 쑥쑥!</p><div class="badge-label" style="margin-top:5px;">새로운 미션 도착! ✨</div><div class="card-mascot">❓</div></div>""", unsafe_allow_html=True)
         if os.path.exists("pages/7_🎯_금융_미션.py"):
-        if st.button("지금 도전! 🚀", key="main_quiz", use_container_width=True):
-            from utils.menu import add_to_recent
+            if st.button("지금 도전! 🚀", key="main_quiz", use_container_width=True):
+                from utils.menu import add_to_recent
                 try:
-            add_to_recent("오늘의 퀴즈", "pages/7_🎯_금융_미션.py", "🎯")
+                    add_to_recent("오늘의 퀴즈", "pages/7_🎯_금융_미션.py", "🎯")
                 except: pass
             st.switch_page("pages/7_🎯_금융_미션.py")
 
     with col2:
         st.markdown("""<div class="dash-card card-yellow"><div class="card-title">📖 오늘의 학습</div><div class="badge-label" style="background:#C5B4E3; color:#3D2B66; position:absolute; top:25px; right:25px;">꿈꾸기 가이드 📖</div><div style="margin-top:20px;"><div class="card-subtitle">오늘의 목표 (40%)</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 40%;"></div></div><p style="margin:0; font-weight:700; font-size:16px;">3/5 완료</p><p style="margin:5px 0 0 0; font-size:14px; opacity:0.8;">꿈을 이루는 저축법 배우기</p></div><div class="card-mascot">🤖</div></div>""", unsafe_allow_html=True)
         if os.path.exists("pages/8_📖_금융_스토리.py"):
-        if st.button("학습 계속하기 📚", key="main_study", use_container_width=True):
-            from utils.menu import add_to_recent
+            if st.button("학습 계속하기 📚", key="main_study", use_container_width=True):
+                from utils.menu import add_to_recent
                 try:
-            add_to_recent("금융 스토리", "pages/8_📖_금융_스토리.py", "📖")
+                    add_to_recent("금융 스토리", "pages/8_📖_금융_스토리.py", "📖")
                 except: pass
             st.switch_page("pages/8_📖_금융_스토리.py")
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1681,14 +1683,15 @@ def child_dashboard(user_name):
         if st.button("목표 관리하기 🧸", key="main_goal", use_container_width=True):
             try:
                 if os.path.exists("pages/9_💵_용돈_관리.py"):
-            from utils.menu import add_to_recent
+                    from utils.menu import add_to_recent
                     try:
-            add_to_recent("거래 내역", "pages/9_💵_용돈_관리.py", "💵")
+                        add_to_recent("목표 관리", "pages/9_💵_용돈_관리.py", "💵")
                     except: pass
-            st.switch_page("pages/9_💵_용돈_관리.py")
+                    st.switch_page("pages/9_💵_용돈_관리.py")
                 else:
                     st.info("목표 관리 페이지가 준비 중입니다. 곧 만나요! 💫")
             except Exception as e:
+                st.error(f"페이지 이동 중 오류가 발생했습니다: {str(e)}")
                 st.info("목표 관리 페이지가 준비 중입니다. 곧 만나요! 💫")
 
 # 메인 로직
