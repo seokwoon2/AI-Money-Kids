@@ -1224,6 +1224,18 @@ def main_page():
                 display: block !important;
             }
             
+            /* 상단 Streamlit 기본 툴바/메뉴 숨김 (대시보드가 주인공) */
+            [data-testid="stToolbar"] { display: none !important; }
+            #MainMenu { display: none !important; }
+            footer { display: none !important; }
+
+            /* 좌상단 사이드바 토글(»») 숨김 - 대신 페이지 내 메뉴 제공 */
+            button[data-testid="collapsedControl"],
+            button[aria-label*="sidebar"],
+            button[title*="sidebar"] {
+                display: none !important;
+            }
+            
             /* 메인페이지 배경 - 로그인 페이지 그라데이션 제거 */
             .stApp {
                 background: #f0f2f6 !important;
@@ -1243,6 +1255,55 @@ def main_page():
     
     user = db.get_user_by_id(st.session_state.user_id)
     user_type = user.get('user_type', 'child') if user else 'child'
+
+    # ✅ 사이드바가 접혀 있어도 접근 가능한 "메뉴" (요즘 UI: popover)
+    top_l, top_r = st.columns([0.7, 0.3])
+    with top_l:
+        st.markdown(
+            f"<div style='font-size:12px; color:#6b7280; font-weight:800;'>AI Money Friends</div>",
+            unsafe_allow_html=True,
+        )
+    with top_r:
+        with st.popover("☰ 메뉴", use_container_width=True):
+            # 메뉴 항목 (부모/아이에 따라 다름)
+            if user_type == "parent":
+                menu_items = [
+                    ("🏠", "대시보드", "app.py"),
+                    ("👶", "자녀 관리", "pages/2_📊_부모_대시보드.py"),
+                    ("💰", "용돈 관리", "pages/9_💵_용돈_관리.py"),
+                    ("📊", "리포트", "pages/3_💼_부모_상담실.py"),
+                    ("⚙️", "설정", "pages/4_👤_내정보.py"),
+                ]
+            else:
+                menu_items = [
+                    ("🏠", "홈", "app.py"),
+                    ("💰", "내 용돈", "pages/9_💵_용돈_관리.py"),
+                    ("🎯", "미션", "pages/7_🎯_금융_미션.py"),
+                    ("🤖", "AI 채팅", "pages/1_💬_아이_채팅.py"),
+                    ("📚", "금융 스토리", "pages/8_📖_금융_스토리.py"),
+                ]
+
+            import os
+            for icon, label, path in menu_items:
+                is_ready = (path == "app.py") or os.path.exists(path)
+                if st.button(
+                    f"{icon} {label}" + ("" if is_ready else " (준비중)"),
+                    use_container_width=True,
+                    key=f"popover_menu_{label}",
+                    disabled=not is_ready,
+                ):
+                    st.switch_page(path)
+
+            st.markdown("---")
+            if st.button("🚪 로그아웃", use_container_width=True, key="popover_logout"):
+                for key in list(st.session_state.keys()):
+                    if key not in ["current_auth_screen"]:
+                        del st.session_state[key]
+                st.session_state.logged_in = False
+                st.session_state.current_auth_screen = "login"
+                st.switch_page("app.py")
+
+    # 기존 사이드바 메뉴도 유지 (펼친 사용자에게는 더 편함)
     render_sidebar_menu(st.session_state.user_id, st.session_state.user_name, user_type)
     
     if user_type == 'parent':
@@ -1291,14 +1352,17 @@ def parent_dashboard(user_name):
     .stApp {
         background: #f0f2f6 !important;
     }
-    .parent-header { padding: 20px 0; margin-bottom: 20px; }
-    .parent-header h1 { font-size: 28px; font-weight: 700; color: #1a202c; }
-    .parent-card { background-color: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%; border: 1px solid #edf2f7; }
-    .card-label { font-size: 18px; font-weight: 700; color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .parent-header { padding: 10px 0 14px 0; margin-bottom: 14px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+    .parent-header h1 { font-size: 26px; font-weight: 900; color: #111827; margin:0; letter-spacing:-0.3px; }
+    .parent-sub { font-size: 13px; color:#6b7280; font-weight:800; margin-top:6px; }
+    .parent-chip { background: rgba(255,255,255,0.85); border: 1px solid rgba(17,24,39,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 900; color:#374151; }
+
+    .parent-card { background-color: white; border-radius: 22px; padding: 22px; box-shadow: 0 16px 30px rgba(17,24,39,0.08); height: 100%; border: 1px solid rgba(17,24,39,0.06); }
+    .card-label { font-size: 16px; font-weight: 900; color: #111827; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
     .child-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f7fafc; }
     .child-avatar { width: 45px; height: 45px; background-color: #edf2ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 15px; }
     .child-info { flex: 1; }
-    .child-name { font-weight: 700; color: #4a5568; }
+    .child-name { font-weight: 900; color: #111827; }
     .child-amount { font-weight: 800; color: #1a202c; text-align: right; }
     .stat-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f4ff; }
     .stat-item { text-align: center; flex: 1; }
@@ -1342,7 +1406,19 @@ def parent_dashboard(user_name):
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f'<div class="parent-header"><h1>안녕하세요, {user_name}님 👋</h1></div>', unsafe_allow_html=True)
+    today_str = datetime.now().strftime("%Y.%m.%d")
+    st.markdown(
+        f"""
+        <div class="parent-header">
+            <div>
+                <h1>안녕하세요, {user_name}님 👋</h1>
+                <div class="parent-sub">오늘도 우리 가족의 금융 습관을 한눈에 확인해요</div>
+            </div>
+            <div class="parent-chip">📅 {today_str}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     col1, col2, col3 = st.columns([1.2, 1, 0.8])
     
