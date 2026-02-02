@@ -986,10 +986,10 @@ def login_page():
     # 사이드바 숨기기
     hide_sidebar_navigation()
     
-    # 전체 스타일 (애니메이션 포함)
+    # 전체 스타일 (수정됨)
     st.markdown("""
         <style>
-        /* 배경 */
+        /* 전체 배경 */
         [data-testid="stAppViewContainer"] {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             background-attachment: fixed;
@@ -997,32 +997,98 @@ def login_page():
         
         /* 메인 컨테이너 */
         .block-container {
-            animation: slideUp 0.5s ease-out;
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
         }
         
-        .login-container {
-            max-width: 420px;
-            margin: 30px auto;
-            padding: 40px 30px;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
+        /* 애니메이션 */
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
+        }
+        
+        .pig-icon {
+            animation: bounce 2s infinite;
+        }
+        
+        /* 입력 필드 */
+        .stTextInput > div > div > input {
+            border: 2px solid #E9ECEF !important;
+            border-radius: 12px !important;
+            padding: 14px !important;
+            font-size: 15px !important;
+            background: #F8F9FA !important;
+        }
+        
+        .stTextInput > div > div > input:focus {
+            border-color: #6C5CE7 !important;
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1) !important;
+        }
+        
+        /* 소셜 로그인 버튼 */
+        .social-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .kakao-btn {
+            background: linear-gradient(135deg, #FEE500 0%, #FFD600 100%);
+            color: #3C1E1E;
+            box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
+        }
+        
+        .naver-btn {
+            background: linear-gradient(135deg, #03C75A 0%, #00B851 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(3, 199, 90, 0.4);
+        }
+        
+        .google-btn {
+            background: white;
+            color: #2D3436;
+            border: 2px solid #E9ECEF;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        /* 로그인 버튼 */
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 14px !important;
+            padding: 16px !important;
+            font-size: 17px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 8px 16px rgba(108, 92, 231, 0.3) !important;
+        }
+        
+        /* 카드 */
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 35px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 440px;
+            margin: 30px auto;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Streamlit 요소들이 보이게 */
+        .stTextInput, .stButton, .stMarkdown {
+            position: relative;
+            z-index: 11;
         }
         
         /* 섹션 제목 */
@@ -1035,86 +1101,6 @@ def login_page():
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        
-        /* 입력 필드 스타일 */
-        .stTextInput > div > div > input {
-            border: 2px solid #E9ECEF;
-            border-radius: 12px;
-            padding: 14px 14px 14px 45px;
-            font-size: 15px;
-            transition: all 0.3s;
-            background: #F8F9FA;
-        }
-        
-        .stTextInput > div > div > input:focus {
-            border-color: #6C5CE7;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
-        }
-        
-        /* 버튼 호버 효과 */
-        .social-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            text-decoration: none;
-        }
-        
-        .social-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-        }
-        
-        /* 카카오 버튼 */
-        .kakao-btn {
-            background: linear-gradient(135deg, #FEE500 0%, #FFD600 100%);
-            color: #3C1E1E;
-            box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
-        }
-        
-        /* 네이버 버튼 */
-        .naver-btn {
-            background: linear-gradient(135deg, #03C75A 0%, #00B851 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(3, 199, 90, 0.4);
-        }
-        
-        /* 구글 버튼 */
-        .google-btn {
-            background: white;
-            color: #2D3436;
-            border: 2px solid #E9ECEF;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        /* 로그인 버튼 */
-        .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            padding: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            box-shadow: 0 8px 16px rgba(108, 92, 231, 0.3);
-            transition: all 0.3s;
-            width: 100%;
-        }
-        
-        .stButton > button[kind="primary"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(108, 92, 231, 0.4);
         }
         
         /* 구분선 */
@@ -1142,16 +1128,28 @@ def login_page():
             font-size: 14px;
             font-weight: 600;
         }
+        
+        /* 모바일 대응 */
+        @media (max-width: 768px) {
+            .login-card {
+                margin: 10px;
+                padding: 25px 20px;
+                border-radius: 20px;
+            }
+            .pig-icon {
+                font-size: 70px !important;
+            }
+        }
         </style>
     """, unsafe_allow_html=True)
         
     # 중앙 정렬 컨테이너
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
     
     # 헤더
     st.markdown("""
         <div style='text-align: center; padding: 0 0 30px 0;'>
-            <div style='font-size: 90px; margin-bottom: 15px; animation: bounce 2s infinite;'>🐷</div>
+            <div class='pig-icon' style='font-size: 90px; margin-bottom: 15px;'>🐷</div>
             <h1 style='
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 -webkit-background-clip: text;
