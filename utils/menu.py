@@ -21,14 +21,71 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     <style>
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
+
+    /* 사이드바 접힘(>>) 컨트롤을 '메뉴'처럼 보이게 */
+    [data-testid="collapsedControl"] {
+        background: rgba(255,255,255,0.92) !important;
+        border: 1px solid rgba(17,24,39,0.08) !important;
+        border-radius: 999px !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12) !important;
+        backdrop-filter: blur(8px);
+    }
+    [data-testid="collapsedControl"]::after {
+        content: " 메뉴";
+        font-weight: 800;
+        color: #111827;
+        letter-spacing: -0.2px;
+        margin-left: 6px;
+    }
+    /* 사이드바 펼친 상태의 접기 버튼도 통일감 */
+    button[data-testid="stSidebarCollapseButton"] {
+        border-radius: 10px !important;
+    }
     
     /* 사이드바 전체 배경 및 스타일 */
-    .stSidebar {
+    section[data-testid="stSidebar"] {
         background-color: #ffffff !important;
         border-right: 1px solid #f0f2f6;
     }
     [data-testid="stSidebarContent"] {
         padding-top: 0 !important;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    /* 프로필 카드 */
+    .amf-profile {
+        background: linear-gradient(135deg, rgba(102,126,234,0.10), rgba(118,75,162,0.10));
+        border: 1px solid rgba(102,126,234,0.18);
+        border-radius: 16px;
+        padding: 14px 14px;
+        margin: 6px 0 12px 0;
+    }
+    .amf-profile-name {
+        font-size: 15px;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.2;
+    }
+    .amf-profile-badge {
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(17,24,39,0.08);
+        color: #374151;
+    }
+    .amf-section-title {
+        margin: 14px 4px 8px 4px;
+        font-size: 12px;
+        font-weight: 900;
+        color: #6b7280;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
     }
     
     /* 메뉴 버튼 스타일 */
@@ -37,7 +94,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         padding: 12px 20px !important;
         border-radius: 12px !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
+        font-weight: 800 !important;
         transition: all 0.2s ease !important;
         text-align: left !important;
         margin-bottom: 5px !important;
@@ -51,10 +108,10 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         border: none !important;
     }
     
-    /* 비활성 메뉴: 회색 */
+    /* 비활성 메뉴: 라이트 */
     .stSidebar .stButton > button[type="secondary"] {
         background-color: transparent !important;
-        color: #B2BEC3 !important;
+        color: #374151 !important;
         border: 1px solid #DFE6E9 !important;
     }
     
@@ -70,7 +127,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         color: #636E72 !important;
     }
     
-    /* 로그아웃 버튼: 빨간색 */
+    /* 로그아웃 버튼 */
     button[key*="menu_logout"],
     button[key*="로그아웃"] {
         background-color: #FF7675 !important;
@@ -93,13 +150,24 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.markdown("""
             <div style='text-align: center; padding: 20px 0;'>
                 <div style='font-size: 60px;'>🐷</div>
-                <h2 style='color: #FF69B4; margin: 10px 0; font-size: 24px; font-weight: 700;'>
+                <h2 style='color: #111827; margin: 10px 0 0 0; font-size: 20px; font-weight: 900; letter-spacing:-0.3px;'>
                     AI Money Friends
                 </h2>
+                <div style='color:#6b7280; font-size:12px; font-weight:700; margin-top:4px;'>Menu</div>
             </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown("---")
+
+        # 프로필
+        role_kr = "부모님" if user_type == "parent" else ("아이" if user_type == "child" else "사용자")
+        st.markdown(
+            f"""
+            <div class="amf-profile">
+                <div class="amf-profile-name">안녕하세요, {user_name}님</div>
+                <div class="amf-profile-badge">{role_kr} 계정</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         
         # 세션 상태 초기화
         if 'current_page' not in st.session_state:
@@ -108,7 +176,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         # 메뉴 항목 (부모/아이에 따라 다름)
         if user_type == 'parent':
             menu_items = [
-                ("🏠", "홈", "home"),
+                ("🏠", "대시보드", "home"),
                 ("👶", "자녀 관리", "children"),
                 ("💰", "용돈 관리", "allowance"),
                 ("📊", "리포트", "report"),
@@ -119,8 +187,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 ("🏠", "홈", "home"),
                 ("💰", "내 용돈", "my_money"),
                 ("🎯", "미션", "missions"),
-                ("🤖", "AI 친구", "ai_chat"),
-                ("📚", "학습", "learning"),
+                ("🤖", "AI 채팅", "ai_chat"),
+                ("📚", "금융 스토리", "learning"),
             ]
         else:
             menu_items = [
@@ -129,6 +197,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         
         # 메뉴 버튼 렌더링
         current_page = st.session_state.get('current_page', 'home')
+
+        st.markdown('<div class="amf-section-title">Main</div>', unsafe_allow_html=True)
         
         for icon, label, key in menu_items:
             is_active = current_page == key
@@ -160,11 +230,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 elif key == 'home':
                     st.switch_page("app.py")
                 st.rerun()
-        
-        st.markdown("---")
+
+        st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
         
         # 로그아웃 버튼
         if st.session_state.get('logged_in'):
+            st.markdown('<div class="amf-section-title">Account</div>', unsafe_allow_html=True)
             if st.button("🚪 로그아웃", use_container_width=True, key="menu_logout", type="secondary"):
                 # 카카오 로그아웃 처리
                 if hasattr(st.session_state, 'access_token') and st.session_state.access_token:
