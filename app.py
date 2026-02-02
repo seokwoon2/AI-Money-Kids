@@ -1161,53 +1161,28 @@ def login_page():
         username = st.text_input("ID", placeholder="아이디를 입력하세요", key="login_username", label_visibility="collapsed")
         password = st.text_input("PW", type="password", placeholder="비밀번호를 입력하세요", key="login_password", label_visibility="collapsed")
 
-        st.markdown(
-            "<div style='font-size:13px; color:#6b7280; margin-top:0.9rem; font-weight:900;'>로그인 유형</div>",
-            unsafe_allow_html=True,
-        )
-
-        # 요즘 스타일: 세그먼트 컨트롤(네이티브)로 선택
-        current = st.session_state.get("selected_user_type", "parent")
-        default_label = "👨‍👩‍👧 부모님" if current == "parent" else "👶 아이"
-        picked = st.segmented_control(
-            label="로그인 유형",
-            options=["👨‍👩‍👧 부모님", "👶 아이"],
-            default=default_label,
-            key="login_type_segmented",
-            label_visibility="collapsed",
-        )
-        user_type = "child" if picked == "👶 아이" else "parent"
-        st.session_state["selected_user_type"] = user_type
-
-        if user_type == "parent":
-            st.markdown('<div class="login-hint">👨‍👩‍👧 부모님으로 로그인합니다</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="login-hint">👶 아이로 로그인합니다</div>', unsafe_allow_html=True)
-
-        # 로그인 버튼 (요청 반영: 💜) + 간격은 hint의 margin으로 제어
+        # 로그인 버튼 (요청 반영: 💜)
         if st.button("💜 로그인하기", key="do_login_btn", use_container_width=True, type="primary"):
             if not username or not password:
                 st.error("⚠️ 아이디와 비밀번호를 입력하세요")
             else:
                 user = db.get_user_by_username(username)
                 if user and db.verify_password(password, user["password_hash"]):
-                    if user.get("user_type") != user_type:
-                        type_kr = "부모님" if user.get("user_type") == "parent" else "아이"
-                        st.error(f"❌ 이 계정은 **{type_kr}** 계정입니다.")
-                    else:
-                        st.session_state["logged_in"] = True
-                        st.session_state["user_id"] = user["id"]
-                        st.session_state["user_name"] = user["name"]
-                        st.session_state["username"] = username
-                        st.session_state["user_type"] = user_type
-                        st.session_state.show_login_success = True
+                    # ✅ 사용자 유형은 DB에서 자동 판별
+                    inferred_type = user.get("user_type") or "child"
+                    st.session_state["logged_in"] = True
+                    st.session_state["user_id"] = user["id"]
+                    st.session_state["user_name"] = user["name"]
+                    st.session_state["username"] = username
+                    st.session_state["user_type"] = inferred_type
+                    st.session_state.show_login_success = True
 
-                        st.success("✅ 로그인 성공!")
-                        st.balloons()
-                        import time
+                    st.success("✅ 로그인 성공!")
+                    st.balloons()
+                    import time
 
-                        time.sleep(0.9)
-                        st.rerun()
+                    time.sleep(0.9)
+                    st.rerun()
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다")
 
