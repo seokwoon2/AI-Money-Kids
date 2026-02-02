@@ -1002,8 +1002,12 @@ def login_page():
             /* Streamlit 여백/폭 정리 (스크롤 최소화) */
             .main > div { padding: 0 !important; }
             .block-container {
-                padding: 1.2rem 0.75rem !important;
+                padding: 1.1rem 0.75rem !important;
                 max-width: 520px !important;
+                min-height: 100vh !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important; /* 세로 중앙 정렬 */
             }
 
             /* 입력 필드 */
@@ -1021,10 +1025,19 @@ def login_page():
             .stButton button { border-radius: 12px !important; font-weight: 800 !important; }
 
             /* Primary 버튼 */
-            .stButton > button[kind="primary"], button[kind="primary"] {
+            .stButton > button[kind="primary"],
+            button[kind="primary"],
+            button[data-testid="baseButton-primary"] {
                 background: linear-gradient(135deg, #667eea, #764ba2) !important;
                 border: none !important;
                 color: white !important;
+                box-shadow: 0 10px 22px rgba(102,126,234,0.25) !important;
+            }
+            .stButton > button[kind="primary"]:hover,
+            button[kind="primary"]:hover,
+            button[data-testid="baseButton-primary"]:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 28px rgba(102,126,234,0.32) !important;
             }
 
             /* 카드: form 자체를 카드로 */
@@ -1066,27 +1079,35 @@ def login_page():
                 background: linear-gradient(135deg, #667eea, #764ba2);
             }
 
-            /* 라디오를 세그먼트처럼 보이게 */
+            /* 라디오를 세그먼트처럼(버튼 느낌) + 줄바꿈/점(라디오 동그라미) 방지 */
             .stRadio div[role="radiogroup"] {
-                display: flex;
-                gap: 10px;
+                display: flex !important;
+                gap: 10px !important;
             }
             .stRadio div[role="radiogroup"] > label {
-                flex: 1;
-                border: 1.5px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 10px 12px;
+                flex: 1 !important;
+                border: 1.5px solid #e5e7eb !important;
+                border-radius: 12px !important;
+                padding: 10px 12px !important;
                 margin: 0 !important;
-                background: white;
-                justify-content: center;
+                background: white !important;
+                justify-content: center !important;
+                align-items: center !important;
+                white-space: nowrap !important;
+            }
+            .stRadio div[role="radiogroup"] > label input {
+                position: absolute !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+            /* 선택 상태: (대부분의 Streamlit DOM에서 input 다음 div가 라벨 내용) */
+            .stRadio div[role="radiogroup"] > label input:checked + div {
+                border-radius: 10px;
+                background: linear-gradient(135deg, rgba(102,126,234,0.16), rgba(118,75,162,0.16));
             }
             .stRadio div[role="radiogroup"] > label:hover {
-                border-color: rgba(102,126,234,0.65);
-                box-shadow: 0 6px 14px rgba(0,0,0,0.06);
-            }
-            .stRadio div[role="radiogroup"] > label:has(input:checked) {
-                border-color: transparent;
-                background: linear-gradient(135deg, rgba(102,126,234,0.14), rgba(118,75,162,0.14));
+                border-color: rgba(102,126,234,0.65) !important;
+                box-shadow: 0 6px 14px rgba(0,0,0,0.06) !important;
             }
 
             /* 모바일 */
@@ -1099,118 +1120,117 @@ def login_page():
         unsafe_allow_html=True,
     )
 
-    # 중앙 정렬 (wide에서도 카드 폭 유지)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        # OAuth URL 준비 (기존 방식 유지)
-        kakao_url = None
-        naver_url = None
-        google_url = None
-        try:
-            oauth_service = get_oauth_service()
-            kakao_url = getattr(oauth_service, "get_kakao_login_url", lambda: None)()
-            naver_url = getattr(oauth_service, "get_naver_login_url", lambda: None)()
-            google_url = getattr(oauth_service, "get_google_login_url", lambda: None)()
-        except Exception:
-            pass
+    # OAuth URL 준비 (기존 방식 유지)
+    kakao_url = None
+    naver_url = None
+    google_url = None
+    try:
+        oauth_service = get_oauth_service()
+        kakao_url = getattr(oauth_service, "get_kakao_login_url", lambda: None)()
+        naver_url = getattr(oauth_service, "get_naver_login_url", lambda: None)()
+        google_url = getattr(oauth_service, "get_google_login_url", lambda: None)()
+    except Exception:
+        pass
 
-        # 카드 내용: 탭으로 '한 화면에 너무 많은 기능' 문제 해결
-        with st.form("login_simple_form"):
-            st.markdown(
-                """
-                <div style='text-align:center;'>
-                    <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
-                    <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
-                    <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    # 카드 내용: 탭으로 '한 화면에 너무 많은 기능' 문제 해결
+    with st.form("login_simple_form"):
+        st.markdown(
+            """
+            <div style='text-align:center;'>
+                <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
+                <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
+        tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
 
-            with tab_social:
-                # 소셜 버튼은 큰 줄바꿈을 줄여 스크롤 최소화
-                def _social_btn(url, bg, fg, border, label):
-                    if url and url != "#":
-                        st.markdown(
-                            f"""
-                            <a href="{url}" target="_self" style="text-decoration:none;">
-                                <button style="width:100%; padding:12px 14px; background:{bg}; color:{fg};
-                                               border:{border}; border-radius:12px; font-weight:800; cursor:pointer;
-                                               margin-bottom:10px; font-size:14px;">
-                                    {label}
-                                </button>
-                            </a>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        st.markdown(
-                            f"""
-                            <button disabled style="width:100%; padding:12px 14px; background:{bg}; color:{fg};
-                                            border:{border}; border-radius:12px; font-weight:800;
-                                            margin-bottom:10px; font-size:14px; opacity:0.55;">
-                                {label} (준비중)
-                            </button>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-
-                _social_btn(kakao_url, "#FEE500", "#000", "none", "🟡 카카오로 시작하기")
-                _social_btn(naver_url, "#03C75A", "white", "none", "🟢 네이버로 시작하기")
-                _social_btn(google_url, "white", "#5F6368", "1.5px solid #E0E0E0", "🔴 구글로 시작하기")
-
-                st.caption("아이디/비밀번호 로그인은 오른쪽 탭에서 진행하세요.")
-
-            with tab_id:
-                username = st.text_input("ID", placeholder="아이디를 입력하세요", key="login_username", label_visibility="collapsed")
-                password = st.text_input("PW", type="password", placeholder="비밀번호를 입력하세요", key="login_password", label_visibility="collapsed")
-
-                st.markdown("<div style='font-size:13px; color:#6b7280; margin-top:0.8rem; font-weight:800;'>로그인 유형</div>", unsafe_allow_html=True)
-                type_label = st.radio(
-                    "로그인 유형",
-                    options=["👨‍👩‍👧 부모님", "👶 아이"],
-                    horizontal=True,
-                    label_visibility="collapsed",
-                    index=0 if st.session_state.get("selected_user_type", "parent") == "parent" else 1,
-                    key="login_user_type_label",
+        with tab_social:
+            # 소셜 버튼은 큰 줄바꿈을 줄여 스크롤 최소화 + '점/불릿' 느낌 제거
+            def _social_btn(url, bg, fg, border, label):
+                common = (
+                    "width:100%; padding:12px 14px; border-radius:12px; font-weight:900; "
+                    "cursor:pointer; margin-bottom:10px; font-size:14px; "
+                    "appearance:none; -webkit-appearance:none; outline:none; "
+                    "display:flex; align-items:center; justify-content:center; gap:8px;"
                 )
-                user_type = "parent" if "부모님" in type_label else "child"
-                st.session_state["selected_user_type"] = user_type
-
-                if user_type == "parent":
-                    st.markdown('<div class="login-type-badge">👨‍👩‍👧 부모님으로 로그인합니다</div>', unsafe_allow_html=True)
+                if url and url != "#":
+                    st.markdown(
+                        f"""
+                        <a href="{url}" target="_self" style="text-decoration:none; display:block;">
+                            <button style="{common} background:{bg}; color:{fg}; border:{border};">
+                                {label}
+                            </button>
+                        </a>
+                        """,
+                        unsafe_allow_html=True,
+                    )
                 else:
-                    st.markdown('<div class="login-type-badge">👶 아이로 로그인합니다</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f"""
+                        <button disabled style="{common} background:{bg}; color:{fg}; border:{border}; opacity:0.55;">
+                            {label} <span style="font-weight:800;">(준비중)</span>
+                        </button>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
-                # 로그인 버튼 (아이콘 요청 반영: 💜)
-                do_login = st.form_submit_button("💜 로그인하기", use_container_width=True, type="primary")
+            _social_btn(kakao_url, "#FEE500", "#000", "none", "🟡 카카오로 시작하기")
+            _social_btn(naver_url, "#03C75A", "white", "none", "🟢 네이버로 시작하기")
+            _social_btn(google_url, "white", "#5F6368", "1.5px solid #E0E0E0", "🔴 구글로 시작하기")
 
-                # 도움 링크는 접어서(Expander) 한 화면에 다 안 나오게
-                with st.expander("도움이 필요해요", expanded=False):
-                    c_a, c_b = st.columns(2)
-                    with c_a:
-                        go_find_id = st.form_submit_button("🔍 아이디 찾기", use_container_width=True)
-                    with c_b:
-                        go_find_pw = st.form_submit_button("🔑 비밀번호 찾기", use_container_width=True)
-                    go_signup = st.form_submit_button("📝 회원가입하기", use_container_width=True)
+            st.caption("아이디/비밀번호 로그인은 오른쪽 탭에서 진행하세요.")
 
-            # tab_id가 아닌 경우 변수 미정 방지
-            if "do_login" not in locals():
-                do_login = False
-            if "go_find_id" not in locals():
-                go_find_id = False
-            if "go_find_pw" not in locals():
-                go_find_pw = False
-            if "go_signup" not in locals():
-                go_signup = False
-            if "user_type" not in locals():
-                user_type = st.session_state.get("selected_user_type", "parent")
-            if "username" not in locals():
-                username = st.session_state.get("login_username", "")
-            if "password" not in locals():
-                password = st.session_state.get("login_password", "")
+        with tab_id:
+            username = st.text_input("ID", placeholder="아이디를 입력하세요", key="login_username", label_visibility="collapsed")
+            password = st.text_input("PW", type="password", placeholder="비밀번호를 입력하세요", key="login_password", label_visibility="collapsed")
+
+            st.markdown("<div style='font-size:13px; color:#6b7280; margin-top:0.8rem; font-weight:900;'>로그인 유형</div>", unsafe_allow_html=True)
+            type_label = st.radio(
+                "로그인 유형",
+                options=["👨‍👩‍👧 부모님", "👶 아이"],
+                horizontal=True,
+                label_visibility="collapsed",
+                index=0 if st.session_state.get("selected_user_type", "parent") == "parent" else 1,
+                key="login_user_type_label",
+            )
+            user_type = "parent" if "부모님" in type_label else "child"
+            st.session_state["selected_user_type"] = user_type
+
+            if user_type == "parent":
+                st.markdown('<div class="login-type-badge">👨‍👩‍👧 부모님으로 로그인합니다</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="login-type-badge">👶 아이로 로그인합니다</div>', unsafe_allow_html=True)
+
+            # 로그인 버튼 (요청 반영: 💜)
+            do_login = st.form_submit_button("💜 로그인하기", use_container_width=True, type="primary")
+
+            # 도움 링크는 접어서 한 화면에 다 안 나오게
+            with st.expander("도움이 필요해요", expanded=False):
+                c_a, c_b = st.columns(2)
+                with c_a:
+                    go_find_id = st.form_submit_button("🔍 아이디 찾기", use_container_width=True)
+                with c_b:
+                    go_find_pw = st.form_submit_button("🔑 비밀번호 찾기", use_container_width=True)
+                go_signup = st.form_submit_button("📝 회원가입하기", use_container_width=True)
+
+        # tab_id가 아닌 경우 변수 미정 방지
+        if "do_login" not in locals():
+            do_login = False
+        if "go_find_id" not in locals():
+            go_find_id = False
+        if "go_find_pw" not in locals():
+            go_find_pw = False
+        if "go_signup" not in locals():
+            go_signup = False
+        if "user_type" not in locals():
+            user_type = st.session_state.get("selected_user_type", "parent")
+        if "username" not in locals():
+            username = st.session_state.get("login_username", "")
+        if "password" not in locals():
+            password = st.session_state.get("login_password", "")
 
         # ===== 폼 밖 처리 로직 =====
         if do_login:
