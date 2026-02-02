@@ -991,21 +991,8 @@ def login_page():
                 display: none !important;
             }
             
-            /* Streamlit 기본 패딩/마진 제거 */
-            .main > div {
-                padding-top: 0 !important;
-                padding-bottom: 0 !important;
-            }
-            
-            .block-container {
-                padding-top: 0rem !important;
-                padding-bottom: 0rem !important;
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-                max-width: 100% !important;
-            }
-            
-            /* 전체 배경 */
+            /* 로그인 페이지 전용 스타일 (메인페이지에 영향 없도록) */
+            /* 로그인 페이지 배경 */
             .stApp {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             }
@@ -1013,6 +1000,15 @@ def login_page():
             /* 헤더 제거 */
             header {
                 display: none !important;
+            }
+            
+            /* 로그인 페이지에서만 패딩 제거 */
+            .block-container {
+                padding-top: 0rem !important;
+                padding-bottom: 0rem !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                max-width: 100% !important;
             }
             
             /* 로그인 컨테이너 */
@@ -1293,6 +1289,45 @@ def main_page():
     from utils.menu import render_sidebar_menu, hide_sidebar_navigation
     hide_sidebar_navigation()
     
+    # 메인페이지 전용 CSS (로그인 페이지 스타일 초기화)
+    st.markdown("""
+        <style>
+            /* 메인페이지 기본 스타일 복원 - 최우선 적용 */
+            .block-container {
+                padding-top: 2rem !important;
+                padding-bottom: 2rem !important;
+                padding-left: 5rem !important;
+                padding-right: 5rem !important;
+                max-width: 1400px !important;
+            }
+            
+            /* 메인페이지 배경 - 로그인 페이지 스타일 덮어쓰기 */
+            .stApp {
+                background-color: #f0f2f6 !important;
+                background-image: none !important;
+            }
+            
+            /* 헤더 표시 */
+            header {
+                display: block !important;
+            }
+            
+            /* 사이드바 표시 */
+            [data-testid="stSidebar"] {
+                display: block !important;
+            }
+            
+            /* 메인 컨테이너 여백 */
+            .main .block-container {
+                padding-top: 2rem !important;
+                padding-bottom: 2rem !important;
+                padding-left: 5rem !important;
+                padding-right: 5rem !important;
+                max-width: 1400px !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
     user = db.get_user_by_id(st.session_state.user_id)
     user_type = user.get('user_type', 'child') if user else 'child'
     render_sidebar_menu(st.session_state.user_id, st.session_state.user_name, user_type)
@@ -1338,7 +1373,19 @@ def parent_dashboard(user_name):
 
     st.markdown("""
     <style>
+    /* 부모 대시보드 전용 스타일 */
     .main { background-color: #f0f2f6 !important; }
+    .stApp {
+        background-color: #f0f2f6 !important;
+        background-image: none !important;
+    }
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 5rem !important;
+        padding-right: 5rem !important;
+        max-width: 1400px !important;
+    }
     .parent-header { padding: 20px 0; margin-bottom: 20px; }
     .parent-header h1 { font-size: 28px; font-weight: 700; color: #1a202c; }
     .parent-card { background-color: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%; border: 1px solid #edf2f7; }
@@ -1507,7 +1554,19 @@ def child_dashboard(user_name):
     """아이용 대시보드 - Style A (친근하고 귀여운 카드형)"""
     st.markdown("""
     <style>
+    /* 아이 대시보드 전용 스타일 */
     .main { background-color: #fcfdfe !important; }
+    .stApp {
+        background-color: #fcfdfe !important;
+        background-image: none !important;
+    }
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 5rem !important;
+        padding-right: 5rem !important;
+        max-width: 1400px !important;
+    }
     .dashboard-header { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; padding: 20px 0; }
     .mascot-piggy { font-size: 80px; animation: swing 3s ease-in-out infinite; }
     @keyframes swing { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
