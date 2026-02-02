@@ -991,7 +991,7 @@ def login_page():
                 display: none !important;
             }
             
-            /* 로그인 페이지 전용 스타일 (메인페이지에 영향 없도록) */
+            /* 로그인 페이지 전용 스타일 */
             /* 로그인 페이지 배경 */
             .stApp {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1003,6 +1003,7 @@ def login_page():
             }
             
             /* 로그인 페이지에서만 패딩 제거 */
+            /* 주의: 이 스타일은 메인페이지에서 덮어써짐 */
             .block-container {
                 padding-top: 0rem !important;
                 padding-bottom: 0rem !important;
@@ -1289,22 +1290,21 @@ def main_page():
     from utils.menu import render_sidebar_menu, hide_sidebar_navigation
     hide_sidebar_navigation()
     
-    # 메인페이지 전용 CSS (로그인 페이지 스타일 초기화)
+    # 메인페이지 전용 CSS (로그인 페이지 스타일 완전 초기화)
     st.markdown("""
         <style>
-            /* 메인페이지 기본 스타일 복원 - 최우선 적용 */
+            /* 메인페이지 기본 스타일 복원 */
             .block-container {
-                padding-top: 2rem !important;
-                padding-bottom: 2rem !important;
-                padding-left: 5rem !important;
-                padding-right: 5rem !important;
-                max-width: 1400px !important;
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                max-width: 1200px !important;
             }
             
-            /* 메인페이지 배경 - 로그인 페이지 스타일 덮어쓰기 */
+            /* 메인페이지 배경 - 로그인 페이지 그라데이션 제거 */
             .stApp {
-                background-color: #f0f2f6 !important;
-                background-image: none !important;
+                background: #f0f2f6 !important;
             }
             
             /* 헤더 표시 */
@@ -1315,15 +1315,6 @@ def main_page():
             /* 사이드바 표시 */
             [data-testid="stSidebar"] {
                 display: block !important;
-            }
-            
-            /* 메인 컨테이너 여백 */
-            .main .block-container {
-                padding-top: 2rem !important;
-                padding-bottom: 2rem !important;
-                padding-left: 5rem !important;
-                padding-right: 5rem !important;
-                max-width: 1400px !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -1376,15 +1367,7 @@ def parent_dashboard(user_name):
     /* 부모 대시보드 전용 스타일 */
     .main { background-color: #f0f2f6 !important; }
     .stApp {
-        background-color: #f0f2f6 !important;
-        background-image: none !important;
-    }
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-        padding-left: 5rem !important;
-        padding-right: 5rem !important;
-        max-width: 1400px !important;
+        background: #f0f2f6 !important;
     }
     .parent-header { padding: 20px 0; margin-bottom: 20px; }
     .parent-header h1 { font-size: 28px; font-weight: 700; color: #1a202c; }
@@ -1557,15 +1540,7 @@ def child_dashboard(user_name):
     /* 아이 대시보드 전용 스타일 */
     .main { background-color: #fcfdfe !important; }
     .stApp {
-        background-color: #fcfdfe !important;
-        background-image: none !important;
-    }
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-        padding-left: 5rem !important;
-        padding-right: 5rem !important;
-        max-width: 1400px !important;
+        background: #fcfdfe !important;
     }
     .dashboard-header { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; padding: 20px 0; }
     .mascot-piggy { font-size: 80px; animation: swing 3s ease-in-out infinite; }
