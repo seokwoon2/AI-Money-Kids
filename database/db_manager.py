@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Tuple
 import bcrypt
 from config import Config
+from datetime import date as _date, timedelta as _timedelta
 
 class DatabaseManager:
     """데이터베이스 관리 클래스"""
@@ -28,6 +29,244 @@ class DatabaseManager:
         conn.executescript(schema)
         conn.commit()
         conn.close()
+
+        # 기존 DB 마이그레이션(컬럼 추가 등)
+        self._ensure_columns()
+
+    def _ensure_columns(self):
+        """기존 DB에 누락된 컬럼/테이블 보정(안전한 ALTER)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # behaviors 확장 컬럼
+            try:
+                cursor.execute("ALTER TABLE behaviors ADD COLUMN category TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE behaviors ADD COLUMN related_request_id INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+        finally:
+            conn.close()
+
+    # ========== 미션 ==========
+
+    def seed_default_missions_and_badges(self):
+        """기본 미션/배지 시드(없을 때만)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # 기본 미션 템플릿(시스템 공용)
+            cursor.execute("SELECT COUNT(*) as cnt FROM mission_templates")
+            if int(cursor.fetchone()["cnt"] or 0) == 0:
+                templates = [
+                    ("오늘은 저금통에 1,000원 저축하기", "저축(saving) 기록을 남겨요", "easy", 500),
+                    ("계획 지출 1건 기록하기", "planned_spending으로 지출을 계획해요", "normal", 300),
+                    ("가격 비교 해보기", "comparing_prices 활동을 해봐요", "easy", 200),
+                    ("충동 구매 참기", "delayed_gratification 활동을 해봐요", "hard", 700),
+                ]
+                cursor.executemany(
+                    """
+                    INSERT INTO mission_templates (parent_code, title, description, difficulty, reward_amount, is_active)
+                    VALUES (NULL, ?, ?, ?, ?, 1)
+                    """,
+                    templates,
+                )
+                conn.commit()
+
+            # 기본 배지
+            cursor.execute("SELECT COUNT(*) as cnt FROM badges")
+            if int(cursor.fetchone()["cnt"] or 0) == 0:
+                badges = [
+                    ("xp_10", "새싹 경제가", "활동을 10번 완료했어요", "🌱", 10),
+                    ("xp_50", "성실한 저축가", "활동을 50번 완료했어요", "💎", 50),
+                    ("xp_100", "금융 마스터", "활동을 100번 완료했어요", "🏆", 100),
+                ]
+                cursor.executemany(
+                    "INSERT INTO badges (code, title, description, icon, required_xp) VALUES (?, ?, ?, ?, ?)",
+                    badges,
+                )
+                conn.commit()
+        finally:
+            conn.close()
+
+    def create_custom_mission(self, parent_code: str, title: str, description: str, difficulty: str, reward_amount: float, created_by: int) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO mission_templates (parent_code, title, description, difficulty, reward_amount, is_active, created_by)
+                VALUES (?, ?, ?, ?, ?, 1, ?)
+                """,
+                (parent_code, title, description, difficulty, reward_amount, created_by),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_custom_missions(self, parent_code: str):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT * FROM mission_templates WHERE parent_code = ? AND is_active = 1 ORDER BY created_at DESC",
+                (parent_code,),
+            )
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def assign_daily_missions_if_needed(self, user_id: int, date_str: str):
+        """해당 날짜에 일일 미션이 없으면 3개 배정"""
+        self.seed_default_missions_and_badges()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) as cnt FROM mission_assignments WHERE user_id = ? AND cycle = 'daily' AND assigned_date = ?",
+                (user_id, date_str),
+            )
+            if int(cursor.fetchone()["cnt"] or 0) > 0:
+                return
+            cursor.execute(
+                "SELECT id FROM mission_templates WHERE is_active = 1 AND parent_code IS NULL ORDER BY RANDOM() LIMIT 3"
+            )
+            templates = [r["id"] for r in cursor.fetchall()]
+            cursor.executemany(
+                """
+                INSERT INTO mission_assignments (user_id, template_id, cycle, assigned_date, status)
+                VALUES (?, ?, 'daily', ?, 'active')
+                """,
+                [(user_id, tid, date_str) for tid in templates],
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_missions_for_user(self, user_id: int, date_str: str = None, active_only: bool = True):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            q = """
+                SELECT a.*, t.title, t.description, t.difficulty, t.reward_amount
+                FROM mission_assignments a
+                JOIN mission_templates t ON a.template_id = t.id
+                WHERE a.user_id = ?
+            """
+            params = [user_id]
+            if date_str:
+                q += " AND a.assigned_date = ?"
+                params.append(date_str)
+            if active_only:
+                q += " AND a.status = 'active'"
+            q += " ORDER BY a.assigned_date DESC, a.id DESC"
+            cursor.execute(q, params)
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def complete_mission(self, assignment_id: int) -> bool:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE mission_assignments SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id = ? AND status='active'",
+                (assignment_id,),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    # ========== 배지/성장 ==========
+
+    def get_xp(self, user_id: int) -> int:
+        """단순 XP: behaviors 개수 + 완료 미션 개수"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) as cnt FROM behaviors WHERE user_id = ?", (user_id,))
+            bcnt = int(cursor.fetchone()["cnt"] or 0)
+            cursor.execute("SELECT COUNT(*) as cnt FROM mission_assignments WHERE user_id = ? AND status='completed'", (user_id,))
+            mcnt = int(cursor.fetchone()["cnt"] or 0)
+            return bcnt + mcnt
+        finally:
+            conn.close()
+
+    def award_badges_if_needed(self, user_id: int):
+        self.seed_default_missions_and_badges()
+        xp = self.get_xp(user_id)
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT badge_id FROM user_badges WHERE user_id = ?", (user_id,))
+            owned = {int(r["badge_id"]) for r in cursor.fetchall()}
+            cursor.execute("SELECT * FROM badges ORDER BY required_xp ASC")
+            for b in cursor.fetchall():
+                bid = int(b["id"])
+                if bid in owned:
+                    continue
+                if xp >= int(b["required_xp"] or 0):
+                    cursor.execute("INSERT INTO user_badges (user_id, badge_id) VALUES (?, ?)", (user_id, bid))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_user_badges(self, user_id: int):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT ub.earned_at, b.*
+                FROM user_badges ub
+                JOIN badges b ON ub.badge_id = b.id
+                WHERE ub.user_id = ?
+                ORDER BY ub.earned_at DESC
+                """,
+                (user_id,),
+            )
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    # ========== 학습 진행 ==========
+
+    def upsert_learning_progress(self, user_id: int, lesson_code: str, progress: float):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO learning_progress (user_id, lesson_code, progress)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_id, lesson_code) DO UPDATE SET
+                    progress=excluded.progress,
+                    updated_at=CURRENT_TIMESTAMP
+                """,
+                (user_id, lesson_code, progress),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_learning_progress(self, user_id: int):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM learning_progress WHERE user_id = ?", (user_id,))
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
     
     def _get_connection(self):
         """데이터베이스 연결 반환"""
@@ -398,6 +637,389 @@ class DatabaseManager:
             conn.commit()
         finally:
             conn.close()
+
+    def save_behavior_v2(
+        self,
+        user_id: int,
+        behavior_type: str,
+        amount: float = None,
+        description: str = None,
+        category: str = None,
+        related_request_id: int = None,
+    ):
+        """확장 행동 기록 저장(category/request 연동)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO behaviors (user_id, behavior_type, amount, category, description, related_request_id)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, behavior_type, amount, category, description, related_request_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    # ========== 요청(아이→부모) ==========
+
+    def create_request(
+        self,
+        child_id: int,
+        parent_code: str,
+        request_type: str,
+        amount: float,
+        category: str = None,
+        reason: str = None,
+    ) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO requests (child_id, parent_code, request_type, amount, category, reason)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (child_id, parent_code, request_type, amount, category, reason),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_requests_for_parent(self, parent_code: str, status: str = "pending"):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT r.*, u.name as child_name, u.username as child_username
+                FROM requests r
+                JOIN users u ON r.child_id = u.id
+                WHERE r.parent_code = ? AND r.status = ?
+                ORDER BY r.created_at DESC
+                """,
+                (parent_code, status),
+            )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_requests_for_child(self, child_id: int, limit: int = 50):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT *
+                FROM requests
+                WHERE child_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (child_id, limit),
+            )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def decide_request(self, request_id: int, decided_by: int, status: str):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                UPDATE requests
+                SET status = ?, decided_by = ?, decided_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (status, decided_by, request_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    # ========== 정기 용돈 ==========
+
+    def create_recurring_allowance(
+        self,
+        parent_id: int,
+        child_id: int,
+        amount: float,
+        frequency: str,
+        day_of_week: int = None,
+        day_of_month: int = None,
+        next_run: str = None,
+        memo: str = None,
+    ) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO recurring_allowances
+                (parent_id, child_id, amount, frequency, day_of_week, day_of_month, next_run, memo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (parent_id, child_id, amount, frequency, day_of_week, day_of_month, next_run, memo),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_recurring_allowances(self, parent_id: int):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT ra.*, u.name as child_name, u.username as child_username
+                FROM recurring_allowances ra
+                JOIN users u ON ra.child_id = u.id
+                WHERE ra.parent_id = ?
+                ORDER BY ra.created_at DESC
+                """,
+                (parent_id,),
+            )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def set_recurring_allowance_active(self, recurring_id: int, is_active: bool):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE recurring_allowances SET is_active = ? WHERE id = ?",
+                (1 if is_active else 0, recurring_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    # ========== 목표 ==========
+
+    def create_goal(self, user_id: int, title: str, target_amount: float) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO goals (user_id, title, target_amount)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, title, target_amount),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_goals(self, user_id: int, active_only: bool = False):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            if active_only:
+                cursor.execute(
+                    "SELECT * FROM goals WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC",
+                    (user_id,),
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM goals WHERE user_id = ? ORDER BY created_at DESC",
+                    (user_id,),
+                )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def add_goal_contribution(self, goal_id: int, amount: float, note: str = None) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO goal_contributions (goal_id, amount, note) VALUES (?, ?, ?)",
+                (goal_id, amount, note),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_goal_progress(self, goal_id: int) -> float:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT SUM(amount) as total FROM goal_contributions WHERE goal_id = ?", (goal_id,))
+            row = cursor.fetchone()
+            return float(row["total"] or 0)
+        finally:
+            conn.close()
+
+    def set_goal_active(self, goal_id: int, is_active: bool):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE goals SET is_active = ? WHERE id = ?", (1 if is_active else 0, goal_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    # ========== 알림 ==========
+
+    def create_notification(self, user_id: int, title: str, body: str = None, level: str = "info") -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO notifications (user_id, title, body, level) VALUES (?, ?, ?, ?)",
+                (user_id, title, body, level),
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_notifications(self, user_id: int, unread_only: bool = True, limit: int = 20):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            if unread_only:
+                cursor.execute(
+                    """
+                    SELECT * FROM notifications
+                    WHERE user_id = ? AND is_read = 0
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (user_id, limit),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT * FROM notifications
+                    WHERE user_id = ?
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (user_id, limit),
+                )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def mark_notification_read(self, notification_id: int) -> bool:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", (notification_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    # ========== 정기 용돈 자동 실행 ==========
+
+    def _next_run_for_recurring(self, row: Dict, today: _date) -> _date:
+        freq = row.get("frequency")
+        if freq == "weekly":
+            dow = int(row.get("day_of_week") or 0)  # 0=월..6=일
+            delta = (dow - today.weekday()) % 7
+            if delta == 0:
+                delta = 7
+            return today + _timedelta(days=delta)
+        # monthly
+        dom = int(row.get("day_of_month") or 1)
+        y, m = today.year, today.month
+        # pick this month if in future, else next month
+        def _safe_date(yy, mm, dd):
+            # clamp day
+            if mm == 2:
+                dd = min(dd, 28)
+            elif mm in (4, 6, 9, 11):
+                dd = min(dd, 30)
+            else:
+                dd = min(dd, 31)
+            return _date(yy, mm, dd)
+        cand = _safe_date(y, m, dom)
+        if cand > today:
+            return cand
+        if m == 12:
+            y, m = y + 1, 1
+        else:
+            m += 1
+        return _safe_date(y, m, dom)
+
+    def run_due_recurring_allowances(self) -> int:
+        """
+        정기 용돈: next_run <= today 인 항목을 자동 지급.
+        - 스케줄러가 없으므로 앱 실행/페이지 진입 시 호출하는 방식
+        - 지급 후 next_run 갱신
+        """
+        today = _date.today()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT ra.*, u.name as child_name
+                FROM recurring_allowances ra
+                JOIN users u ON ra.child_id = u.id
+                WHERE ra.is_active = 1
+                  AND ra.next_run IS NOT NULL
+                  AND date(ra.next_run) <= date('now')
+                ORDER BY ra.next_run ASC
+                """
+            )
+            due = [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+
+        processed = 0
+        for r in due:
+            rid = int(r["id"])
+            child_id = int(r["child_id"])
+            amount = float(r.get("amount") or 0)
+            freq = r.get("frequency")
+            memo = r.get("memo") or ""
+
+            # 지급 기록 + 알림
+            self.save_behavior_v2(
+                child_id,
+                "allowance",
+                amount,
+                description=f"정기 용돈 지급({('매주' if freq=='weekly' else '매월')}) {memo}".strip(),
+                category="정기용돈",
+            )
+            self.create_notification(child_id, "정기 용돈이 들어왔어요!", f"{int(amount):,}원을 받았어요.", level="success")
+
+            # next_run 갱신
+            try:
+                next_run = self._next_run_for_recurring(r, today)
+            except Exception:
+                next_run = today + _timedelta(days=7)
+
+            conn2 = self._get_connection()
+            cur2 = conn2.cursor()
+            try:
+                cur2.execute("UPDATE recurring_allowances SET next_run = ? WHERE id = ?", (next_run.isoformat(), rid))
+                conn2.commit()
+            finally:
+                conn2.close()
+
+            processed += 1
+
+        return processed
     
     def get_user_behaviors(self, user_id: int, limit: int = 100) -> List[Dict]:
         """사용자의 행동 기록 조회"""

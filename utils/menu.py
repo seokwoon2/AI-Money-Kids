@@ -185,26 +185,27 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         if 'current_page' not in st.session_state:
             st.session_state['current_page'] = 'home'
         
-        # 메뉴 항목 (부모/아이에 따라 다름)
-        if user_type == 'parent':
+        # 메뉴 항목 (요청한 구조로 교체)
+        if user_type == "parent":
             menu_items = [
-                ("🏠", "대시보드", "home"),
-                ("👶", "자녀 관리", "children"),
-                ("💰", "용돈 관리", "allowance"),
-                ("📊", "리포트", "report"),
+                ("🏠", "대시보드", "parent_dashboard"),
+                ("👶", "자녀 관리", "parent_children"),
+                ("💵", "용돈 관리", "allowance_manage"),
+                ("📝", "요청 승인", "request_approve"),
+                ("📊", "리포트", "parent_report"),
                 ("⚙️", "설정", "settings"),
             ]
-        elif user_type == 'child':
+        else:  # child
             menu_items = [
-                ("🏠", "홈", "home"),
-                ("💰", "내 용돈", "my_money"),
-                ("🎯", "미션", "missions"),
-                ("🤖", "AI 채팅", "ai_chat"),
-                ("📚", "금융 스토리", "learning"),
-            ]
-        else:
-            menu_items = [
-                ("🏠", "홈", "home"),
+                ("🏠", "홈", "child_dashboard"),
+                ("💰", "내 지갑", "wallet"),
+                ("🎯", "저축 목표", "goals"),
+                ("📝", "용돈 요청", "allowance_request"),
+                ("✅", "미션", "missions"),
+                ("🤖", "AI 친구", "ai_friend"),
+                ("📚", "경제 교실", "classroom"),
+                ("🏆", "내 성장", "growth"),
+                ("⚙️", "설정", "settings"),
             ]
         
         # 메뉴 버튼 렌더링
@@ -214,18 +215,26 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         
         for icon, label, key in menu_items:
             is_active = current_page == key
-            
-            # 페이지 경로 매핑
+
+            # 페이지 경로 매핑 (새 구조)
             page_paths = {
-                'home': 'app.py',
-                'children': 'pages/2_📊_부모_대시보드.py',
-                'allowance': 'pages/9_💵_용돈_관리.py',
-                'report': 'pages/3_💼_부모_상담실.py',
-                'settings': 'pages/4_👤_내정보.py',
-                'my_money': 'pages/9_💵_용돈_관리.py',
-                'missions': 'pages/7_🎯_금융_미션.py',
-                'ai_chat': 'pages/1_💬_아이_채팅.py',
-                'learning': 'pages/8_📖_금융_스토리.py',
+                # parent
+                "parent_dashboard": "pages/1_🏠_대시보드.py",
+                "parent_children": "pages/2_👶_자녀_관리.py",
+                "allowance_manage": "pages/3_💵_용돈_관리.py",
+                "request_approve": "pages/4_📝_요청_승인.py",
+                "parent_report": "pages/5_📊_리포트.py",
+                # child
+                "child_dashboard": "pages/1_🏠_대시보드.py",
+                "wallet": "pages/7_💰_내_지갑.py",
+                "goals": "pages/8_🎯_저축_목표.py",
+                "allowance_request": "pages/9_📝_용돈_요청.py",
+                "missions": "pages/10_✅_미션.py",
+                "ai_friend": "pages/11_🤖_AI_친구.py",
+                "classroom": "pages/12_📚_경제_교실.py",
+                "growth": "pages/13_🏆_내_성장.py",
+                # shared
+                "settings": "pages/6_⚙️_설정.py",
             }
             
             page_path = page_paths.get(key)
@@ -239,8 +248,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 st.session_state['current_page'] = key
                 if page_path and os.path.exists(page_path):
                     st.switch_page(page_path)
-                elif key == 'home':
-                    st.switch_page("app.py")
+                else:
+                    st.info("페이지가 준비 중입니다.")
                 st.rerun()
 
         st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)

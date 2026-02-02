@@ -1207,17 +1207,18 @@ def login_page():
 
 
 def main_page():
-    """로그인 후 메인 대시보드 페이지 - 유형별 분기"""
-    from utils.menu import render_sidebar_menu, hide_sidebar_navigation
-    hide_sidebar_navigation()
+    """로그인 후 대시보드로 이동(새 구조 통일)"""
+    # 이제 로그인 후 첫 화면은 `pages/1_🏠_대시보드.py`로 통일합니다.
+    st.switch_page("pages/1_🏠_대시보드.py")
+    return
     
     # 메인페이지 전용 CSS (로그인 페이지 스타일 완전 초기화)
     st.markdown("""
         <style>
             /* 메인페이지 기본 스타일 복원 */
             .block-container {
-                padding-top: 1rem !important;
-                padding-bottom: 1rem !important;
+                padding-top: 0.75rem !important;
+                padding-bottom: 1.25rem !important;
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
                 max-width: 1200px !important;
@@ -1228,12 +1229,27 @@ def main_page():
             [data-testid="stToolbar"] { display: none !important; }
             #MainMenu { display: none !important; }
             footer { display: none !important; }
+            header { display: none !important; }
 
             /* 좌상단 사이드바 토글(»») 숨김 - 대신 페이지 내 메뉴 제공 */
             button[data-testid="collapsedControl"],
             button[aria-label*="sidebar"],
             button[title*="sidebar"] {
                 display: none !important;
+            }
+
+            /* 상단 메뉴 버튼(팝오버) - 작은 캡슐 버튼처럼 */
+            button[aria-haspopup="dialog"] {
+                border-radius: 999px !important;
+                padding: 7px 12px !important;
+                font-weight: 900 !important;
+                background: rgba(255,255,255,0.95) !important;
+                border: 1px solid rgba(17,24,39,0.10) !important;
+                box-shadow: 0 10px 24px rgba(17,24,39,0.08) !important;
+            }
+            button[aria-haspopup="dialog"]:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 30px rgba(17,24,39,0.12) !important;
             }
             
             /* 메인페이지 배경 - 로그인 페이지 그라데이션 제거 */
@@ -1256,31 +1272,36 @@ def main_page():
     user = db.get_user_by_id(st.session_state.user_id)
     user_type = user.get('user_type', 'child') if user else 'child'
 
-    # ✅ 사이드바가 접혀 있어도 접근 가능한 "메뉴" (요즘 UI: popover)
-    top_l, top_r = st.columns([0.7, 0.3])
+    # ✅ 사이드바가 접혀 있어도 접근 가능한 "메뉴" (요즘 UI: 작은 캡슐 + 우측 정렬)
+    top_l, top_r = st.columns([0.85, 0.15])
     with top_l:
         st.markdown(
-            f"<div style='font-size:12px; color:#6b7280; font-weight:800;'>AI Money Friends</div>",
+            "<div style='height:4px;'></div>",
             unsafe_allow_html=True,
         )
     with top_r:
-        with st.popover("☰ 메뉴", use_container_width=True):
+        with st.popover("☰ 메뉴", use_container_width=False):
             # 메뉴 항목 (부모/아이에 따라 다름)
             if user_type == "parent":
                 menu_items = [
-                    ("🏠", "대시보드", "app.py"),
-                    ("👶", "자녀 관리", "pages/2_📊_부모_대시보드.py"),
-                    ("💰", "용돈 관리", "pages/9_💵_용돈_관리.py"),
-                    ("📊", "리포트", "pages/3_💼_부모_상담실.py"),
-                    ("⚙️", "설정", "pages/4_👤_내정보.py"),
+                    ("🏠", "대시보드", "pages/1_🏠_대시보드.py"),
+                    ("👶", "자녀 관리", "pages/2_👶_자녀_관리.py"),
+                    ("💵", "용돈 관리", "pages/3_💵_용돈_관리.py"),
+                    ("📝", "요청 승인", "pages/4_📝_요청_승인.py"),
+                    ("📊", "리포트", "pages/5_📊_리포트.py"),
+                    ("⚙️", "설정", "pages/6_⚙️_설정.py"),
                 ]
             else:
                 menu_items = [
-                    ("🏠", "홈", "app.py"),
-                    ("💰", "내 용돈", "pages/9_💵_용돈_관리.py"),
-                    ("🎯", "미션", "pages/7_🎯_금융_미션.py"),
-                    ("🤖", "AI 채팅", "pages/1_💬_아이_채팅.py"),
-                    ("📚", "금융 스토리", "pages/8_📖_금융_스토리.py"),
+                    ("🏠", "홈", "pages/1_🏠_대시보드.py"),
+                    ("💰", "내 지갑", "pages/7_💰_내_지갑.py"),
+                    ("🎯", "저축 목표", "pages/8_🎯_저축_목표.py"),
+                    ("📝", "용돈 요청", "pages/9_📝_용돈_요청.py"),
+                    ("✅", "미션", "pages/10_✅_미션.py"),
+                    ("🤖", "AI 친구", "pages/11_🤖_AI_친구.py"),
+                    ("📚", "경제 교실", "pages/12_📚_경제_교실.py"),
+                    ("🏆", "내 성장", "pages/13_🏆_내_성장.py"),
+                    ("⚙️", "설정", "pages/6_⚙️_설정.py"),
                 ]
 
             import os
@@ -1357,7 +1378,8 @@ def parent_dashboard(user_name):
     .parent-sub { font-size: 13px; color:#6b7280; font-weight:800; margin-top:6px; }
     .parent-chip { background: rgba(255,255,255,0.85); border: 1px solid rgba(17,24,39,0.08); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 900; color:#374151; }
 
-    .parent-card { background-color: white; border-radius: 22px; padding: 22px; box-shadow: 0 16px 30px rgba(17,24,39,0.08); height: 100%; border: 1px solid rgba(17,24,39,0.06); }
+    /* 카드 공통: 섹션 간격 통일 */
+    .parent-card { background-color: white; border-radius: 22px; padding: 22px; box-shadow: 0 16px 30px rgba(17,24,39,0.08); height: 100%; border: 1px solid rgba(17,24,39,0.06); margin-bottom: 16px; }
     .card-label { font-size: 16px; font-weight: 900; color: #111827; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
     .child-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f7fafc; }
     .child-avatar { width: 45px; height: 45px; background-color: #edf2ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 15px; }
