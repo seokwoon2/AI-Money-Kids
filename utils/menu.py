@@ -93,6 +93,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 items = [
                     ("🏠", "홈", "parent_dashboard"),
                     ("🔗", "연동하기", "linking"),
+                    ("🏁", "챌린지", "challenges"),
                     ("👶", "자녀 관리", "parent_children"),
                     ("💵", "용돈 관리", "allowance_manage"),
                     ("📝", "요청 승인", "request_approve"),
@@ -103,6 +104,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 items = [
                     ("🏠", "홈", "child_dashboard"),
                     ("🔗", "연동하기", "linking"),
+                    ("🏁", "챌린지", "challenges"),
                     ("💰", "내 지갑", "wallet"),
                     ("🎯", "저축 목표", "goals"),
                     ("📝", "용돈 요청", "allowance_request"),
@@ -131,6 +133,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 "growth": "pages/13_🏆_내_성장.py",
                 "settings": "pages/6_⚙️_설정.py",
                 "linking": "pages/15_🔗_연동하기.py",
+                "challenges": "pages/16_🏁_챌린지.py",
             }
 
             for icon, label, key in items:
@@ -625,6 +628,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             menu_items = [
                 ("🏠", "홈", "parent_dashboard"),
                 ("🔗", "연동하기", "linking"),
+                ("🏁", "챌린지", "challenges"),
                 ("👶", "자녀 관리", "parent_children"),
                 ("💵", "용돈 관리", "allowance_manage"),
                 ("📝", "요청 승인", "request_approve"),
@@ -635,6 +639,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             menu_items = [
                 ("🏠", "홈", "child_dashboard"),
                 ("🔗", "연동하기", "linking"),
+                ("🏁", "챌린지", "challenges"),
                 ("💰", "내 지갑", "wallet"),
                 ("🎯", "저축 목표", "goals"),
                 ("📝", "용돈 요청", "allowance_request"),
@@ -671,6 +676,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 "classroom": "pages/12_📚_경제_교실.py",
                 "growth": "pages/13_🏆_내_성장.py",
                 "linking": "pages/15_🔗_연동하기.py",
+                "challenges": "pages/16_🏁_챌린지.py",
                 # shared
                 "settings": "pages/6_⚙️_설정.py",
             }

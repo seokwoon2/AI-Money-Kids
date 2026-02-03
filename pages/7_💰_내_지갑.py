@@ -55,6 +55,15 @@ def main():
     if not behaviors:
         st.caption("아직 거래 기록이 없어요.")
     else:
+        type_kr = {
+            "allowance": "용돈",
+            "saving": "저축",
+            "planned_spending": "계획 소비",
+            "impulse_buying": "충동 소비",
+            "delayed_gratification": "참기",
+            "comparing_prices": "가격 비교",
+            "spend": "지출",
+        }
         rows = []
         for b in behaviors[:50]:
             t = b.get("behavior_type")
@@ -63,7 +72,7 @@ def main():
             rows.append(
                 {
                     "일시": b.get("timestamp"),
-                    "구분": t,
+                    "구분": type_kr.get(str(t or "").strip(), str(t or "").strip()),
                     "금액": f"{sign}{int(amt):,}",
                     "카테고리": b.get("category") or "",
                     "메모": b.get("description") or "",

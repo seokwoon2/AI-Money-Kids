@@ -9,6 +9,7 @@ from utils.characters import get_skins_for_character
 from datetime import timedelta as _timedelta2
 import random as _random
 import re as _re
+import json as _json
 
 class DatabaseManager:
     """데이터베이스 관리 클래스"""
@@ -1434,6 +1435,471 @@ class DatabaseManager:
                 (user_id, behavior_type, amount, category, description, related_request_id),
             )
             conn.commit()
+            # 자동저축: 용돈(allowance) 발생 시 n%를 저축으로 자동 기록
+            try:
+                if str(behavior_type or "").strip() == "allowance" and float(amount or 0) > 0:
+                    stg = self.get_auto_saving_setting(int(user_id))
+                    if stg and int(stg.get("is_active") or 0) == 1:
+                        pct = int(stg.get("percent") or 0)
+                        if pct > 0:
+                            save_amt = int(round(float(amount) * (pct / 100.0)))
+                            if save_amt > 0:
+                                cursor.execute(
+                                    """
+                                    INSERT INTO behaviors (user_id, behavior_type, amount, category, description, related_request_id)
+                                    VALUES (?, 'saving', ?, ?, ?, ?)
+                                    """,
+                                    (int(user_id), float(save_amt), "자동저축", f"자동저축 {pct}%", None),
+                                )
+                                conn.commit()
+            except Exception:
+                pass
+        finally:
+            conn.close()
+
+    # ========== 자동저축 ==========
+
+    def get_auto_saving_setting(self, user_id: int) -> Optional[Dict]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM auto_saving_settings WHERE user_id = ? LIMIT 1", (int(user_id),))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def set_auto_saving_setting(self, user_id: int, percent: int, is_active: bool) -> bool:
+        percent = max(0, min(100, int(percent or 0)))
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO auto_saving_settings (user_id, percent, is_active, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    percent = excluded.percent,
+                    is_active = excluded.is_active,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (int(user_id), int(percent), 1 if is_active else 0),
+            )
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+    def try_grant_autosave_weekly_bonus(self, user_id: int, bonus_coins: int = 20) -> tuple[bool, str]:
+        """
+        자동저축 주간 보상(간단 버전)
+        - 지난 주(월~일) 기준
+        - 해당 주에 용돈(allowance)이 1건 이상 있었고
+        - 자동저축(category='자동저축') 합계가 예상치(allowance*percent) 이상이면
+        - 아직 해당 week_key로 보상을 안 받았을 때 코인 지급
+        """
+        stg = self.get_auto_saving_setting(int(user_id)) or {}
+        if int(stg.get("is_active") or 0) != 1:
+            return False, "자동저축이 꺼져 있어요."
+        pct = int(stg.get("percent") or 0)
+        if pct <= 0:
+            return False, "자동저축 비율이 0%예요."
+
+        today = _date.today()
+        # 이번 주 월요일
+        this_monday = today - _timedelta(days=today.weekday())
+        # 지난 주 월~일
+        last_monday = this_monday - _timedelta(days=7)
+        last_sunday = this_monday - _timedelta(days=1)
+        iso = last_monday.isocalendar()
+        week_key = f"{iso.year}-W{int(iso.week):02d}"
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # 이미 보상 받았나?
+            cursor.execute(
+                "SELECT 1 FROM auto_saving_weekly_rewards WHERE user_id = ? AND week_key = ? LIMIT 1",
+                (int(user_id), week_key),
+            )
+            if cursor.fetchone():
+                return False, "이미 지난주 보상을 받았어요."
+
+            start = last_monday.isoformat()
+            end = last_sunday.isoformat()
+
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(amount),0) as s
+                FROM behaviors
+                WHERE user_id = ?
+                  AND behavior_type = 'allowance'
+                  AND date(timestamp) BETWEEN ? AND ?
+                """,
+                (int(user_id), start, end),
+            )
+            allow_sum = float((cursor.fetchone() or {}).get("s") or 0)
+            if allow_sum <= 0:
+                return False, "지난주에 받은 용돈이 없어서 보상이 없어요."
+
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(amount),0) as s
+                FROM behaviors
+                WHERE user_id = ?
+                  AND behavior_type = 'saving'
+                  AND COALESCE(category,'') = '자동저축'
+                  AND date(timestamp) BETWEEN ? AND ?
+                """,
+                (int(user_id), start, end),
+            )
+            auto_save_sum = float((cursor.fetchone() or {}).get("s") or 0)
+            expected = allow_sum * (pct / 100.0)
+            if auto_save_sum + 0.0001 < expected:
+                return False, "지난주 자동저축 달성이 부족해요."
+
+            # 보상 지급(코인)
+            cursor.execute(
+                "UPDATE users SET coins = COALESCE(coins,0) + ? WHERE id = ?",
+                (int(bonus_coins), int(user_id)),
+            )
+            cursor.execute(
+                "INSERT INTO auto_saving_weekly_rewards (user_id, week_key) VALUES (?, ?)",
+                (int(user_id), week_key),
+            )
+            cursor.execute(
+                "INSERT INTO notifications (user_id, title, body, level) VALUES (?, ?, ?, ?)",
+                (int(user_id), "주간 자동저축 보상! 🪙", f"지난주 자동저축 달성으로 코인 +{int(bonus_coins)}", "success"),
+            )
+            conn.commit()
+            return True, f"지난주 보상으로 코인 +{int(bonus_coins)} 지급!"
+        except Exception:
+            try:
+                conn.commit()
+            except Exception:
+                pass
+            return False, "보상 처리에 실패했어요."
+        finally:
+            conn.close()
+
+    # ========== 챌린지 ==========
+
+    def create_challenge_template(
+        self,
+        parent_code: str | None,
+        title: str,
+        challenge_type: str,
+        params: dict | None = None,
+        reward_amount: float = 0,
+        reward_coins: int = 0,
+        created_by: int | None = None,
+    ) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO challenge_templates (parent_code, title, challenge_type, params_json, reward_amount, reward_coins, created_by, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                """,
+                (
+                    parent_code,
+                    str(title or "").strip(),
+                    str(challenge_type or "").strip(),
+                    _json.dumps(params or {}, ensure_ascii=False),
+                    float(reward_amount or 0),
+                    int(reward_coins or 0),
+                    int(created_by) if created_by is not None else None,
+                ),
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    def start_challenge(self, user_id: int, template_id: int, start_date: str, end_date: str) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO challenge_instances (user_id, template_id, start_date, end_date, status)
+                VALUES (?, ?, ?, ?, 'active')
+                """,
+                (int(user_id), int(template_id), str(start_date), str(end_date)),
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    def get_challenge_instances(self, user_id: int, status: str | None = None, limit: int = 50) -> list[Dict]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            q = """
+                SELECT i.*, t.title as template_title, t.challenge_type, t.params_json, t.reward_amount, t.reward_coins
+                FROM challenge_instances i
+                JOIN challenge_templates t ON t.id = i.template_id
+                WHERE i.user_id = ?
+            """
+            params: list = [int(user_id)]
+            if status:
+                q += " AND i.status = ?"
+                params.append(str(status))
+            q += " ORDER BY i.created_at DESC LIMIT ?"
+            params.append(int(limit))
+            cursor.execute(q, params)
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def create_challenge_checkin(self, instance_id: int, checkin_date: str, value: float = 1.0, note: str | None = None) -> bool:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO challenge_checkins (instance_id, checkin_date, value, note)
+                VALUES (?, ?, ?, ?)
+                """,
+                (int(instance_id), str(checkin_date), float(value or 0), note),
+            )
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+    def _sum_spend_in_range(self, user_id: int, start_date: str, end_date: str, category: str | None = None) -> float:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            q = """
+                SELECT COALESCE(SUM(amount),0) as s
+                FROM behaviors
+                WHERE user_id = ?
+                  AND behavior_type IN ('planned_spending','impulse_buying','spend')
+                  AND date(timestamp) BETWEEN ? AND ?
+            """
+            params = [int(user_id), str(start_date), str(end_date)]
+            if category:
+                q += " AND COALESCE(category,'') = ?"
+                params.append(str(category))
+            cursor.execute(q, params)
+            return float((cursor.fetchone() or {}).get("s") or 0)
+        finally:
+            conn.close()
+
+    def _sum_saving_on_date(self, user_id: int, day: str) -> float:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(amount),0) as s
+                FROM behaviors
+                WHERE user_id = ?
+                  AND behavior_type = 'saving'
+                  AND date(timestamp) = ?
+                """,
+                (int(user_id), str(day)),
+            )
+            return float((cursor.fetchone() or {}).get("s") or 0)
+        finally:
+            conn.close()
+
+    def compute_challenge_progress(self, inst: Dict) -> Dict:
+        """
+        inst: get_challenge_instances()의 row(dict)
+        return: {"progress":0~1, "summary":str, "can_finalize":bool, "is_success":bool|None}
+        """
+        ctype = str(inst.get("challenge_type") or "").strip()
+        start_date = str(inst.get("start_date") or "")
+        end_date = str(inst.get("end_date") or "")
+        params = {}
+        try:
+            params = _json.loads(inst.get("params_json") or "{}") or {}
+        except Exception:
+            params = {}
+
+        uid = int(inst.get("user_id"))
+        today = _date.today().isoformat()
+        can_finalize = today > end_date
+
+        if ctype == "spend_cap":
+            cap = float(params.get("cap_amount") or 0)
+            spent = self._sum_spend_in_range(uid, start_date, min(today, end_date))
+            prog = 0.0 if cap <= 0 else min(1.0, spent / cap)
+            remaining = cap - spent
+            is_success = None
+            if can_finalize:
+                total = self._sum_spend_in_range(uid, start_date, end_date)
+                is_success = bool(total <= cap)
+            return {
+                "progress": float(prog),
+                "summary": f"소비 {int(spent):,}원 / 목표 {int(cap):,}원 · 남은 {int(max(0, remaining)):,}원",
+                "can_finalize": bool(can_finalize),
+                "is_success": is_success,
+            }
+
+        if ctype == "reduce_category":
+            cat = str(params.get("category") or "").strip()
+            baseline = float(params.get("baseline_amount") or 0)
+            pct = float(params.get("reduction_pct") or 10)
+            target = baseline * (1.0 - (pct / 100.0))
+            cur = self._sum_spend_in_range(uid, start_date, min(today, end_date), category=cat or None)
+            prog = 0.0 if target <= 0 else min(1.0, cur / target)
+            is_success = None
+            if can_finalize:
+                total = self._sum_spend_in_range(uid, start_date, end_date, category=cat or None)
+                is_success = bool(total <= target)
+            label = cat or "카테고리"
+            return {
+                "progress": float(prog),
+                "summary": f"{label} 소비 {int(cur):,}원 / 목표 {int(target):,}원(기준 {int(baseline):,}원 대비 {int(pct)}%↓)",
+                "can_finalize": bool(can_finalize),
+                "is_success": is_success,
+            }
+
+        if ctype in ("daily_save_fixed", "daily_save_increasing"):
+            try:
+                s = _date.fromisoformat(start_date)
+                e = _date.fromisoformat(end_date)
+            except Exception:
+                return {"progress": 0.0, "summary": "기간 정보가 올바르지 않아요.", "can_finalize": False, "is_success": None}
+
+            days_total = max(1, (e - s).days + 1)
+            met = 0
+            required_today = 0
+            for i in range(days_total):
+                d = (s + _timedelta(days=i)).isoformat()
+                if d > today:
+                    continue
+                saved = self._sum_saving_on_date(uid, d)
+                if ctype == "daily_save_fixed":
+                    req = float(params.get("daily_amount") or 0)
+                else:
+                    start_amt = float(params.get("start_amount") or 500)
+                    inc = float(params.get("daily_increment") or 100)
+                    req = start_amt + inc * i
+                if d == today:
+                    required_today = int(req)
+                if saved >= req and req > 0:
+                    met += 1
+
+            prog = min(1.0, met / float(days_total))
+            is_success = None
+            if can_finalize:
+                # 모든 날짜 충족했는지 재평가(전체)
+                met_all = 0
+                for i in range(days_total):
+                    d = (s + _timedelta(days=i)).isoformat()
+                    saved = self._sum_saving_on_date(uid, d)
+                    if ctype == "daily_save_fixed":
+                        req = float(params.get("daily_amount") or 0)
+                    else:
+                        start_amt = float(params.get("start_amount") or 500)
+                        inc = float(params.get("daily_increment") or 100)
+                        req = start_amt + inc * i
+                    if saved >= req and req > 0:
+                        met_all += 1
+                is_success = bool(met_all >= days_total)
+
+            title = "하루 저축" if ctype == "daily_save_fixed" else "점점 늘리는 저축"
+            return {
+                "progress": float(prog),
+                "summary": f"{title} · 달성 {met}/{days_total}일 (오늘 목표 {int(required_today):,}원)",
+                "can_finalize": bool(can_finalize),
+                "is_success": is_success,
+            }
+
+        if ctype == "habit_custom":
+            target = int(params.get("target_count") or 7)
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) as cnt
+                    FROM challenge_checkins c
+                    WHERE c.instance_id = ?
+                      AND c.checkin_date BETWEEN ? AND ?
+                    """,
+                    (int(inst.get("id")), start_date, min(today, end_date)),
+                )
+                cnt = int((cursor.fetchone() or {}).get("cnt") or 0)
+            finally:
+                conn.close()
+            prog = 0.0 if target <= 0 else min(1.0, cnt / float(target))
+            is_success = None
+            if can_finalize:
+                is_success = bool(cnt >= target)
+            return {
+                "progress": float(prog),
+                "summary": f"체크 {cnt}/{target}회",
+                "can_finalize": bool(can_finalize),
+                "is_success": is_success,
+            }
+
+        return {"progress": 0.0, "summary": "지원되지 않는 챌린지 타입이에요.", "can_finalize": False, "is_success": None}
+
+    def finalize_challenge_if_due(self, instance_id: int) -> Optional[Dict]:
+        """기간 종료 후 정산(완료/실패 처리 + 보상 지급)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT i.*, t.title as template_title, t.challenge_type, t.params_json, t.reward_amount, t.reward_coins
+                FROM challenge_instances i
+                JOIN challenge_templates t ON t.id = i.template_id
+                WHERE i.id = ?
+                LIMIT 1
+                """,
+                (int(instance_id),),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+            inst = dict(row)
+            if str(inst.get("status")) != "active":
+                return inst
+
+            prog = self.compute_challenge_progress(inst)
+            if not prog.get("can_finalize"):
+                return inst
+            is_success = prog.get("is_success")
+            if is_success is None:
+                return inst
+
+            new_status = "completed" if is_success else "failed"
+            cursor.execute(
+                "UPDATE challenge_instances SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (new_status, int(instance_id)),
+            )
+            # 보상 지급(성공 시)
+            if is_success:
+                r_amount = float(inst.get("reward_amount") or 0)
+                r_coins = int(inst.get("reward_coins") or 0)
+                uid = int(inst.get("user_id"))
+                if r_amount > 0:
+                    cursor.execute(
+                        """
+                        INSERT INTO behaviors (user_id, behavior_type, amount, category, description)
+                        VALUES (?, 'allowance', ?, '챌린지', ?)
+                        """,
+                        (uid, float(r_amount), f"챌린지 보상: {inst.get('template_title') or ''}"),
+                    )
+                if r_coins > 0:
+                    cursor.execute("UPDATE users SET coins = COALESCE(coins,0) + ? WHERE id = ?", (r_coins, uid))
+                cursor.execute(
+                    "INSERT INTO notifications (user_id, title, body, level) VALUES (?, ?, ?, ?)",
+                    (uid, "챌린지 성공! 🎉", f"{inst.get('template_title')} 보상을 받았어요!", "success"),
+                )
+            conn.commit()
+            inst["status"] = new_status
+            return inst
         finally:
             conn.close()
 

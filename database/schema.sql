@@ -182,3 +182,76 @@ CREATE INDEX IF NOT EXISTS idx_risk_signals_user_id ON risk_signals(user_id);
 CREATE INDEX IF NOT EXISTS idx_risk_signals_created_at ON risk_signals(created_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_due_at ON reminders(due_at);
+
+-- =========================
+-- 챌린지 / 자동저축
+-- =========================
+
+-- 자동저축 설정(아이 계정 기준)
+CREATE TABLE IF NOT EXISTS auto_saving_settings (
+    user_id INTEGER PRIMARY KEY,
+    percent INTEGER NOT NULL DEFAULT 0,  -- 0~100
+    is_active INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 자동저축 주간 보상(중복 방지)
+CREATE TABLE IF NOT EXISTS auto_saving_weekly_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    week_key TEXT NOT NULL, -- 예: 2026-W05
+    rewarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, week_key),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 챌린지 템플릿(시스템/부모 커스텀)
+CREATE TABLE IF NOT EXISTS challenge_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_code TEXT,  -- 시스템 챌린지면 NULL
+    title TEXT NOT NULL,
+    challenge_type TEXT NOT NULL, -- spend_cap | reduce_category | daily_save_fixed | daily_save_increasing | habit_custom
+    params_json TEXT,  -- JSON 문자열
+    reward_amount REAL NOT NULL DEFAULT 0, -- 머니(원) 보상(선택)
+    reward_coins INTEGER NOT NULL DEFAULT 0, -- 코인 보상(선택)
+    created_by INTEGER,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- 챌린지 인스턴스(아이별 참여 기록)
+CREATE TABLE IF NOT EXISTS challenge_instances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    template_id INTEGER NOT NULL,
+    start_date TEXT NOT NULL, -- YYYY-MM-DD
+    end_date TEXT NOT NULL,   -- YYYY-MM-DD
+    status TEXT NOT NULL DEFAULT 'active', -- active|completed|failed|cancelled
+    progress_json TEXT, -- 진행 캐시(선택)
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (template_id) REFERENCES challenge_templates(id)
+);
+
+-- 챌린지 체크인(습관/일일형)
+CREATE TABLE IF NOT EXISTS challenge_checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    instance_id INTEGER NOT NULL,
+    checkin_date TEXT NOT NULL, -- YYYY-MM-DD
+    value REAL,
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(instance_id, checkin_date),
+    FOREIGN KEY (instance_id) REFERENCES challenge_instances(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_auto_saving_settings_user_id ON auto_saving_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_auto_saving_weekly_rewards_user_id ON auto_saving_weekly_rewards(user_id);
+CREATE INDEX IF NOT EXISTS idx_challenge_templates_parent_code ON challenge_templates(parent_code);
+CREATE INDEX IF NOT EXISTS idx_challenge_instances_user_id ON challenge_instances(user_id);
+CREATE INDEX IF NOT EXISTS idx_challenge_instances_status ON challenge_instances(status);
+CREATE INDEX IF NOT EXISTS idx_challenge_checkins_instance_id ON challenge_checkins(instance_id);

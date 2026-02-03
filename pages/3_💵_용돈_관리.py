@@ -271,11 +271,20 @@ def main():
         if not recent:
             st.caption("아직 기록이 없어요.")
         else:
+            type_kr = {
+                "allowance": "용돈",
+                "saving": "저축",
+                "planned_spending": "계획 소비",
+                "impulse_buying": "충동 소비",
+                "delayed_gratification": "참기",
+                "comparing_prices": "가격 비교",
+                "spend": "지출",
+            }
             st.dataframe(
                 [
                     {
                         "일시": r.get("timestamp"),
-                        "유형": r.get("behavior_type"),
+                        "유형": type_kr.get(str(r.get("behavior_type") or "").strip(), str(r.get("behavior_type") or "").strip()),
                         "금액": int(r.get("amount") or 0),
                         "카테고리": r.get("category") or "",
                         "내용": r.get("description") or "",
