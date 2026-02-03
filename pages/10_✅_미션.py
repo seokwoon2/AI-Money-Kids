@@ -32,6 +32,36 @@ def main():
 
     today = date.today().isoformat()
 
+    # ✅ 레벨업 대형 연출 카드(한 번만 표시)
+    ev = st.session_state.pop("levelup_event", None)
+    if ev:
+        before_lv = int(ev.get("before", 0) or 0)
+        after_lv = int(ev.get("after", 0) or 0)
+        coins_gained = int(ev.get("coins_gained", 0) or 0)
+        skins = ev.get("skins_unlocked") or []
+        st.markdown(
+            f"""
+            <div style="
+              background: linear-gradient(135deg, #667eea, #764ba2);
+              padding: 16px 16px;
+              border-radius: 18px;
+              color: white;
+              box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+              margin-bottom: 12px;
+            ">
+              <div style="font-weight:950; font-size:18px;">🎉 레벨업!</div>
+              <div style="margin-top:6px; font-weight:900; font-size:14px; opacity:0.95;">
+                Lv.{before_lv} → Lv.{after_lv}
+              </div>
+              <div style="margin-top:10px; font-weight:900; font-size:13px; opacity:0.92;">
+                🪙 코인 +{coins_gained}
+                {(' · 🎨 스킨 해금 ' + str(len(skins)) + '개') if skins else ''}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     if user_type == "child":
         db.assign_daily_missions_if_needed(user_id, today)
         tab_daily, tab_history = st.tabs(["📌 오늘의 미션", "🗂️ 기록"])
@@ -48,6 +78,13 @@ def main():
                             st.caption(m.get("description"))
                         st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
                         if st.button("완료!", key=f"complete_{m['id']}", use_container_width=True, type="primary"):
+                            xp_before = 0
+                            lvl_before = 1
+                            try:
+                                xp_before = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else 0
+                                lvl_before = max(1, xp_before // 20 + 1)
+                            except Exception:
+                                pass
                             ok = db.complete_mission(int(m["id"]))
                             if ok:
                                 reward = float(m.get("reward_amount") or 0)
@@ -55,7 +92,40 @@ def main():
                                     db.save_behavior_v2(user_id, "allowance", reward, description="미션 보상", category="미션")
                                 db.create_notification(user_id, "미션 완료!", f"보상 {int(reward):,}원을 받았어요.", level="success")
                                 db.award_badges_if_needed(user_id)
-                                st.balloons()
+                                xp_after = xp_before
+                                lvl_after = lvl_before
+                                try:
+                                    xp_after = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else xp_before
+                                    lvl_after = max(1, xp_after // 20 + 1)
+                                except Exception:
+                                    pass
+                                gained_xp = max(0, xp_after - xp_before)
+                                reward_info = {}
+                                try:
+                                    reward_info = db.grant_level_rewards_if_needed(user_id) if hasattr(db, "grant_level_rewards_if_needed") else {}
+                                except Exception:
+                                    reward_info = {}
+                                coins_gained = int((reward_info or {}).get("coins_gained") or 0)
+                                skins_unlocked = (reward_info or {}).get("skins_unlocked") or []
+
+                                if hasattr(st, "toast"):
+                                    st.toast(f"✨ XP +{gained_xp}", icon="🧠")
+                                    if lvl_after > lvl_before:
+                                        st.toast(f"🎉 레벨업! Lv.{lvl_before} → Lv.{lvl_after}", icon="⬆️")
+                                    if coins_gained:
+                                        st.toast(f"🪙 코인 +{coins_gained}", icon="🪙")
+                                    if skins_unlocked:
+                                        st.toast("🎨 새 스킨이 해금됐어요!", icon="🎨")
+                                # 대형 연출 카드용 이벤트 저장
+                                if lvl_after > lvl_before:
+                                    st.session_state["levelup_event"] = {
+                                        "before": lvl_before,
+                                        "after": lvl_after,
+                                        "coins_gained": coins_gained,
+                                        "skins_unlocked": skins_unlocked,
+                                    }
+                                if lvl_after > lvl_before:
+                                    st.balloons()
                                 st.rerun()
                             else:
                                 st.info("이미 완료했거나 처리할 수 없어요.")

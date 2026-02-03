@@ -80,156 +80,178 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         db = None
     unread_count = len(unread)
 
-    # ✅ 상단(전역) + 보기 토글: 같은 컨테이너로 묶어서 CSS 스코프를 고정
+    def _render_top_menu_popover():
+        with st.popover("☰", use_container_width=False):
+            st.markdown("**메뉴**")
+            if user_type == "parent":
+                items = [
+                    ("🏠", "홈", "parent_dashboard"),
+                    ("👶", "자녀 관리", "parent_children"),
+                    ("💵", "용돈 관리", "allowance_manage"),
+                    ("📝", "요청 승인", "request_approve"),
+                    ("📊", "리포트", "parent_report"),
+                    ("⚙️", "설정", "settings"),
+                ]
+            else:
+                items = [
+                    ("🏠", "홈", "child_dashboard"),
+                    ("💰", "내 지갑", "wallet"),
+                    ("🎯", "저축 목표", "goals"),
+                    ("📝", "용돈 요청", "allowance_request"),
+                    ("✅", "미션", "missions"),
+                    ("🛍️", "상점", "shop"),
+                    ("🤖", "AI 친구", "ai_friend"),
+                    ("📚", "경제 교실", "classroom"),
+                    ("🏆", "내 성장", "growth"),
+                    ("⚙️", "설정", "settings"),
+                ]
+
+            page_paths = {
+                "parent_dashboard": "pages/1_🏠_대시보드.py",
+                "parent_children": "pages/2_👶_자녀_관리.py",
+                "allowance_manage": "pages/3_💵_용돈_관리.py",
+                "request_approve": "pages/4_📝_요청_승인.py",
+                "parent_report": "pages/5_📊_리포트.py",
+                "child_dashboard": "pages/1_🏠_대시보드.py",
+                "wallet": "pages/7_💰_내_지갑.py",
+                "goals": "pages/8_🎯_저축_목표.py",
+                "allowance_request": "pages/9_📝_용돈_요청.py",
+                "missions": "pages/10_✅_미션.py",
+                "shop": "pages/14_🛍️_상점.py",
+                "ai_friend": "pages/11_🤖_AI_친구.py",
+                "classroom": "pages/12_📚_경제_교실.py",
+                "growth": "pages/13_🏆_내_성장.py",
+                "settings": "pages/6_⚙️_설정.py",
+            }
+
+            for icon, label, key in items:
+                page_path = page_paths.get(key)
+                ready = bool(page_path and _page_exists(page_path))
+                if st.button(
+                    f"{icon} {label}" + ("" if ready else " (준비중)"),
+                    use_container_width=True,
+                    disabled=not ready,
+                    key=f"amf_top_menu_{key}",
+                ):
+                    st.session_state["current_page"] = key
+                    if page_path and ready:
+                        try:
+                            st.switch_page(page_path)
+                        except Exception:
+                            st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
+                    st.rerun()
+
+            st.markdown("---")
+            if st.session_state.get("logged_in"):
+                if st.button("🚪 로그아웃", use_container_width=True, key="amf_top_logout"):
+                    for k in list(st.session_state.keys()):
+                        if k not in ["current_auth_screen"]:
+                            del st.session_state[k]
+                    st.session_state["logged_in"] = False
+                    st.session_state["current_auth_screen"] = "login"
+                    try:
+                        st.switch_page("app.py")
+                    except Exception:
+                        st.rerun()
+
+    def _render_top_alarm():
+        with st.popover("🔔", use_container_width=False):
+            st.markdown("**알림**")
+            if unread_count:
+                st.caption(f"읽지 않은 알림: {unread_count}개")
+            if not unread:
+                st.caption("새 알림이 없어요.")
+            else:
+                for n in unread[:8]:
+                    lvl = (n.get("level") or "info").lower()
+                    title = n.get("title") or ""
+                    body = n.get("body") or ""
+                    if lvl == "success":
+                        st.success(f"**{title}**\n\n{body}")
+                    elif lvl == "warning":
+                        st.warning(f"**{title}**\n\n{body}")
+                    else:
+                        st.info(f"**{title}**\n\n{body}")
+                    if st.button("읽음", key=f"amf_top_read_notif_{n.get('id')}", use_container_width=True):
+                        if db and hasattr(db, "mark_notification_read"):
+                            try:
+                                db.mark_notification_read(int(n["id"]))
+                            except Exception:
+                                pass
+                        st.rerun()
+
+    def _render_top_view():
+        current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
+        if hasattr(st, "segmented_control"):
+            picked = st.segmented_control(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                default=current,
+                label_visibility="collapsed",
+                key="amf_layout_mode_segmented",
+            )
+        else:
+            picked = st.selectbox(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                index=["자동", "모바일", "PC"].index(current),
+                label_visibility="collapsed",
+                key="amf_layout_mode_select",
+            )
+        if picked:
+            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
+            if new_mode != st.session_state.get("layout_mode", "auto"):
+                st.session_state["layout_mode"] = new_mode
+                st.rerun()
+
+    # ✅ 상단(전역) + 보기: layout_mode에 따라 레이아웃/스타일 분리
     with st.container():
         st.markdown('<span id="amf_topnav_anchor"></span>', unsafe_allow_html=True)
 
-        # ✅ 상단(전역): 메뉴(맨왼쪽) / 홈(그다음) / 보기 / 날짜 / 알림(맨오른쪽)
-        top_menu, top_home, top_view, top_date, top_alarm = st.columns([0.07, 0.06, 0.47, 0.22, 0.18])
-
-        with top_menu:
-            with st.popover("☰", use_container_width=False):
-                st.markdown("**메뉴**")
-                # 메뉴 항목 (현재 pages 구조 기준)
-                if user_type == "parent":
-                    items = [
-                        ("🏠", "홈", "parent_dashboard"),
-                        ("👶", "자녀 관리", "parent_children"),
-                        ("💵", "용돈 관리", "allowance_manage"),
-                        ("📝", "요청 승인", "request_approve"),
-                        ("📊", "리포트", "parent_report"),
-                        ("⚙️", "설정", "settings"),
-                    ]
-                else:
-                    items = [
-                        ("🏠", "홈", "child_dashboard"),
-                        ("💰", "내 지갑", "wallet"),
-                        ("🎯", "저축 목표", "goals"),
-                        ("📝", "용돈 요청", "allowance_request"),
-                        ("✅", "미션", "missions"),
-                        ("🤖", "AI 친구", "ai_friend"),
-                        ("📚", "경제 교실", "classroom"),
-                        ("🏆", "내 성장", "growth"),
-                        ("⚙️", "설정", "settings"),
-                    ]
-
-                page_paths = {
-                    # parent
-                    "parent_dashboard": "pages/1_🏠_대시보드.py",
-                    "parent_children": "pages/2_👶_자녀_관리.py",
-                    "allowance_manage": "pages/3_💵_용돈_관리.py",
-                    "request_approve": "pages/4_📝_요청_승인.py",
-                    "parent_report": "pages/5_📊_리포트.py",
-                    # child
-                    "child_dashboard": "pages/1_🏠_대시보드.py",
-                    "wallet": "pages/7_💰_내_지갑.py",
-                    "goals": "pages/8_🎯_저축_목표.py",
-                    "allowance_request": "pages/9_📝_용돈_요청.py",
-                    "missions": "pages/10_✅_미션.py",
-                    "ai_friend": "pages/11_🤖_AI_친구.py",
-                    "classroom": "pages/12_📚_경제_교실.py",
-                    "growth": "pages/13_🏆_내_성장.py",
-                    # shared
-                    "settings": "pages/6_⚙️_설정.py",
-                }
-
-                for icon, label, key in items:
-                    page_path = page_paths.get(key)
-                    ready = bool(page_path and _page_exists(page_path))
-                    if st.button(
-                        f"{icon} {label}" + ("" if ready else " (준비중)"),
-                        use_container_width=True,
-                        disabled=not ready,
-                        key=f"amf_top_menu_{key}",
-                    ):
-                        st.session_state["current_page"] = key
-                        if page_path and ready:
-                            try:
-                                st.switch_page(page_path)
-                            except Exception:
-                                st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
+        if layout_mode == "mobile":
+            # 모바일: 1줄(메뉴/홈/날짜/알림) + 1줄(보기)
+            r1_menu, r1_home, r1_date, r1_alarm = st.columns([0.10, 0.08, 0.62, 0.20])
+            with r1_menu:
+                _render_top_menu_popover()
+            with r1_home:
+                if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
+                    st.session_state["current_page"] = home_key
+                    try:
+                        st.switch_page(home_path)
+                    except Exception:
                         st.rerun()
-
-                st.markdown("---")
-                if st.session_state.get("logged_in"):
-                    if st.button("🚪 로그아웃", use_container_width=True, key="amf_top_logout"):
-                        for k in list(st.session_state.keys()):
-                            if k not in ["current_auth_screen"]:
-                                del st.session_state[k]
-                        st.session_state["logged_in"] = False
-                        st.session_state["current_auth_screen"] = "login"
-                        try:
-                            st.switch_page("app.py")
-                        except Exception:
-                            st.rerun()
-
-        with top_home:
-            if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
-                st.session_state["current_page"] = home_key
-                try:
-                    st.switch_page(home_path)
-                except Exception:
-                    st.rerun()
-
-        with top_view:
-            # ✅ 보기(자동/모바일/PC): 상단 한 줄에 배치 (PC에서 위치 이상한 문제 해결)
-            current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
-            if hasattr(st, "segmented_control"):
-                picked = st.segmented_control(
-                    "보기",
-                    options=["자동", "모바일", "PC"],
-                    default=current,
-                    label_visibility="collapsed",
-                    key="amf_layout_mode_segmented",
+            with r1_date:
+                st.markdown(
+                    f"<div class='amf-topdate' style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
+                    unsafe_allow_html=True,
                 )
-            else:
-                picked = st.selectbox(
-                    "보기",
-                    options=["자동", "모바일", "PC"],
-                    index=["자동", "모바일", "PC"].index(current),
-                    label_visibility="collapsed",
-                    key="amf_layout_mode_select",
+            with r1_alarm:
+                _render_top_alarm()
+
+            r2_view = st.columns([1])[0]
+            with r2_view:
+                _render_top_view()
+        else:
+            # PC/자동: 1줄(메뉴/홈/보기/날짜/알림)
+            top_menu, top_home, top_view, top_date, top_alarm = st.columns([0.07, 0.06, 0.47, 0.22, 0.18])
+            with top_menu:
+                _render_top_menu_popover()
+            with top_home:
+                if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
+                    st.session_state["current_page"] = home_key
+                    try:
+                        st.switch_page(home_path)
+                    except Exception:
+                        st.rerun()
+            with top_view:
+                _render_top_view()
+            with top_date:
+                st.markdown(
+                    f"<div class='amf-topdate' style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
+                    unsafe_allow_html=True,
                 )
-
-            if picked:
-                new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
-                if new_mode != st.session_state.get("layout_mode", "auto"):
-                    st.session_state["layout_mode"] = new_mode
-                    st.rerun()
-
-        with top_date:
-            st.markdown(
-                f"<div class='amf-topdate' style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
-                unsafe_allow_html=True,
-            )
-
-        with top_alarm:
-            # 버튼 크기를 줄이기 위해 알림은 아이콘형(필요 시 숫자는 내부에서 표시)
-            alarm_label = "🔔"
-            with st.popover(alarm_label, use_container_width=False):
-                st.markdown("**알림**")
-                if unread_count:
-                    st.caption(f"읽지 않은 알림: {unread_count}개")
-                if not unread:
-                    st.caption("새 알림이 없어요.")
-                else:
-                    for n in unread[:8]:
-                        lvl = (n.get("level") or "info").lower()
-                        title = n.get("title") or ""
-                        body = n.get("body") or ""
-                        if lvl == "success":
-                            st.success(f"**{title}**\n\n{body}")
-                        elif lvl == "warning":
-                            st.warning(f"**{title}**\n\n{body}")
-                        else:
-                            st.info(f"**{title}**\n\n{body}")
-                        if st.button("읽음", key=f"amf_top_read_notif_{n.get('id')}", use_container_width=True):
-                            if db and hasattr(db, "mark_notification_read"):
-                                try:
-                                    db.mark_notification_read(int(n["id"]))
-                                except Exception:
-                                    pass
-                            st.rerun()
+            with top_alarm:
+                _render_top_alarm()
     
     # CSS 주입
     responsive_css = """
@@ -258,6 +280,68 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         }
     }
     """
+
+    # ===== 상단바 모드별 CSS(모바일/PC 구분) =====
+    topnav_mode_css = ""
+    if layout_mode == "pc":
+        topnav_mode_css = """
+        /* ====== TopNav Force PC ====== */
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"]{
+            flex-wrap: nowrap !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"] > div{
+            min-width: 0 !important;
+        }
+        /* 아이콘형(popover) 버튼은 고정 폭 */
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"]{
+            width: 44px !important;
+            min-width: 44px !important;
+            padding: 0 !important;
+            justify-content: center !important;
+        }
+        """
+    elif layout_mode == "mobile":
+        topnav_mode_css = """
+        /* ====== TopNav Force Mobile ====== */
+        /* 전역 @media 규칙(50%)이 상단바를 깨지 않도록 상단바만 예외 처리 */
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"] > div{
+            flex: 0 1 auto !important;
+            min-width: 0 !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"]{
+            flex-wrap: nowrap !important;
+        }
+        /* 모바일에서는 보기 토글이 100% 폭을 쓰도록 */
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
+            width: 100% !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"] button{
+            height: 40px !important;
+            font-size: 13px !important;
+            padding: 0 10px !important;
+        }
+        /* popover 버튼은 터치용으로 조금 더 크게 */
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"]{
+            width: 46px !important;
+            min-width: 46px !important;
+            padding: 0 !important;
+            justify-content: center !important;
+        }
+        """
+    else:
+        # auto: 화면이 좁을 때는 상단바만 50% 고정폭을 풀어준다
+        topnav_mode_css = """
+        /* ====== TopNav Auto ====== */
+        @media (max-width: 768px){
+            div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"] > div{
+                flex: 0 1 auto !important;
+                min-width: 0 !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
+                width: 100% !important;
+            }
+        }
+        """
 
     # 강제 모바일: 화면이 넓어도 1열 위주(모바일처럼)
     if layout_mode == "mobile":
@@ -405,7 +489,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         transform: translateY(-3px);
     }
 
-    /* ===== 전역 상단바(메뉴/홈/날짜/알림/보기) 컴팩트 ===== */
+    /* ===== 전역 상단바(메뉴/홈/날짜/알림/보기) 기본 ===== */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor){
         margin-bottom: 0.25rem !important;
     }
@@ -413,16 +497,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         align-items: center !important;
         gap: 0.55rem !important;
     }
-    /* 모바일에서도 배치 순서 유지(강제 줄바꿈 방지) */
-    @media (max-width: 768px){
-        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"]{
-            flex-wrap: nowrap !important;
-        }
-        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"] > div{
-            min-width: 0 !important;
-        }
-    }
-    /* 상단바 버튼(메뉴/홈/알림) */
+    /* 상단바 버튼 기본 톤 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
         height: 42px !important;
@@ -433,33 +508,15 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background: rgba(255,255,255,0.92) !important;
         box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
         line-height: 1 !important;
+        white-space: nowrap !important;
     }
-    /* ✅ 아이콘형(팝오버 트리거) 버튼만 고정 폭 적용
-       (전역 버튼까지 폭이 줄어 글자가 깨지는 현상 방지) */
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"]{
-        width: 44px !important;
-        min-width: 44px !important;
-        padding: 0 !important;
-        justify-content: center !important;
-    }
-
-    /* 상단바 segmented_control(보기) 컴팩트 */
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
-        margin-top: 0 !important;
-    }
+    /* 상단바 segmented_control 기본 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"] button{
         height: 36px !important;
         padding: 0 12px !important;
         font-weight: 900 !important;
         font-size: 13px !important;
         border-radius: 999px !important;
-    }
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
-        transform: translateY(1px);
-    }
-    /* segmented_control(보기) 주변 간격 축소 */
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
-        margin-top: -2px !important;
     }
     
     /* 메뉴 버튼 스타일 */
@@ -520,7 +577,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
 
     # ✅ f-string 금지: CSS의 { }가 파이썬 포맷으로 해석되면 NameError 발생
     st.markdown(
-        "<style>\n" + base_css + "\n" + responsive_css + "\n</style>",
+        "<style>\n" + base_css + "\n" + topnav_mode_css + "\n" + responsive_css + "\n</style>",
         unsafe_allow_html=True,
     )
 

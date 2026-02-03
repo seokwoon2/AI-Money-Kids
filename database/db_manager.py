@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Tuple
 import bcrypt
 from config import Config
 from datetime import date as _date, timedelta as _timedelta
+from utils.characters import get_skins_for_character
 
 class DatabaseManager:
     """데이터베이스 관리 클래스"""
@@ -48,6 +49,55 @@ class DatabaseManager:
                 cursor.execute("ALTER TABLE behaviors ADD COLUMN related_request_id INTEGER")
                 conn.commit()
             except sqlite3.OperationalError:
+                pass
+
+            # users 확장 컬럼
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN birth_date TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_code TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_nickname TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_skin_code TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN coins INTEGER NOT NULL DEFAULT 0")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN last_reward_level INTEGER NOT NULL DEFAULT 0")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            # user_skins 테이블(없으면 생성)
+            try:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS user_skins (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        skin_code TEXT NOT NULL,
+                        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, skin_code)
+                    )
+                    """
+                )
+                conn.commit()
+            except Exception:
                 pass
         finally:
             conn.close()
@@ -188,15 +238,37 @@ class DatabaseManager:
     # ========== 배지/성장 ==========
 
     def get_xp(self, user_id: int) -> int:
-        """단순 XP: behaviors 개수 + 완료 미션 개수"""
+        """XP(가중치): behaviors 개수 + 완료 미션 난이도 가중 합"""
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT COUNT(*) as cnt FROM behaviors WHERE user_id = ?", (user_id,))
             bcnt = int(cursor.fetchone()["cnt"] or 0)
-            cursor.execute("SELECT COUNT(*) as cnt FROM mission_assignments WHERE user_id = ? AND status='completed'", (user_id,))
-            mcnt = int(cursor.fetchone()["cnt"] or 0)
-            return bcnt + mcnt
+            # missions: difficulty join (없으면 count fallback)
+            try:
+                cursor.execute(
+                    """
+                    SELECT COALESCE(SUM(
+                        CASE COALESCE(t.difficulty,'normal')
+                            WHEN 'easy' THEN 5
+                            WHEN 'hard' THEN 12
+                            ELSE 8
+                        END
+                    ),0) as xp
+                    FROM mission_assignments a
+                    JOIN mission_templates t ON a.template_id = t.id
+                    WHERE a.user_id = ? AND a.status='completed'
+                    """,
+                    (user_id,),
+                )
+                mxp = int((cursor.fetchone() or {}).get("xp") or 0)
+            except Exception:
+                cursor.execute(
+                    "SELECT COUNT(*) as cnt FROM mission_assignments WHERE user_id = ? AND status='completed'",
+                    (user_id,),
+                )
+                mxp = int(cursor.fetchone()["cnt"] or 0)
+            return int(bcnt + mxp)
         finally:
             conn.close()
 
@@ -276,8 +348,21 @@ class DatabaseManager:
     
     # ========== 사용자 관리 ==========
     
-    def create_user(self, username: str, password: str, name: str, age: int, parent_code: str, 
-                   user_type: str = 'child', parent_ssn: str = None, phone_number: str = None) -> int:
+    def create_user(
+        self,
+        username: str,
+        password: str,
+        name: str,
+        age: int,
+        parent_code: str,
+        user_type: str = "child",
+        parent_ssn: str = None,
+        phone_number: str = None,
+        birth_date: str = None,  # YYYY-MM-DD
+        character_code: str = None,
+        character_nickname: str = None,
+        character_skin_code: str = None,
+    ) -> int:
         """새 사용자 생성"""
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
@@ -309,15 +394,252 @@ class DatabaseManager:
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
+
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN birth_date TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_code TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_nickname TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN character_skin_code TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN coins INTEGER NOT NULL DEFAULT 0")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN last_reward_level INTEGER NOT NULL DEFAULT 0")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
             
             cursor.execute("""
-                INSERT INTO users (username, password_hash, name, age, parent_code, user_type, parent_ssn, phone_number)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (username, password_hash, name, age, parent_code, user_type, parent_ssn_hash, phone_number))
+                INSERT INTO users (
+                    username, password_hash, name, age,
+                    birth_date, character_code, character_nickname, character_skin_code,
+                    coins, last_reward_level,
+                    parent_code, user_type, parent_ssn, phone_number
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
+            """, (
+                username,
+                password_hash,
+                name,
+                age,
+                birth_date,
+                character_code,
+                character_nickname,
+                character_skin_code,
+                parent_code,
+                user_type,
+                parent_ssn_hash,
+                phone_number,
+            ))
             conn.commit()
             return cursor.lastrowid
         finally:
             conn.close()
+
+    def update_user_birth_date(self, user_id: int, birth_date: str) -> bool:
+        """생년월일 업데이트(YYYY-MM-DD)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET birth_date = ? WHERE id = ?", (birth_date, user_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def update_user_character_code(self, user_id: int, character_code: str) -> bool:
+        """캐릭터 코드 업데이트"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET character_code = ? WHERE id = ?", (character_code, user_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def update_user_character_nickname(self, user_id: int, character_nickname: str) -> bool:
+        """캐릭터 별명/이름 업데이트"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET character_nickname = ? WHERE id = ?", (character_nickname, user_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def update_user_character_skin_code(self, user_id: int, character_skin_code: str) -> bool:
+        """캐릭터 스킨 코드 업데이트"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET character_skin_code = ? WHERE id = ?", (character_skin_code, user_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def add_coins(self, user_id: int, amount: int) -> bool:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET coins = COALESCE(coins,0) + ? WHERE id = ?", (int(amount), user_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def unlock_skin(self, user_id: int, skin_code: str) -> bool:
+        """스킨 해금(중복 방지)"""
+        if not skin_code:
+            return False
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT OR IGNORE INTO user_skins (user_id, skin_code) VALUES (?, ?)",
+                (int(user_id), str(skin_code)),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def get_unlocked_skins(self, user_id: int) -> list[str]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT skin_code FROM user_skins WHERE user_id = ? ORDER BY unlocked_at DESC", (int(user_id),))
+            return [str(r["skin_code"]) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def _level_from_xp(xp: int) -> int:
+        return max(1, int(xp) // 20 + 1)
+
+    def grant_level_rewards_if_needed(self, user_id: int) -> dict:
+        """
+        레벨업 보상 지급(중복 방지)
+        - coins: 레벨당 10코인 + (5레벨마다 추가 50코인)
+        - skins: 캐릭터별 스킨(required_level) 자동 해금
+        """
+        user = self.get_user_by_id(int(user_id)) or {}
+        xp = 0
+        try:
+            xp = int(self.get_xp(int(user_id)) or 0)
+        except Exception:
+            xp = 0
+        level_now = self._level_from_xp(xp)
+        last_paid = int(user.get("last_reward_level") or 0)
+        coins_before = int(user.get("coins") or 0)
+        coins_gain = 0
+        skins_unlocked: list[str] = []
+
+        if level_now <= last_paid:
+            return {
+                "level_now": level_now,
+                "levels_gained": 0,
+                "coins_gained": 0,
+                "coins_now": coins_before,
+                "skins_unlocked": [],
+            }
+
+        for lv in range(last_paid + 1, level_now + 1):
+            coins_gain += 10
+            if lv % 5 == 0:
+                coins_gain += 50
+
+        if coins_gain:
+            self.add_coins(int(user_id), coins_gain)
+
+        # 스킨 해금: 기본 스킨만(상점 스킨은 구매)
+        ccode = (user.get("character_code") or "").strip()
+        if ccode:
+            for skin in get_skins_for_character(ccode):
+                if int(skin.get("price") or 0) != 0:
+                    continue
+                req = int(skin.get("required_level") or 9999)
+                if req <= level_now:
+                    if self.unlock_skin(int(user_id), skin.get("code")):
+                        skins_unlocked.append(str(skin.get("code")))
+
+        # last_reward_level 업데이트
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET last_reward_level = ? WHERE id = ?", (int(level_now), int(user_id)))
+            conn.commit()
+        finally:
+            conn.close()
+
+        # coins_now 재조회(간단)
+        updated = self.get_user_by_id(int(user_id)) or {}
+        coins_now = int(updated.get("coins") or 0)
+
+        return {
+            "level_now": level_now,
+            "levels_gained": int(level_now - last_paid),
+            "coins_gained": int(coins_gain),
+            "coins_now": coins_now,
+            "skins_unlocked": skins_unlocked,
+        }
+
+    def purchase_skin(self, user_id: int, skin_code: str, price: int, required_level: int) -> tuple[bool, str]:
+        """스킨 구매(코인 차감 + 해금 + 적용)"""
+        user = self.get_user_by_id(int(user_id)) or {}
+        coins = int(user.get("coins") or 0)
+        xp = 0
+        try:
+            xp = int(self.get_xp(int(user_id)) or 0)
+        except Exception:
+            xp = 0
+        lvl = self._level_from_xp(xp)
+        if lvl < int(required_level or 1):
+            return False, f"레벨 {required_level} 이상이 필요해요."
+        if coins < int(price or 0):
+            return False, "코인이 부족해요."
+
+        # 이미 해금?
+        try:
+            unlocked = set(self.get_unlocked_skins(int(user_id)))
+            if skin_code in unlocked:
+                return False, "이미 보유한 스킨이에요."
+        except Exception:
+            pass
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET coins = COALESCE(coins,0) - ? WHERE id = ? AND COALESCE(coins,0) >= ?", (int(price), int(user_id), int(price)))
+            if cursor.rowcount <= 0:
+                conn.commit()
+                return False, "코인이 부족해요."
+            conn.commit()
+        finally:
+            conn.close()
+
+        self.unlock_skin(int(user_id), skin_code)
+        self.update_user_character_skin_code(int(user_id), skin_code)
+        return True, "구매 완료! 스킨을 적용했어요."
     
     def get_user_by_username(self, username: str) -> Optional[Dict]:
         """사용자명으로 사용자 조회"""

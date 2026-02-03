@@ -133,7 +133,8 @@ def handle_oauth_callback():
                         st.success(f"🎉 환영합니다, {nickname}님!")
                         st.balloons()
                         st.query_params.clear()
-                        import time
+import time
+from datetime import date
                         time.sleep(1)
                         st.rerun()
                     else:
@@ -1312,8 +1313,20 @@ def signup_page():
 
     if "signup_user_type" not in st.session_state:
         st.session_state["signup_user_type"] = None
+    if "signup_character_code" not in st.session_state:
+        st.session_state["signup_character_code"] = None
+    if "amf_signup_flow_step" not in st.session_state:
+        # 1: 시작, 2: 아이/부모 선택, 3: 캐릭터 선택(아이), 4: 정보 입력
+        st.session_state["amf_signup_flow_step"] = 1
 
     def _form():
+        # === 온보딩 위자드(스샷처럼 선택 → 시작하기) ===
+        def _goto(step: int):
+            st.session_state["amf_signup_flow_step"] = int(step)
+            st.rerun()
+
+        step = int(st.session_state.get("amf_signup_flow_step") or 1)
+
         st.markdown(
             """
             <div style='text-align:center;'>
@@ -1325,33 +1338,195 @@ def signup_page():
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 👤 가입 유형")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("👨‍👩‍👧 부모님", key="signup_parent_btn", use_container_width=True):
-                st.session_state["signup_user_type"] = "parent"
-                st.rerun()
-        with c2:
-            if st.button("👶 아이", key="signup_child_btn", use_container_width=True):
-                st.session_state["signup_user_type"] = "child"
-                st.rerun()
+        # 스텝 인디케이터(1~3)
+        st.markdown(
+            f"""
+            <div style="display:flex; gap:10px; justify-content:center; margin: 6px 0 10px 0;">
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step==1 else 'rgba(255,255,255,0.35)'};"></div>
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step==2 else 'rgba(255,255,255,0.35)'};"></div>
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step in (3,4) else 'rgba(255,255,255,0.35)'};"></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         user_type = st.session_state.get("signup_user_type")
-        if user_type == "parent":
-            st.markdown('<div class="amf-type-pill">👨‍👩‍👧 부모님으로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
-        elif user_type == "child":
-            st.markdown('<div class="amf-type-pill">👶 아이로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
-        else:
-            st.caption("가입 유형을 선택해주세요")
+
+        # Step 1: 시작하기
+        if step == 1:
+            st.markdown(
+                """
+                <div style="
+                    border-radius:20px;
+                    padding: 18px 16px;
+                    background: rgba(0,0,0,0.12);
+                    border: 1px solid rgba(255,255,255,0.18);
+                ">
+                  <div style="font-weight:950; font-size:18px; color:rgba(255,255,255,0.98);">안녕! 나는 너의 머니프렌즈</div>
+                  <div style="margin-top:6px; font-weight:850; font-size:13px; opacity:0.9;">
+                    용돈 · 미션 · 저축 목표를 게임처럼 같이 키워보자!
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            if st.button("시작하기", key="amf_signup_start", use_container_width=True, type="primary"):
+                _goto(2)
             if st.button("← 로그인으로 돌아가기", key="signup_back_login_top", use_container_width=True):
                 st.session_state["show_signup"] = False
                 st.session_state["current_auth_screen"] = "login"
                 st.rerun()
             return
 
+        # Step 2: 아이/부모 선택(카드형)
+        if step == 2:
+            st.markdown("### 누구로 시작할까?")
+            st.caption("계정을 만들고, 우리 가족 머니프렌즈를 키워요.")
+            a, b = st.columns(2)
+            with a:
+                st.markdown(
+                    """
+                    <div style="
+                        border-radius:18px; padding:14px 14px 10px 14px;
+                        background: rgba(255,255,255,0.10);
+                        border: 1px solid rgba(255,255,255,0.22);
+                    ">
+                      <div style="font-size:22px; font-weight:950; color:rgba(255,255,255,0.96);">아이로 시작</div>
+                      <div style="margin-top:6px; font-size:13px; font-weight:850; opacity:0.9;">나만의 머니프렌즈를 키워요</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                if st.button("이 친구로 시작하기", key="signup_child_btn", use_container_width=True, type="primary"):
+                    st.session_state["signup_user_type"] = "child"
+                    _goto(3)
+            with b:
+                st.markdown(
+                    """
+                    <div style="
+                        border-radius:18px; padding:14px 14px 10px 14px;
+                        background: rgba(255,255,255,0.10);
+                        border: 1px solid rgba(255,255,255,0.22);
+                    ">
+                      <div style="font-size:22px; font-weight:950; color:rgba(255,255,255,0.96);">부모로 시작</div>
+                      <div style="margin-top:6px; font-size:13px; font-weight:850; opacity:0.9;">아이와 함께 돈습관을 관리해요</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                if st.button("이 친구로 시작하기", key="signup_parent_btn", use_container_width=True):
+                    st.session_state["signup_user_type"] = "parent"
+                    _goto(4)
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            if st.button("← 뒤로", key="amf_signup_back_2", use_container_width=True):
+                _goto(1)
+            return
+
+        # Step 3: 캐릭터 선택(아이)
+        if step == 3:
+            st.session_state["signup_user_type"] = "child"
+            st.markdown("### 친구를 골라봐!")
+            st.caption("선택한 친구가 너의 머니프렌즈가 돼요.")
+            try:
+                from utils.characters import get_character_catalog, get_character_by_code
+            except Exception:
+                get_character_catalog = lambda: []  # type: ignore
+                get_character_by_code = lambda _c: None  # type: ignore
+
+            selected_code = st.session_state.get("signup_character_code")
+            chars = get_character_catalog() or []
+            cols = st.columns(3)
+            for i, ch in enumerate(chars):
+                with cols[i % 3]:
+                    is_sel = selected_code == ch.get("code")
+                    c1, c2 = (ch.get("colors") or ("#E5E7EB", "#F3F4F6"))[:2]
+                    st.markdown(
+                        f"""
+                        <div style="
+                            border-radius:18px;
+                            padding:14px 14px 12px 14px;
+                            border: 2px solid {'rgba(255,255,255,0.60)' if is_sel else 'rgba(255,255,255,0.18)'};
+                            background: linear-gradient(135deg, {c1}, {c2});
+                            box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+                            color: rgba(17,24,39,0.92);
+                            min-height: 140px;
+                        ">
+                            <div style="font-size:34px; line-height:1;">{ch.get('emoji','🐾')}</div>
+                            <div style="font-weight:950; font-size:18px; margin-top:6px;">{ch.get('name','캐릭터')}</div>
+                            <div style="font-weight:800; font-size:12px; opacity:0.85;">{ch.get('role','')}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                    if st.button(
+                        "선택" if not is_sel else "선택됨",
+                        use_container_width=True,
+                        key=f"pick_char_{ch.get('code')}",
+                        type="primary" if is_sel else "secondary",
+                    ):
+                        st.session_state["signup_character_code"] = ch.get("code")
+                        st.rerun()
+
+            picked = get_character_by_code(st.session_state.get("signup_character_code"))
+            if picked:
+                st.markdown(
+                    f'<div class="amf-type-pill">🎮 <b>{picked.get("name")}</b>({picked.get("role")})로 시작해요 <small>선택됨</small></div>',
+                    unsafe_allow_html=True,
+                )
+                st.session_state.setdefault("signup_character_nickname", "")
+                nick_default = st.session_state.get("signup_character_nickname") or ""
+                character_nickname = st.text_input(
+                    "캐릭터 이름(별명)",
+                    value=nick_default,
+                    placeholder=f"예: {picked.get('name')}짱",
+                    key="signup_character_nickname_input",
+                )
+                st.session_state["signup_character_nickname"] = character_nickname
+
+            # CTA
+            disabled = not bool(st.session_state.get("signup_character_code"))
+            if st.button(
+                "이 친구랑 시작하기",
+                key="amf_signup_pick_done",
+                use_container_width=True,
+                type="primary",
+                disabled=disabled,
+            ):
+                _goto(4)
+            if st.button("← 뒤로", key="amf_signup_back_3", use_container_width=True):
+                _goto(2)
+            return
+
+        # Step 4: 정보 입력(기존 폼)
+        if not user_type:
+            _goto(2)
+            return
+        if user_type == "parent":
+            st.markdown('<div class="amf-type-pill">👨‍👩‍👧 부모님으로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
+        elif user_type == "child":
+            st.markdown('<div class="amf-type-pill">👶 아이로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
+            if st.session_state.get("signup_character_code"):
+                if st.button("캐릭터 다시 고르기", key="amf_signup_repick_char", use_container_width=True):
+                    _goto(3)
+            else:
+                if st.button("캐릭터 고르러 가기", key="amf_signup_go_char", use_container_width=True, type="primary"):
+                    _goto(3)
+                    return
+
         st.markdown("---")
         st.markdown("### 📝 기본 정보")
         name = st.text_input("이름", placeholder="홍길동", key="signup_name_input")
+        birth_date = None
+        if user_type == "child":
+            # ✅ 아이 회원가입: 생년월일 필수
+            birth_date = st.date_input(
+                "생년월일",
+                value=None,
+                min_value=date(1900, 1, 1),
+                max_value=date.today(),
+                key="signup_birth_date_input",
+            )
         username = st.text_input("아이디", placeholder="gildong123", key="signup_username_input")
         password = st.text_input("비밀번호", type="password", placeholder="6자리 이상", key="signup_pw_input")
         password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="signup_pw_confirm_input")
@@ -1413,6 +1588,10 @@ def signup_page():
         if st.button("🚀 가입하기", type="primary", use_container_width=True, key="signup_submit_btn"):
             if not name or not username or not password:
                 st.error("⚠️ 모든 항목을 입력해주세요")
+            elif user_type == "child" and not birth_date:
+                st.error("⚠️ 생년월일을 입력해주세요")
+            elif user_type == "child" and not st.session_state.get("signup_character_code"):
+                st.error("⚠️ 캐릭터를 선택해주세요")
             elif password != password_confirm:
                 st.error("❌ 비밀번호가 일치하지 않습니다")
             elif len(password) < 6:
@@ -1423,30 +1602,65 @@ def signup_page():
                 st.error("❌ 이미 사용 중인 아이디입니다")
             else:
                 try:
+                    # 나이 계산(기존 age 컬럼 호환)
+                    computed_age = None
+                    birth_date_str = None
+                    if birth_date:
+                        birth_date_str = birth_date.isoformat()
+                        today = date.today()
+                        computed_age = today.year - birth_date.year - (
+                            (today.month, today.day) < (birth_date.month, birth_date.day)
+                        )
                     if user_type == "parent":
                         new_parent_code = generate_parent_code()
                         new_user_id = db.create_user(
                             username=username,
                             password=password,
                             name=name,
-                            age=None,
+                            age=computed_age,
                             parent_code=new_parent_code,
                             user_type="parent",
                             parent_ssn=None,
                             phone_number=None,
+                            birth_date=birth_date_str,
+                            character_code=None,
                         )
                     else:
                         parent_full_code = (parent_user or {}).get("parent_code") or ""
+                        # 기본 스킨은 캐릭터에 맞춰 자동 지정
+                        skin_code = None
+                        if st.session_state.get("signup_character_code"):
+                            skin_code = f"{st.session_state.get('signup_character_code')}:default"
+                        nickname = (st.session_state.get("signup_character_nickname") or "").strip()
+                        if not nickname:
+                            try:
+                                from utils.characters import get_character_by_code
+                                cc = get_character_by_code(st.session_state.get("signup_character_code"))
+                                nickname = (cc or {}).get("name") or "내 캐릭터"
+                            except Exception:
+                                nickname = "내 캐릭터"
                         new_user_id = db.create_user(
                             username=username,
                             password=password,
                             name=name,
-                            age=None,
+                            age=computed_age,
                             parent_code=str(parent_full_code).strip().upper(),
                             user_type="child",
                             parent_ssn=None,
                             phone_number=None,
+                            birth_date=birth_date_str,
+                            character_code=st.session_state.get("signup_character_code"),
+                            character_nickname=nickname,
+                            character_skin_code=skin_code,
                         )
+                        # 기본 스킨 해금 + 첫 보상 지급 체크(레벨1)
+                        try:
+                            if hasattr(db, "unlock_skin") and skin_code:
+                                db.unlock_skin(int(new_user_id), skin_code)
+                            if hasattr(db, "grant_level_rewards_if_needed"):
+                                db.grant_level_rewards_if_needed(int(new_user_id))
+                        except Exception:
+                            pass
                         try:
                             pid = int((parent_user or {}).get("id") or 0)
                             if pid:
