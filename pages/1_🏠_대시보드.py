@@ -182,6 +182,22 @@ def _inject_dashboard_css():
             }
             .amf-chip strong { color: var(--text); }
 
+            /* 상단 액션(팝오버 버튼)이 입력창처럼 커지지 않게 */
+            button[aria-haspopup="dialog"]{
+                width: auto !important;
+                min-width: 44px !important;
+                border-radius: 999px !important;
+                padding: 7px 12px !important;
+                font-weight: 900 !important;
+                background: rgba(255,255,255,0.92) !important;
+                border: 1px solid var(--border) !important;
+                box-shadow: var(--shadow2) !important;
+            }
+            button[aria-haspopup="dialog"]:hover{
+                transform: translateY(-1px);
+                box-shadow: var(--shadow) !important;
+            }
+
             /* metric cards */
             [data-testid="stMetric"]{
                 background: var(--card) !important;
@@ -228,6 +244,28 @@ def _inject_dashboard_css():
             /* progress bar */
             [data-testid="stProgress"] > div > div{
                 background: linear-gradient(135deg, var(--brand1), var(--brand2)) !important;
+            }
+
+            /* 빈 상태 카드 */
+            .amf-empty {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                padding: 16px;
+                box-shadow: var(--shadow2);
+            }
+            .amf-empty h3{
+                margin: 0 0 6px 0;
+                font-size: 16px;
+                font-weight: 950;
+                color: var(--text);
+            }
+            .amf-empty p{
+                margin: 0;
+                color: var(--muted);
+                font-weight: 800;
+                font-size: 13px;
+                line-height: 1.45;
             }
 
             /* tab list pill (used elsewhere) */
@@ -281,7 +319,7 @@ def main():
     else:
         unread = []
     unread_count = len(unread)
-    left, right = st.columns([0.68, 0.32])
+    left, right = st.columns([0.72, 0.28])
     with left:
         st.markdown(
             f"""
@@ -296,9 +334,9 @@ def main():
             unsafe_allow_html=True,
         )
     with right:
-        top0, top1, top2 = st.columns([1, 1, 1])
+        top0, top1, top2 = st.columns([1.3, 1.0, 0.7])
         with top0:
-            with st.popover("☰", use_container_width=True):
+            with st.popover("☰ 메뉴", use_container_width=False):
                 st.markdown("**메뉴**")
                 items = []
                 if user_type == "parent":
@@ -330,7 +368,7 @@ def main():
             st.markdown(f"<div class='amf-chip'>📅 <strong>{datetime.now().strftime('%Y.%m.%d')}</strong></div>", unsafe_allow_html=True)
         with top2:
             label = f"🔔 {unread_count}" if unread_count else "🔔"
-            with st.popover(label, use_container_width=True):
+            with st.popover(label, use_container_width=False):
                 st.markdown("**알림**")
                 if not unread:
                     st.caption("새 알림이 없어요.")
@@ -383,6 +421,28 @@ def main():
             st.metric("총 저축", f"{int(total_saving):,}원")
 
         st.divider()
+
+        # 자녀가 없으면 안내/다음 액션을 먼저 보여주고 아래 섹션은 생략
+        if len(children) == 0:
+            st.markdown(
+                """
+                <div class="amf-empty">
+                  <h3>아직 연결된 자녀가 없어요</h3>
+                  <p>자녀가 가입할 때 부모 코드를 입력하면 자동으로 연결됩니다.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown("#### 부모 코드")
+            st.code(parent_code or "부모 코드 없음", language=None)
+            a1, a2 = st.columns(2)
+            with a1:
+                if st.button("👶 자녀 관리 열기", use_container_width=True):
+                    st.switch_page("pages/2_👶_자녀_관리.py")
+            with a2:
+                if st.button("💵 용돈 관리 열기", use_container_width=True):
+                    st.switch_page("pages/3_💵_용돈_관리.py")
+            return
 
         # 2) 이번 달 지출 통계(가족)
         now = datetime.now()
