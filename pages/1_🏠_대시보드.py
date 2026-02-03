@@ -320,13 +320,13 @@ def main():
         unread = []
     unread_count = len(unread)
     today_str = datetime.now().strftime("%Y.%m.%d")
-    left, right = st.columns([0.78, 0.22])
+    left, right = st.columns([0.72, 0.28])
     with left:
         st.markdown(
             f"""
             <div class="amf-appbar">
               <div>
-                <div class="amf-kicker">AI Money Friends · {today_str}</div>
+                <div class="amf-kicker">AI Money Friends</div>
                 <div class="amf-title">안녕하세요, {user_name}님 👋</div>
                 <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
               </div>
@@ -335,15 +335,11 @@ def main():
             unsafe_allow_html=True,
         )
     with right:
-        menu_label = "☰ 메뉴"
-        if unread_count:
-            menu_label = f"☰ 메뉴 · 🔔{unread_count}"
-
-        with st.popover(menu_label, use_container_width=False):
-            st.markdown(f"<div class='amf-chip'>📅 <strong>{today_str}</strong></div>", unsafe_allow_html=True)
-
-            tab_menu, tab_notif = st.tabs(["메뉴", "알림"])
-            with tab_menu:
+        # 메뉴 / 날짜(우측 정렬) / 알림을 한 줄에 배치
+        top0, top1, top2 = st.columns([1.1, 1.0, 0.55])
+        with top0:
+            with st.popover("☰ 메뉴", use_container_width=False):
+                st.markdown("**메뉴**")
                 items = []
                 if user_type == "parent":
                     items = [
@@ -371,7 +367,15 @@ def main():
                     if st.button(label, use_container_width=True, key=f"dash_menu_{label}"):
                         st.switch_page(path)
 
-            with tab_notif:
+        with top1:
+            st.markdown(
+                f"<div style='text-align:right;'><div class='amf-chip'>📅 <strong>{today_str}</strong></div></div>",
+                unsafe_allow_html=True,
+            )
+        with top2:
+            label = f"🔔 {unread_count}" if unread_count else "🔔"
+            with st.popover(label, use_container_width=False):
+                st.markdown("**알림**")
                 if not unread:
                     st.caption("새 알림이 없어요.")
                 else:
