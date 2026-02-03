@@ -84,8 +84,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     with st.container():
         st.markdown('<span id="amf_topnav_anchor"></span>', unsafe_allow_html=True)
 
-        # ✅ 상단(전역): 메뉴(맨왼쪽) / 홈(그다음) / (우측) 날짜 / 알림(맨오른쪽)
-        top_menu, top_home, top_spacer, top_date, top_alarm = st.columns([0.10, 0.09, 0.40, 0.25, 0.16])
+        # ✅ 상단(전역): 메뉴(맨왼쪽) / 홈(그다음) / 보기 / 날짜 / 알림(맨오른쪽)
+        top_menu, top_home, top_view, top_date, top_alarm = st.columns([0.07, 0.06, 0.47, 0.22, 0.18])
 
         with top_menu:
             with st.popover("☰", use_container_width=False):
@@ -171,40 +171,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 except Exception:
                     st.rerun()
 
-        with top_date:
-            st.markdown(
-                f"<div style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
-                unsafe_allow_html=True,
-            )
-
-        with top_alarm:
-            alarm_label = f"🔔 {unread_count}" if unread_count else "🔔"
-            with st.popover(alarm_label, use_container_width=True):
-                st.markdown("**알림**")
-                if not unread:
-                    st.caption("새 알림이 없어요.")
-                else:
-                    for n in unread[:8]:
-                        lvl = (n.get("level") or "info").lower()
-                        title = n.get("title") or ""
-                        body = n.get("body") or ""
-                        if lvl == "success":
-                            st.success(f"**{title}**\n\n{body}")
-                        elif lvl == "warning":
-                            st.warning(f"**{title}**\n\n{body}")
-                        else:
-                            st.info(f"**{title}**\n\n{body}")
-                        if st.button("읽음", key=f"amf_top_read_notif_{n.get('id')}", use_container_width=True):
-                            if db and hasattr(db, "mark_notification_read"):
-                                try:
-                                    db.mark_notification_read(int(n["id"]))
-                                except Exception:
-                                    pass
-                            st.rerun()
-
-        # ✅ 보기(자동/모바일/PC)는 한 줄 더(우측 정렬)
-        _, view_col = st.columns([0.72, 0.28])
-        with view_col:
+        with top_view:
+            # ✅ 보기(자동/모바일/PC): 상단 한 줄에 배치 (PC에서 위치 이상한 문제 해결)
             current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
             if hasattr(st, "segmented_control"):
                 picked = st.segmented_control(
@@ -228,6 +196,40 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 if new_mode != st.session_state.get("layout_mode", "auto"):
                     st.session_state["layout_mode"] = new_mode
                     st.rerun()
+
+        with top_date:
+            st.markdown(
+                f"<div style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
+                unsafe_allow_html=True,
+            )
+
+        with top_alarm:
+            # 버튼 크기를 줄이기 위해 알림은 아이콘형(필요 시 숫자는 내부에서 표시)
+            alarm_label = "🔔"
+            with st.popover(alarm_label, use_container_width=False):
+                st.markdown("**알림**")
+                if unread_count:
+                    st.caption(f"읽지 않은 알림: {unread_count}개")
+                if not unread:
+                    st.caption("새 알림이 없어요.")
+                else:
+                    for n in unread[:8]:
+                        lvl = (n.get("level") or "info").lower()
+                        title = n.get("title") or ""
+                        body = n.get("body") or ""
+                        if lvl == "success":
+                            st.success(f"**{title}**\n\n{body}")
+                        elif lvl == "warning":
+                            st.warning(f"**{title}**\n\n{body}")
+                        else:
+                            st.info(f"**{title}**\n\n{body}")
+                        if st.button("읽음", key=f"amf_top_read_notif_{n.get('id')}", use_container_width=True):
+                            if db and hasattr(db, "mark_notification_read"):
+                                try:
+                                    db.mark_notification_read(int(n["id"]))
+                                except Exception:
+                                    pass
+                            st.rerun()
     
     # CSS 주입
     responsive_css = """
@@ -429,7 +431,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     /* 상단바 버튼(메뉴/홈/알림) */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
-        height: 40px !important;
+        height: 42px !important;
         padding: 0 10px !important;
         border-radius: 999px !important;
         font-weight: 900 !important;
@@ -438,10 +440,28 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
         line-height: 1 !important;
     }
-    /* 메뉴/홈 버튼은 더 작게(아이콘형) */
+    /* 메뉴/홈/알림 버튼은 아이콘형 고정 폭 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
-        min-width: 40px !important;
+        width: 44px !important;
+        min-width: 44px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+
+    /* 상단바 segmented_control(보기) 컴팩트 */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
+        margin-top: 0 !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"] button{
+        height: 36px !important;
+        padding: 0 12px !important;
+        font-weight: 900 !important;
+        font-size: 13px !important;
+        border-radius: 999px !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
+        transform: translateY(1px);
     }
     /* segmented_control(보기) 주변 간격 축소 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
