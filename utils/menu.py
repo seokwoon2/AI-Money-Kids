@@ -199,7 +199,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
 
         with top_date:
             st.markdown(
-                f"<div style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
+                f"<div class='amf-topdate' style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -410,6 +410,10 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         justify-content: flex-end;
     }
     .amf-topchip strong{ color:#111827; }
+    /* 날짜는 살짝 위로(PC/모바일 공통) */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .amf-topdate{
+        transform: translateY(-3px);
+    }
 
     /* ===== 전역 상단바(메뉴/홈/날짜/알림/보기) 컴팩트 ===== */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor){
