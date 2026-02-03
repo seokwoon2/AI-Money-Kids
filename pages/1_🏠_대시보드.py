@@ -268,6 +268,29 @@ def _inject_dashboard_css():
                 line-height: 1.45;
             }
 
+            /* 아이 대시보드 hero */
+            .amf-hero{
+                background: linear-gradient(135deg, var(--brand1), var(--brand2));
+                padding: 18px 16px;
+                border-radius: 20px;
+                color: white;
+                box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+            }
+            .amf-hero-label{ font-weight: 900; opacity: 0.92; }
+            .amf-hero-value{
+                font-size: 46px;
+                font-weight: 950;
+                letter-spacing: -0.8px;
+                margin-top: 2px;
+                line-height: 1.05;
+            }
+            .amf-hero-sub{
+                margin-top: 6px;
+                opacity: 0.9;
+                font-weight: 800;
+                font-size: 13px;
+            }
+
             /* tab list pill (used elsewhere) */
             .stTabs [data-baseweb="tab-list"]{
                 background:#eef0f5;
@@ -282,6 +305,18 @@ def _inject_dashboard_css():
             .stTabs [aria-selected="true"]{
                 background: white;
                 box-shadow: 0 10px 22px rgba(17,24,39,0.08);
+            }
+
+            /* ✅ Mobile-first tweaks */
+            @media (max-width: 768px){
+                .block-container { padding-top: 0.6rem !important; padding-left: 0.9rem !important; padding-right: 0.9rem !important; }
+                .amf-title { font-size: 22px; }
+                .amf-sub { font-size: 12px; }
+                .amf-chip { font-size: 11px; padding: 6px 10px; }
+                button[aria-haspopup="dialog"]{ padding: 6px 10px !important; }
+                [data-testid="stMetric"]{ padding: 12px 12px !important; }
+                [data-testid="stMetricValue"]{ font-size: 22px !important; }
+                .amf-hero-value{ font-size: 34px; }
             }
         </style>
         """,
@@ -320,82 +355,81 @@ def main():
         unread = []
     unread_count = len(unread)
     today_str = datetime.now().strftime("%Y.%m.%d")
-    left, right = st.columns([0.72, 0.28])
-    with left:
+    # ✅ 모바일 우선: 상단을 2줄 구조로(타이틀/액션) 고정
+    st.markdown(
+        f"""
+        <div class="amf-appbar">
+          <div>
+            <div class="amf-kicker">AI Money Friends</div>
+            <div class="amf-title">안녕하세요, {user_name}님 👋</div>
+            <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # 액션 바: 메뉴 / 날짜(우측 정렬) / 알림 (한 줄)
+    top0, top1, top2 = st.columns([1.15, 1.0, 0.55])
+    with top0:
+        with st.popover("☰ 메뉴", use_container_width=False):
+            st.markdown("**메뉴**")
+            items = []
+            if user_type == "parent":
+                items = [
+                    ("🏠 대시보드", "pages/1_🏠_대시보드.py"),
+                    ("👶 자녀 관리", "pages/2_👶_자녀_관리.py"),
+                    ("💵 용돈 관리", "pages/3_💵_용돈_관리.py"),
+                    ("📝 요청 승인", "pages/4_📝_요청_승인.py"),
+                    ("📊 리포트", "pages/5_📊_리포트.py"),
+                    ("⚙️ 설정", "pages/6_⚙️_설정.py"),
+                ]
+            else:
+                items = [
+                    ("🏠 홈", "pages/1_🏠_대시보드.py"),
+                    ("💰 내 지갑", "pages/7_💰_내_지갑.py"),
+                    ("🎯 저축 목표", "pages/8_🎯_저축_목표.py"),
+                    ("📝 용돈 요청", "pages/9_📝_용돈_요청.py"),
+                    ("✅ 미션", "pages/10_✅_미션.py"),
+                    ("🤖 AI 친구", "pages/11_🤖_AI_친구.py"),
+                    ("📚 경제 교실", "pages/12_📚_경제_교실.py"),
+                    ("🏆 내 성장", "pages/13_🏆_내_성장.py"),
+                    ("⚙️ 설정", "pages/6_⚙️_설정.py"),
+                ]
+
+            for label, path in items:
+                if st.button(label, use_container_width=True, key=f"dash_menu_{label}"):
+                    st.switch_page(path)
+
+    with top1:
         st.markdown(
-            f"""
-            <div class="amf-appbar">
-              <div>
-                <div class="amf-kicker">AI Money Friends</div>
-                <div class="amf-title">안녕하세요, {user_name}님 👋</div>
-                <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
-              </div>
-            </div>
-            """,
+            f"<div style='text-align:right;'><div class='amf-chip'>📅 <strong>{today_str}</strong></div></div>",
             unsafe_allow_html=True,
         )
-    with right:
-        # 메뉴 / 날짜(우측 정렬) / 알림을 한 줄에 배치
-        top0, top1, top2 = st.columns([1.1, 1.0, 0.55])
-        with top0:
-            with st.popover("☰ 메뉴", use_container_width=False):
-                st.markdown("**메뉴**")
-                items = []
-                if user_type == "parent":
-                    items = [
-                        ("🏠 대시보드", "pages/1_🏠_대시보드.py"),
-                        ("👶 자녀 관리", "pages/2_👶_자녀_관리.py"),
-                        ("💵 용돈 관리", "pages/3_💵_용돈_관리.py"),
-                        ("📝 요청 승인", "pages/4_📝_요청_승인.py"),
-                        ("📊 리포트", "pages/5_📊_리포트.py"),
-                        ("⚙️ 설정", "pages/6_⚙️_설정.py"),
-                    ]
-                else:
-                    items = [
-                        ("🏠 홈", "pages/1_🏠_대시보드.py"),
-                        ("💰 내 지갑", "pages/7_💰_내_지갑.py"),
-                        ("🎯 저축 목표", "pages/8_🎯_저축_목표.py"),
-                        ("📝 용돈 요청", "pages/9_📝_용돈_요청.py"),
-                        ("✅ 미션", "pages/10_✅_미션.py"),
-                        ("🤖 AI 친구", "pages/11_🤖_AI_친구.py"),
-                        ("📚 경제 교실", "pages/12_📚_경제_교실.py"),
-                        ("🏆 내 성장", "pages/13_🏆_내_성장.py"),
-                        ("⚙️ 설정", "pages/6_⚙️_설정.py"),
-                    ]
-
-                for label, path in items:
-                    if st.button(label, use_container_width=True, key=f"dash_menu_{label}"):
-                        st.switch_page(path)
-
-        with top1:
-            st.markdown(
-                f"<div style='text-align:right;'><div class='amf-chip'>📅 <strong>{today_str}</strong></div></div>",
-                unsafe_allow_html=True,
-            )
-        with top2:
-            label = f"🔔 {unread_count}" if unread_count else "🔔"
-            with st.popover(label, use_container_width=False):
-                st.markdown("**알림**")
-                if not unread:
-                    st.caption("새 알림이 없어요.")
-                else:
-                    for n in unread[:8]:
-                        lvl = (n.get("level") or "info").lower()
-                        title = n.get("title") or ""
-                        body = n.get("body") or ""
-                        if lvl == "success":
-                            st.success(f"**{title}**\n\n{body}")
-                        elif lvl == "warning":
-                            st.warning(f"**{title}**\n\n{body}")
-                        else:
-                            st.info(f"**{title}**\n\n{body}")
-                        if st.button("읽음", key=f"read_notif_{n['id']}", use_container_width=True):
-                            if hasattr(db, "mark_notification_read"):
-                                try:
-                                    db.mark_notification_read(int(n["id"]))
-                                except Exception:
-                                    pass
-                            st.rerun()
+    with top2:
+        label = f"🔔 {unread_count}" if unread_count else "🔔"
+        with st.popover(label, use_container_width=False):
+            st.markdown("**알림**")
+            if not unread:
+                st.caption("새 알림이 없어요.")
+            else:
+                for n in unread[:8]:
+                    lvl = (n.get("level") or "info").lower()
+                    title = n.get("title") or ""
+                    body = n.get("body") or ""
+                    if lvl == "success":
+                        st.success(f"**{title}**\n\n{body}")
+                    elif lvl == "warning":
+                        st.warning(f"**{title}**\n\n{body}")
+                    else:
+                        st.info(f"**{title}**\n\n{body}")
+                    if st.button("읽음", key=f"read_notif_{n['id']}", use_container_width=True):
+                        if hasattr(db, "mark_notification_read"):
+                            try:
+                                db.mark_notification_read(int(n["id"]))
+                            except Exception:
+                                pass
+                        st.rerun()
 
     st.divider()
 
@@ -416,14 +450,15 @@ def main():
             total_spend += cstats["total_spend"]
 
         st.markdown("### 👨‍👩‍👧 가족 요약")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
+        r1c1, r1c2 = st.columns(2)
+        with r1c1:
             st.metric("연결된 자녀", f"{len(children)}명")
-        with c2:
+        with r1c2:
             st.metric("가족 잔액(추정)", f"{int(total_balance):,}원")
-        with c3:
+        r2c1, r2c2 = st.columns(2)
+        with r2c1:
             st.metric("총 용돈(지급)", f"{int(total_allowance):,}원")
-        with c4:
+        with r2c2:
             st.metric("총 저축", f"{int(total_saving):,}원")
 
         st.divider()
@@ -530,38 +565,27 @@ def main():
 
         st.divider()
         st.subheader("빠른 메뉴")
-        q1, q2, q3 = st.columns(3)
+        q1, q2 = st.columns(2)
         with q1:
             if st.button("👶 자녀 관리", use_container_width=True):
                 st.switch_page("pages/2_👶_자녀_관리.py")
         with q2:
             if st.button("💵 용돈 관리", use_container_width=True):
                 st.switch_page("pages/3_💵_용돈_관리.py")
-        with q3:
-            if st.button("📊 리포트", use_container_width=True):
-                st.switch_page("pages/5_📊_리포트.py")
+        if st.button("📊 리포트", use_container_width=True):
+            st.switch_page("pages/5_📊_리포트.py")
 
     else:
         # 아이용 대시보드
         cstats = _compute_balance(db, user_id)
 
-        # hero card
+        # hero card (모바일 대응을 위해 클래스 기반 스타일)
         st.markdown(
             f"""
-            <div style="
-                background: linear-gradient(135deg, var(--brand1), var(--brand2));
-                padding: 18px 16px;
-                border-radius: 20px;
-                color: white;
-                box-shadow: 0 18px 40px rgba(118,75,162,0.25);
-            ">
-                <div style="font-weight:900; opacity:0.92;">내 잔액</div>
-                <div style="font-size:46px; font-weight:950; letter-spacing:-0.8px; margin-top:2px;">
-                    {int(cstats["balance"]):,}원
-                </div>
-                <div style="margin-top:6px; opacity:0.9; font-weight:800; font-size:13px;">
-                    저축 {int(cstats["total_saving"]):,}원 · 지출 {int(cstats["total_spend"]):,}원
-                </div>
+            <div class="amf-hero">
+                <div class="amf-hero-label">내 잔액</div>
+                <div class="amf-hero-value">{int(cstats["balance"]):,}원</div>
+                <div class="amf-hero-sub">저축 {int(cstats["total_saving"]):,}원 · 지출 {int(cstats["total_spend"]):,}원</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -574,56 +598,54 @@ def main():
         db.assign_daily_missions_if_needed(user_id, today)
         missions = db.get_missions_for_user(user_id, date_str=today, active_only=True)
 
-        left, right = st.columns([1.15, 0.85])
-        with left:
-            st.subheader("✅ 오늘의 미션")
-            if not missions:
-                st.caption("오늘의 미션이 없어요.")
-            else:
-                for m in missions:
-                    with st.container(border=True):
-                        st.markdown(f"**{m.get('title')}**")
-                        if m.get("description"):
-                            st.caption(m.get("description"))
-                        st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
-                        if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True):
-                            ok = db.complete_mission(int(m["id"]))
-                            if ok:
-                                reward = float(m.get("reward_amount") or 0)
-                                if reward > 0:
-                                    db.save_behavior_v2(
-                                        user_id,
-                                        "allowance",
-                                        reward,
-                                        description="미션 보상",
-                                        category="미션",
-                                    )
-                                db.create_notification(user_id, "미션 완료!", f"보상 {int(reward):,}원을 받았어요.", level="success")
-                                db.award_badges_if_needed(user_id)
-                                st.balloons()
-                                st.rerun()
-                            else:
-                                st.info("이미 완료했거나 처리할 수 없어요.")
-                if st.button("📌 미션 페이지로 이동", use_container_width=True):
-                    st.switch_page("pages/10_✅_미션.py")
+        # ✅ 모바일 우선: 2컬럼 대신 세로 스택
+        st.subheader("✅ 오늘의 미션")
+        if not missions:
+            st.caption("오늘의 미션이 없어요.")
+        else:
+            for m in missions:
+                with st.container(border=True):
+                    st.markdown(f"**{m.get('title')}**")
+                    if m.get("description"):
+                        st.caption(m.get("description"))
+                    st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
+                    if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True):
+                        ok = db.complete_mission(int(m["id"]))
+                        if ok:
+                            reward = float(m.get("reward_amount") or 0)
+                            if reward > 0:
+                                db.save_behavior_v2(
+                                    user_id,
+                                    "allowance",
+                                    reward,
+                                    description="미션 보상",
+                                    category="미션",
+                                )
+                            db.create_notification(user_id, "미션 완료!", f"보상 {int(reward):,}원을 받았어요.", level="success")
+                            db.award_badges_if_needed(user_id)
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.info("이미 완료했거나 처리할 수 없어요.")
+        if st.button("📌 미션 페이지로 이동", use_container_width=True):
+            st.switch_page("pages/10_✅_미션.py")
 
-        with right:
-            st.subheader("🎯 저축 목표")
-            goals = db.get_goals(user_id, active_only=True)
-            if not goals:
-                st.caption("아직 목표가 없어요.")
-                if st.button("목표 만들기", use_container_width=True):
-                    st.switch_page("pages/8_🎯_저축_목표.py")
-            else:
-                g = goals[0]
-                progress = db.get_goal_progress(int(g["id"]))
-                target = float(g.get("target_amount") or 0)
-                pct = 0 if target <= 0 else min(1.0, progress / target)
-                st.markdown(f"**{g.get('title')}**")
-                st.progress(pct)
-                st.caption(f"{int(progress):,}원 / {int(target):,}원")
-                if st.button("목표 관리", use_container_width=True):
-                    st.switch_page("pages/8_🎯_저축_목표.py")
+        st.subheader("🎯 저축 목표")
+        goals = db.get_goals(user_id, active_only=True)
+        if not goals:
+            st.caption("아직 목표가 없어요.")
+            if st.button("목표 만들기", use_container_width=True):
+                st.switch_page("pages/8_🎯_저축_목표.py")
+        else:
+            g = goals[0]
+            progress = db.get_goal_progress(int(g["id"]))
+            target = float(g.get("target_amount") or 0)
+            pct = 0 if target <= 0 else min(1.0, progress / target)
+            st.markdown(f"**{g.get('title')}**")
+            st.progress(pct)
+            st.caption(f"{int(progress):,}원 / {int(target):,}원")
+            if st.button("목표 관리", use_container_width=True):
+                st.switch_page("pages/8_🎯_저축_목표.py")
 
         st.divider()
 
@@ -639,13 +661,14 @@ def main():
         st.info(tip)
 
         st.divider()
-        q1, q2, q3, q4 = st.columns(4)
+        q1, q2 = st.columns(2)
         with q1:
             if st.button("💰 내 지갑", use_container_width=True):
                 st.switch_page("pages/7_💰_내_지갑.py")
         with q2:
             if st.button("📝 용돈 요청", use_container_width=True):
                 st.switch_page("pages/9_📝_용돈_요청.py")
+        q3, q4 = st.columns(2)
         with q3:
             if st.button("🤖 AI 친구", use_container_width=True):
                 st.switch_page("pages/11_🤖_AI_친구.py")

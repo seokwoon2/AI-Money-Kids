@@ -15,9 +15,96 @@ def safe_page_link(page_path: str, label: str, icon: str = None):
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     """개선된 사이드바 메뉴"""
+    # 전역 레이아웃 모드: auto(기기폭) / mobile(강제) / pc(강제)
+    if "layout_mode" not in st.session_state:
+        st.session_state["layout_mode"] = "auto"
+    layout_mode = st.session_state.get("layout_mode", "auto")
     
     # CSS 주입
-    st.markdown("""
+    # 공통 반응형 CSS: auto는 미디어쿼리로, mobile/pc는 강제로 override
+    responsive_css = """
+    /* ====== Responsive (global) ====== */
+    /* auto: 작은 화면에서 컬럼 래핑 + 터치 타겟/타이포 조정 */
+    @media (max-width: 768px){
+        .block-container{
+            padding-top: 0.6rem !important;
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+        }
+        /* st.columns() 래핑: 모바일에서 2열/1열로 자연스럽게 줄바꿈 */
+        div[data-testid="stHorizontalBlock"]{
+            flex-wrap: wrap !important;
+            gap: 0.75rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 calc(50% - 0.5rem) !important;
+            min-width: calc(50% - 0.5rem) !important;
+        }
+        /* 아주 작은 기기에서는 1열 */
+        @media (max-width: 420px){
+            div[data-testid="stHorizontalBlock"] > div{
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+            }
+        }
+        /* 버튼/입력 조금 더 촘촘하게 */
+        .stButton > button{
+            padding: 10px 12px !important;
+            border-radius: 14px !important;
+            font-weight: 900 !important;
+        }
+        [data-testid="stMetricValue"]{ font-size: 22px !important; }
+    }
+    """
+
+    # 강제 모바일: 화면이 넓어도 모바일 스타일 적용
+    if layout_mode == "mobile":
+        responsive_css += """
+        /* ====== Force Mobile ====== */
+        .block-container{
+            padding-top: 0.6rem !important;
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+            max-width: 740px !important;
+        }
+        div[data-testid="stHorizontalBlock"]{
+            flex-wrap: wrap !important;
+            gap: 0.75rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 calc(50% - 0.5rem) !important;
+            min-width: calc(50% - 0.5rem) !important;
+        }
+        @media (max-width: 99999px){
+            /* 강제 모바일: 매우 작은 화면처럼 1열을 더 쉽게 */
+            div[data-testid="stHorizontalBlock"] > div{
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+            }
+        }
+        """
+
+    # 강제 PC: 모바일 폭에서도 래핑을 막고 PC처럼 유지(원하면 가로 스크롤이 생길 수 있음)
+    if layout_mode == "pc":
+        responsive_css += """
+        /* ====== Force PC ====== */
+        @media (max-width: 768px){
+            .block-container{
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+            div[data-testid="stHorizontalBlock"]{
+                flex-wrap: nowrap !important;
+                gap: 1rem !important;
+            }
+            div[data-testid="stHorizontalBlock"] > div{
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+            }
+        }
+        """
+
+    st.markdown(f"""
     <style>
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
@@ -153,7 +240,18 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background-color: #FF6B6B !important;
         box-shadow: 0 4px 12px rgba(255, 118, 117, 0.4) !important;
     }
+
+    /* 레이아웃 모드 토글 */
+    .amf-toggle-title{
+        margin: 10px 4px 6px 4px;
+        font-size: 12px;
+        font-weight: 900;
+        color: #6b7280;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+    }
     </style>
+    {responsive_css}
     """, unsafe_allow_html=True)
 
     # --- 사이드바 콘텐츠 시작 ---
@@ -180,6 +278,21 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             """,
             unsafe_allow_html=True,
         )
+
+        # 레이아웃 모드(자동/모바일/PC)
+        st.markdown('<div class="amf-toggle-title">View</div>', unsafe_allow_html=True)
+        selected = st.radio(
+            "화면 모드",
+            options=["자동", "모바일", "PC"],
+            index={"auto": 0, "mobile": 1, "pc": 2}.get(layout_mode, 0),
+            horizontal=True,
+            label_visibility="collapsed",
+            key="amf_layout_mode_radio",
+        )
+        new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[selected]
+        if new_mode != st.session_state.get("layout_mode", "auto"):
+            st.session_state["layout_mode"] = new_mode
+            st.rerun()
         
         # 세션 상태 초기화
         if 'current_page' not in st.session_state:
