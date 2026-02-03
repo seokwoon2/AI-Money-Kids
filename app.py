@@ -595,8 +595,8 @@ def show_find_password_page():
                     else:
                         st.warning("⚠️ 비밀번호를 모두 입력해주세요.")
 
-def signup_page():
-    """회원가입 페이지 - 프리미엄 디자인"""
+def _signup_page_premium():
+    """회원가입 페이지 - 프리미엄 디자인(구버전)"""
 
     hide_sidebar_navigation()
 
@@ -1146,6 +1146,329 @@ def signup_page():
                 st.rerun()
 
         # 카드 컨테이너는 with 블록으로 자동 종료됨
+
+
+def signup_page():
+    """회원가입 페이지 - 로그인 페이지와 동일한 스타일(투 컬럼 레이아웃)"""
+
+    hide_sidebar_navigation()
+
+    # ✅ 보기(자동/모바일/PC) - 로그인과 동일한 세션 키 사용
+    if "layout_mode" not in st.session_state:
+        st.session_state["layout_mode"] = "auto"
+
+    _, view_col = st.columns([0.78, 0.22])
+    with view_col:
+        current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(st.session_state.get("layout_mode", "auto"), "자동")
+        if hasattr(st, "segmented_control"):
+            picked = st.segmented_control(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                default=current,
+                label_visibility="collapsed",
+                key="amf_signup_layout_mode_segmented",
+            )
+        else:
+            picked = st.selectbox(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                index=["자동", "모바일", "PC"].index(current),
+                label_visibility="collapsed",
+                key="amf_signup_layout_mode_select",
+            )
+
+        if picked:
+            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
+            if new_mode != st.session_state.get("layout_mode", "auto"):
+                st.session_state["layout_mode"] = new_mode
+                st.rerun()
+
+    # 모드별 너비
+    mode = st.session_state.get("layout_mode", "auto")
+    if mode == "mobile":
+        st.markdown("<style>:root{--signup-maxw:520px;--signup-pad:1rem 0.75rem;}</style>", unsafe_allow_html=True)
+    elif mode == "pc":
+        st.markdown("<style>:root{--signup-maxw:1100px;--signup-pad:1.25rem 1rem;}</style>", unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<style>"
+            ":root{--signup-maxw:1100px;--signup-pad:1.25rem 1rem;}"
+            "@media (max-width: 720px){:root{--signup-maxw:520px;--signup-pad:1rem 0.75rem;}}"
+            "</style>",
+            unsafe_allow_html=True,
+        )
+
+    # CSS (HTML 래핑 없이 Streamlit 컨테이너로 안전하게)
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebar"] { display: none !important; }
+            header, footer { display: none !important; }
+            html, body, [data-testid="stAppViewContainer"]{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            }
+            [data-testid="stAppViewContainer"] > .main { background: transparent !important; }
+            .main > div { padding: 0 !important; }
+            .block-container{
+                padding: var(--signup-pad, 1.1rem 0.75rem) !important;
+                max-width: var(--signup-maxw, 520px) !important;
+                min-height: 100vh !important;
+            }
+
+            /* 작은 화면: 2열 → 1열 */
+            @media (max-width: 720px) {
+                div[data-testid="stHorizontalBlock"]{ flex-wrap: wrap !important; gap: 0.85rem !important; }
+                div[data-testid="stHorizontalBlock"] > div{ flex: 1 1 100% !important; min-width: 100% !important; }
+            }
+
+            /* 오른쪽 폼 카드 */
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor){
+                background: white !important;
+                border-radius: 22px !important;
+                box-shadow: 0 18px 45px rgba(0,0,0,0.28) !important;
+                border: 1px solid rgba(17,24,39,0.08) !important;
+                overflow: hidden !important;
+            }
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) > div{
+                padding: 1.85rem 1.6rem !important;
+            }
+
+            .stTextInput input {
+                border-radius: 12px !important;
+                border: 2px solid #E0E0E0 !important;
+                padding: 12px 16px !important;
+            }
+            .stTextInput input:focus {
+                border-color: #667eea !important;
+                box-shadow: 0 0 0 3px rgba(102,126,234,0.12) !important;
+            }
+
+            .stButton button { border-radius: 12px !important; font-weight: 800 !important; }
+            button[kind="primary"]{
+                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                border: none !important;
+                color: white !important;
+                box-shadow: 0 10px 22px rgba(102,126,234,0.25) !important;
+            }
+
+            .parent-code-box{
+                background: linear-gradient(135deg, rgba(255,193,7,0.10), rgba(255,152,0,0.10));
+                border: 2px dashed #FFA726;
+                border-radius: 16px;
+                padding: 1.2rem;
+                margin: 1.2rem 0;
+                text-align: center;
+            }
+            .code-verified{
+                background: #E8F5E9;
+                border: 2px solid #4CAF50;
+                border-radius: 12px;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if "signup_user_type" not in st.session_state:
+        st.session_state["signup_user_type"] = None
+
+    def _form():
+        st.markdown(
+            """
+            <div style='text-align:center;'>
+                <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
+                <div style='font-size:22px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                <div style='color:#636E72; margin:0.45rem 0 0.95rem 0; font-size:13px;'>아이들의 경제 교육 친구</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("### 👤 가입 유형")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("👨‍👩‍👧 부모님", key="signup_parent_btn", use_container_width=True):
+                st.session_state["signup_user_type"] = "parent"
+                st.rerun()
+        with c2:
+            if st.button("👶 아이", key="signup_child_btn", use_container_width=True):
+                st.session_state["signup_user_type"] = "child"
+                st.rerun()
+
+        user_type = st.session_state.get("signup_user_type")
+        if user_type == "parent":
+            st.info("👨‍👩‍👧 부모님으로 가입합니다")
+        elif user_type == "child":
+            st.warning("👶 아이로 가입합니다")
+        else:
+            st.caption("가입 유형을 선택해주세요")
+            if st.button("← 로그인으로 돌아가기", key="signup_back_login_top", use_container_width=True):
+                st.session_state["show_signup"] = False
+                st.session_state["current_auth_screen"] = "login"
+                st.rerun()
+            return
+
+        st.markdown("---")
+        st.markdown("### 📝 기본 정보")
+        name = st.text_input("이름", placeholder="홍길동", key="signup_name_input")
+        username = st.text_input("아이디", placeholder="gildong123", key="signup_username_input")
+        password = st.text_input("비밀번호", type="password", placeholder="6자리 이상", key="signup_pw_input")
+        password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="signup_pw_confirm_input")
+
+        parent_user = None
+        if user_type == "child":
+            st.markdown("---")
+            st.markdown(
+                """
+                <div class="parent-code-box">
+                    <div style="font-size: 36px;">🔗</div>
+                    <div style="font-weight: 900; font-size: 17px; color: #F57C00; margin: 0.5rem 0;">
+                        부모님과 연결하기
+                    </div>
+                    <div style="font-size: 13px; color: #666;">
+                        부모님의 초대 코드를 입력하세요
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            parent_code = (
+                st.text_input(
+                    "부모 초대 코드",
+                    max_chars=8,
+                    placeholder="7C825EA9 또는 825EA9",
+                    key="signup_parent_code_input",
+                )
+                .upper()
+                .strip()
+            )
+            if parent_code:
+                if validate_parent_code(parent_code):
+                    try:
+                        parent_user = db.find_parent_by_invite_code(parent_code)
+                    except Exception:
+                        parent_user = None
+                if parent_user:
+                    st.markdown(
+                        f"""
+                        <div class="code-verified">
+                            <div style="text-align: center;">
+                                <div style="font-size: 32px;">✅</div>
+                                <div style="font-weight: 900; margin: 0.5rem 0;">
+                                    {parent_user.get('name', '부모님')}과 연결됩니다!
+                                </div>
+                                <div style="font-size: 14px; color: #666;">
+                                    @{parent_user.get('username', '')}
+                                </div>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.error("❌ 올바르지 않은 초대 코드입니다")
+
+        st.markdown("---")
+        if st.button("🚀 가입하기", type="primary", use_container_width=True, key="signup_submit_btn"):
+            if not name or not username or not password:
+                st.error("⚠️ 모든 항목을 입력해주세요")
+            elif password != password_confirm:
+                st.error("❌ 비밀번호가 일치하지 않습니다")
+            elif len(password) < 6:
+                st.error("⚠️ 비밀번호는 6자리 이상이어야 합니다")
+            elif user_type == "child" and not parent_user:
+                st.error("⚠️ 올바른 부모 초대 코드를 입력해주세요")
+            elif db.get_user_by_username(username):
+                st.error("❌ 이미 사용 중인 아이디입니다")
+            else:
+                try:
+                    if user_type == "parent":
+                        new_parent_code = generate_parent_code()
+                        new_user_id = db.create_user(
+                            username=username,
+                            password=password,
+                            name=name,
+                            age=None,
+                            parent_code=new_parent_code,
+                            user_type="parent",
+                            parent_ssn=None,
+                            phone_number=None,
+                        )
+                    else:
+                        parent_full_code = (parent_user or {}).get("parent_code") or ""
+                        new_user_id = db.create_user(
+                            username=username,
+                            password=password,
+                            name=name,
+                            age=None,
+                            parent_code=str(parent_full_code).strip().upper(),
+                            user_type="child",
+                            parent_ssn=None,
+                            phone_number=None,
+                        )
+                        try:
+                            pid = int((parent_user or {}).get("id") or 0)
+                            if pid:
+                                db.create_notification(
+                                    pid,
+                                    "새 자녀가 연결되었어요 👶",
+                                    f"{name}({username}) 계정이 가족에 연결되었습니다.",
+                                    level="success",
+                                )
+                        except Exception:
+                            pass
+
+                    st.success("✅ 회원가입이 완료되었습니다!")
+                    st.balloons()
+                    st.session_state["logged_in"] = True
+                    st.session_state["user_id"] = int(new_user_id)
+                    st.session_state["user_name"] = name
+                    st.session_state["username"] = username
+                    st.session_state["user_type"] = user_type
+                    st.session_state["show_signup"] = False
+                    st.session_state["current_auth_screen"] = "login"
+                    st.session_state["show_login_success"] = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ 오류가 발생했습니다: {str(e)}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("← 로그인으로 돌아가기", key="signup_back_login", use_container_width=True):
+            st.session_state["show_signup"] = False
+            st.session_state["current_auth_screen"] = "login"
+            st.rerun()
+
+    if mode in ("pc", "auto"):
+        left, right = st.columns([1.05, 0.95], vertical_alignment="top")
+        with left:
+            st.markdown(
+                """
+                <div style='color:white; padding: 10px 6px 2px 6px;'>
+                    <div style='font-size:64px; line-height:1; margin: 10px 0 10px 0;'>🐷</div>
+                    <div style='font-size:34px; font-weight:950; letter-spacing:-0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.18);'>
+                        AI Money Friends
+                    </div>
+                    <div style='margin-top:8px; font-size:15px; font-weight:800; opacity:0.95;'>
+                        아이들의 경제 교육 친구
+                    </div>
+                    <div style='margin-top:16px; font-size:14px; font-weight:800; opacity:0.92; line-height:1.6;'>
+                        ✅ 용돈 관리 · ✅ 미션 · ✅ 저축 목표 · ✅ 리포트<br>
+                        가족과 함께 돈 습관을 만들어봐요.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with right:
+            with st.container(border=True):
+                st.markdown('<div id="signup_card_anchor"></div>', unsafe_allow_html=True)
+                _form()
+    else:
+        with st.container(border=True):
+            st.markdown('<div id="signup_card_anchor"></div>', unsafe_allow_html=True)
+            _form()
 
 
 def show_signup_page():
