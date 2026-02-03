@@ -105,8 +105,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         }
         """
 
-    st.markdown(f"""
-    <style>
+    base_css = """
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
 
@@ -242,9 +241,13 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         box-shadow: 0 4px 12px rgba(255, 118, 117, 0.4) !important;
     }
 
-    {responsive_css}
-    </style>
-    """, unsafe_allow_html=True)
+    """
+
+    # ✅ f-string 금지: CSS의 { }가 파이썬 포맷으로 해석되면 NameError 발생
+    st.markdown(
+        "<style>\n" + base_css + "\n" + responsive_css + "\n</style>",
+        unsafe_allow_html=True,
+    )
 
     # --- 사이드바 콘텐츠 시작 ---
     with st.sidebar:
