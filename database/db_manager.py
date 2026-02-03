@@ -1128,7 +1128,7 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    # ========== 대시보드 통계 ==========
+    # ========== 홈 통계 ==========
 
     def get_children_monthly_savings(self, parent_code: str) -> List[Dict]:
         """부모 코드로 연결된 모든 자녀의 최근 6개월간 월별 저축 합계 조회"""

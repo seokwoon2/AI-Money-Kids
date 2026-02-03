@@ -268,7 +268,7 @@ def _inject_dashboard_css():
                 line-height: 1.45;
             }
 
-            /* 아이 대시보드 hero */
+            /* 아이 홈 hero */
             .amf-hero{
                 background: linear-gradient(135deg, var(--brand1), var(--brand2));
                 padding: 18px 16px;
@@ -377,7 +377,7 @@ def main():
             items = []
             if user_type == "parent":
                 items = [
-                    ("🏠 대시보드", "pages/1_🏠_대시보드.py"),
+                    ("🏠 홈", "pages/1_🏠_대시보드.py"),
                     ("👶 자녀 관리", "pages/2_👶_자녀_관리.py"),
                     ("💵 용돈 관리", "pages/3_💵_용돈_관리.py"),
                     ("📝 요청 승인", "pages/4_📝_요청_승인.py"),
@@ -731,7 +731,7 @@ def main():
             st.switch_page("pages/5_📊_리포트.py")
 
     else:
-        # 아이용 대시보드
+        # 아이용 홈
         cstats = _compute_balance(db, user_id)
 
         # hero card (모바일 대응을 위해 클래스 기반 스타일)

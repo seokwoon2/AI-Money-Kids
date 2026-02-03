@@ -32,30 +32,6 @@ def main():
         st.error("부모님만 접근할 수 있어요.")
         st.stop()
 
-    # ✅ 상단 고정 액션(뒤로가기/메뉴) - 사이드바 토글이 막혀도 이동 가능
-    top_l, top_r = st.columns([0.62, 0.38])
-    with top_l:
-        if st.button("← 대시보드로", use_container_width=True, key="kids_back_dashboard"):
-            st.switch_page("pages/1_🏠_대시보드.py")
-    with top_r:
-        with st.popover("☰ 메뉴", use_container_width=True):
-            if st.button("🏠 대시보드", use_container_width=True, key="kids_menu_dash"):
-                st.switch_page("pages/1_🏠_대시보드.py")
-            if st.button("💵 용돈 관리", use_container_width=True, key="kids_menu_allowance"):
-                st.switch_page("pages/3_💵_용돈_관리.py")
-            if st.button("📝 요청 승인", use_container_width=True, key="kids_menu_requests"):
-                st.switch_page("pages/4_📝_요청_승인.py")
-            if st.button("⚙️ 설정", use_container_width=True, key="kids_menu_settings"):
-                st.switch_page("pages/6_⚙️_설정.py")
-            st.markdown("---")
-            if st.button("🚪 로그아웃", use_container_width=True, key="kids_menu_logout"):
-                for k in list(st.session_state.keys()):
-                    if k not in ["current_auth_screen"]:
-                        del st.session_state[k]
-                st.session_state["logged_in"] = False
-                st.session_state["current_auth_screen"] = "login"
-                st.switch_page("app.py")
-
     parent = db.get_user_by_id(user_id)
     parent_code = (parent or {}).get("parent_code", "")
     children = db.get_users_by_parent_code(parent_code) if parent_code else []
@@ -355,7 +331,7 @@ def main():
         if st.button("💵 용돈 관리로 이동", use_container_width=True):
             st.switch_page("pages/3_💵_용돈_관리.py")
     with b2:
-        if st.button("🏠 대시보드", use_container_width=True):
+        if st.button("🏠 홈", use_container_width=True):
             st.switch_page("pages/1_🏠_대시보드.py")
 
 

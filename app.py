@@ -1297,8 +1297,8 @@ def login_page():
 
 
 def main_page():
-    """로그인 후 대시보드로 이동(새 구조 통일)"""
-    # 이제 로그인 후 첫 화면은 `pages/1_🏠_대시보드.py`로 통일합니다.
+    """로그인 후 홈으로 이동(새 구조 통일)"""
+    # 이제 로그인 후 첫 화면은 `pages/1_🏠_대시보드.py`(홈)로 통일합니다.
     # (페이지 누락/라우팅 이슈가 있어도 앱이 죽지 않도록 예외 처리)
     try:
         st.switch_page("pages/1_🏠_대시보드.py")
@@ -1308,7 +1308,7 @@ def main_page():
         st.rerun()
 
 def parent_dashboard(user_name):
-    """부모용 대시보드 - Style B (전문적인 분석형)"""
+    """부모용 홈 - Style B (전문적인 분석형)"""
     # 자녀 정보 및 통계 가져오기
     user = db.get_user_by_id(st.session_state.user_id)
     parent_code = user['parent_code'] if user else ""
@@ -1339,7 +1339,7 @@ def parent_dashboard(user_name):
 
     st.markdown("""
     <style>
-    /* 부모 대시보드 전용 스타일 */
+    /* 부모 홈 전용 스타일 */
     .main { background-color: #f0f2f6 !important; }
     .stApp {
         background: #f0f2f6 !important;
@@ -1525,10 +1525,10 @@ def parent_dashboard(user_name):
         """, unsafe_allow_html=True)
 
 def child_dashboard(user_name):
-    """아이용 대시보드 - Style A (친근하고 귀여운 카드형)"""
+    """아이용 홈 - Style A (친근하고 귀여운 카드형)"""
     st.markdown("""
     <style>
-    /* 아이 대시보드 전용 스타일 */
+    /* 아이 홈 전용 스타일 */
     .main { background-color: #fcfdfe !important; }
     .stApp {
         background: #fcfdfe !important;

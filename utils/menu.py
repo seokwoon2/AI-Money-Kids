@@ -37,6 +37,13 @@ def safe_page_link(page_path: str, label: str, icon: str | None = None):
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     """개선된 사이드바 메뉴"""
 
+    # ===== 상단 고정 네비(전 페이지 공통): 홈 + 메뉴 + 보기 =====
+    # 사이드바 토글이 막히거나(모바일/오버레이) 사이드바가 접혀도
+    # 사용자가 항상 "홈"과 "메뉴"로 이동 가능하도록 제공합니다.
+    home_key = "parent_dashboard" if user_type == "parent" else "child_dashboard"
+    home_label = "🏠 홈"
+    home_path = "pages/1_🏠_대시보드.py"
+
     # ===== 전역 보기 모드(자동/모바일/PC) =====
     # auto: 기기 폭(미디어쿼리) 기반
     # mobile: 넓은 화면에서도 모바일처럼 강제
@@ -45,10 +52,94 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.session_state["layout_mode"] = "auto"
     layout_mode = st.session_state.get("layout_mode", "auto")
 
-    # ✅ 우측 상단 "보기" 컨트롤 (메뉴 안에 넣지 않음)
-    # popover가 특정 CSS/레이어에서 클릭이 막히는 케이스가 있어, 항상 클릭되는 segmented/select로 변경
-    _, view_col = st.columns([0.78, 0.22])
-    with view_col:
+    # ✅ 상단: 홈/메뉴/보기 (한 줄)
+    top_l, top_m, top_r = st.columns([0.58, 0.20, 0.22])
+    with top_l:
+        if st.button(home_label, use_container_width=True, key="amf_top_home_btn"):
+            st.session_state["current_page"] = home_key
+            try:
+                st.switch_page(home_path)
+            except Exception:
+                st.rerun()
+
+    with top_m:
+        with st.popover("☰ 메뉴", use_container_width=True):
+            # 메뉴 항목 (현재 pages 구조 기준)
+            if user_type == "parent":
+                items = [
+                    ("🏠", "홈", "parent_dashboard"),
+                    ("👶", "자녀 관리", "parent_children"),
+                    ("💵", "용돈 관리", "allowance_manage"),
+                    ("📝", "요청 승인", "request_approve"),
+                    ("📊", "리포트", "parent_report"),
+                    ("⚙️", "설정", "settings"),
+                ]
+            else:
+                items = [
+                    ("🏠", "홈", "child_dashboard"),
+                    ("💰", "내 지갑", "wallet"),
+                    ("🎯", "저축 목표", "goals"),
+                    ("📝", "용돈 요청", "allowance_request"),
+                    ("✅", "미션", "missions"),
+                    ("🤖", "AI 친구", "ai_friend"),
+                    ("📚", "경제 교실", "classroom"),
+                    ("🏆", "내 성장", "growth"),
+                    ("⚙️", "설정", "settings"),
+                ]
+
+            page_paths = {
+                # parent
+                "parent_dashboard": "pages/1_🏠_대시보드.py",
+                "parent_children": "pages/2_👶_자녀_관리.py",
+                "allowance_manage": "pages/3_💵_용돈_관리.py",
+                "request_approve": "pages/4_📝_요청_승인.py",
+                "parent_report": "pages/5_📊_리포트.py",
+                # child
+                "child_dashboard": "pages/1_🏠_대시보드.py",
+                "wallet": "pages/7_💰_내_지갑.py",
+                "goals": "pages/8_🎯_저축_목표.py",
+                "allowance_request": "pages/9_📝_용돈_요청.py",
+                "missions": "pages/10_✅_미션.py",
+                "ai_friend": "pages/11_🤖_AI_친구.py",
+                "classroom": "pages/12_📚_경제_교실.py",
+                "growth": "pages/13_🏆_내_성장.py",
+                # shared
+                "settings": "pages/6_⚙️_설정.py",
+            }
+
+            for icon, label, key in items:
+                page_path = page_paths.get(key)
+                ready = bool(page_path and _page_exists(page_path))
+                if st.button(
+                    f"{icon} {label}" + ("" if ready else " (준비중)"),
+                    use_container_width=True,
+                    disabled=not ready,
+                    key=f"amf_top_menu_{key}",
+                ):
+                    st.session_state["current_page"] = key
+                    if page_path and ready:
+                        try:
+                            st.switch_page(page_path)
+                        except Exception:
+                            st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
+                    st.rerun()
+
+            st.markdown("---")
+            if st.session_state.get("logged_in"):
+                if st.button("🚪 로그아웃", use_container_width=True, key="amf_top_logout"):
+                    for k in list(st.session_state.keys()):
+                        if k not in ["current_auth_screen"]:
+                            del st.session_state[k]
+                    st.session_state["logged_in"] = False
+                    st.session_state["current_auth_screen"] = "login"
+                    try:
+                        st.switch_page("app.py")
+                    except Exception:
+                        st.rerun()
+
+    with top_r:
+        # ✅ 우측 상단 "보기" 컨트롤 (메뉴 안에 넣지 않음)
+        # popover가 특정 CSS/레이어에서 클릭이 막히는 케이스가 있어, 항상 클릭되는 segmented/select로 변경
         current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
         if hasattr(st, "segmented_control"):
             picked = st.segmented_control(
@@ -324,12 +415,13 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         
         # 세션 상태 초기화
         if 'current_page' not in st.session_state:
-            st.session_state['current_page'] = 'home'
+            # 부모/아이에 따라 기본 홈 페이지를 다르게 지정
+            st.session_state['current_page'] = "parent_dashboard" if user_type == "parent" else "child_dashboard"
         
         # 메뉴 항목 (현재 pages 구조 기준)
         if user_type == "parent":
             menu_items = [
-                ("🏠", "대시보드", "parent_dashboard"),
+                ("🏠", "홈", "parent_dashboard"),
                 ("👶", "자녀 관리", "parent_children"),
                 ("💵", "용돈 관리", "allowance_manage"),
                 ("📝", "요청 승인", "request_approve"),
