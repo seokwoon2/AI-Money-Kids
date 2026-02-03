@@ -65,6 +65,44 @@ def _safe_seed_defaults(db: DatabaseManager) -> None:
             pass
 
 
+def _safe_get_pending_requests(db: DatabaseManager, parent_code: str) -> list:
+    """Cloud 구버전 DB 매니저에서도 요청 목록을 안전하게 가져오기"""
+    if not parent_code:
+        return []
+    if hasattr(db, "get_requests_for_parent"):
+        try:
+            return db.get_requests_for_parent(parent_code, status="pending")
+        except Exception:
+            return []
+
+    # fallback SQL
+    try:
+        conn = db._get_connection()  # pylint: disable=protected-access
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='requests'")
+        if not cur.fetchone():
+            return []
+        cur.execute(
+            """
+            SELECT r.*, u.name as child_name, u.username as child_username
+            FROM requests r
+            JOIN users u ON r.child_id = u.id
+            WHERE r.parent_code = ? AND r.status = 'pending'
+            ORDER BY r.created_at DESC
+            """,
+            (parent_code,),
+        )
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def _guard_login() -> bool:
     if not st.session_state.get("logged_in"):
         st.switch_page("app.py")
@@ -110,7 +148,9 @@ def _inject_dashboard_css():
             .block-container { max-width: 1200px !important; padding-top: 0.9rem !important; }
 
             /* remove default chrome for app-like feel */
-            [data-testid="stToolbar"], #MainMenu, footer, header { display:none !important; }
+            [data-testid="stToolbar"], #MainMenu, footer { display:none !important; }
+            /* 헤더는 남겨서 사이드바 토글(>>)이 보이도록 */
+            header { background: transparent !important; }
 
             /* typography */
             h1, h2, h3 { letter-spacing: -0.3px; color: var(--text); }
@@ -241,7 +281,7 @@ def main():
     else:
         unread = []
     unread_count = len(unread)
-    left, right = st.columns([0.74, 0.26])
+    left, right = st.columns([0.68, 0.32])
     with left:
         st.markdown(
             f"""
@@ -256,7 +296,36 @@ def main():
             unsafe_allow_html=True,
         )
     with right:
-        top1, top2 = st.columns([1, 1])
+        top0, top1, top2 = st.columns([1, 1, 1])
+        with top0:
+            with st.popover("☰", use_container_width=True):
+                st.markdown("**메뉴**")
+                items = []
+                if user_type == "parent":
+                    items = [
+                        ("🏠 대시보드", "pages/1_🏠_대시보드.py"),
+                        ("👶 자녀 관리", "pages/2_👶_자녀_관리.py"),
+                        ("💵 용돈 관리", "pages/3_💵_용돈_관리.py"),
+                        ("📝 요청 승인", "pages/4_📝_요청_승인.py"),
+                        ("📊 리포트", "pages/5_📊_리포트.py"),
+                        ("⚙️ 설정", "pages/6_⚙️_설정.py"),
+                    ]
+                else:
+                    items = [
+                        ("🏠 홈", "pages/1_🏠_대시보드.py"),
+                        ("💰 내 지갑", "pages/7_💰_내_지갑.py"),
+                        ("🎯 저축 목표", "pages/8_🎯_저축_목표.py"),
+                        ("📝 용돈 요청", "pages/9_📝_용돈_요청.py"),
+                        ("✅ 미션", "pages/10_✅_미션.py"),
+                        ("🤖 AI 친구", "pages/11_🤖_AI_친구.py"),
+                        ("📚 경제 교실", "pages/12_📚_경제_교실.py"),
+                        ("🏆 내 성장", "pages/13_🏆_내_성장.py"),
+                        ("⚙️ 설정", "pages/6_⚙️_설정.py"),
+                    ]
+
+                for label, path in items:
+                    if st.button(label, use_container_width=True, key=f"dash_menu_{label}"):
+                        st.switch_page(path)
         with top1:
             st.markdown(f"<div class='amf-chip'>📅 <strong>{datetime.now().strftime('%Y.%m.%d')}</strong></div>", unsafe_allow_html=True)
         with top2:
@@ -344,7 +413,7 @@ def main():
                 st.metric("총 지출", f"{int(month_spend + month_impulse):,}원")
         with col_b:
             st.subheader("🧯 긴급 알림")
-            pending = db.get_requests_for_parent(parent_code, status="pending") if parent_code else []
+            pending = _safe_get_pending_requests(db, parent_code)
             if not pending:
                 st.success("대기 중인 요청이 없어요.")
             else:
