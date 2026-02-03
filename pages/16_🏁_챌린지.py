@@ -93,19 +93,23 @@ def _progress_ring(pct: float, label: str) -> str:
     dash = circumference * p
     gap = circumference - dash
     percent_txt = int(round(p * 100))
-    return f"""
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:78px;">
-      <svg width="52" height="52" viewBox="0 0 52 52" style="overflow:visible;">
-        <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(15,23,42,0.10)" stroke-width="6"></circle>
-        <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(16,185,129,0.95)" stroke-width="6"
-          stroke-linecap="round"
-          stroke-dasharray="{dash:.2f} {gap:.2f}"
-          transform="rotate(-90 26 26)"></circle>
-        <text x="26" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="#0f172a">{percent_txt}%</text>
-      </svg>
-      <div style="font-size:11px; font-weight:800; color:rgba(15,23,42,0.60);">{label}</div>
-    </div>
-    """
+    # ⚠️ 들여쓰기/선행 공백이 있으면 Streamlit markdown에서 코드블록으로 깨질 수 있어
+    # HTML은 항상 0열 시작으로 정리해서 반환합니다.
+    return _dedent(
+        f"""
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:78px;">
+          <svg width="52" height="52" viewBox="0 0 52 52" style="overflow:visible;">
+            <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(15,23,42,0.10)" stroke-width="6"></circle>
+            <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(16,185,129,0.95)" stroke-width="6"
+              stroke-linecap="round"
+              stroke-dasharray="{dash:.2f} {gap:.2f}"
+              transform="rotate(-90 26 26)"></circle>
+            <text x="26" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="#0f172a">{percent_txt}%</text>
+          </svg>
+          <div style="font-size:11px; font-weight:800; color:rgba(15,23,42,0.60);">{_html.escape(str(label))}</div>
+        </div>
+        """
+    ).strip()
 
 
 def _days_remaining_inclusive(end_s: str) -> int:
