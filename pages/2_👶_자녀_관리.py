@@ -1,6 +1,8 @@
 import streamlit as st
 
 from datetime import datetime
+from urllib.parse import quote as _urlquote
+import streamlit.components.v1 as components
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
@@ -30,6 +32,30 @@ def main():
         st.error("부모님만 접근할 수 있어요.")
         st.stop()
 
+    # ✅ 상단 고정 액션(뒤로가기/메뉴) - 사이드바 토글이 막혀도 이동 가능
+    top_l, top_r = st.columns([0.62, 0.38])
+    with top_l:
+        if st.button("← 대시보드로", use_container_width=True, key="kids_back_dashboard"):
+            st.switch_page("pages/1_🏠_대시보드.py")
+    with top_r:
+        with st.popover("☰ 메뉴", use_container_width=True):
+            if st.button("🏠 대시보드", use_container_width=True, key="kids_menu_dash"):
+                st.switch_page("pages/1_🏠_대시보드.py")
+            if st.button("💵 용돈 관리", use_container_width=True, key="kids_menu_allowance"):
+                st.switch_page("pages/3_💵_용돈_관리.py")
+            if st.button("📝 요청 승인", use_container_width=True, key="kids_menu_requests"):
+                st.switch_page("pages/4_📝_요청_승인.py")
+            if st.button("⚙️ 설정", use_container_width=True, key="kids_menu_settings"):
+                st.switch_page("pages/6_⚙️_설정.py")
+            st.markdown("---")
+            if st.button("🚪 로그아웃", use_container_width=True, key="kids_menu_logout"):
+                for k in list(st.session_state.keys()):
+                    if k not in ["current_auth_screen"]:
+                        del st.session_state[k]
+                st.session_state["logged_in"] = False
+                st.session_state["current_auth_screen"] = "login"
+                st.switch_page("app.py")
+
     parent = db.get_user_by_id(user_id)
     parent_code = (parent or {}).get("parent_code", "")
     children = db.get_users_by_parent_code(parent_code) if parent_code else []
@@ -47,58 +73,128 @@ def main():
 
     st.divider()
 
+    # ✅ 실사용 UX: 자녀가 있어도 항상 "자녀 초대(코드/QR)" 제공 (기본은 접힘)
+    if parent_code:
+        full_code = (parent_code or "").strip().upper()
+        short_code = full_code[-6:] if len(full_code) >= 6 else full_code
+
+        with st.expander("👶 자녀 초대하기 (코드/QR)", expanded=(len(children) == 0)):
+            left, right = st.columns([1.25, 0.75])
+            with left:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        padding: 18px 16px;
+                        border-radius: 16px;
+                        color: white;
+                        box-shadow: 0 16px 32px rgba(102,126,234,0.20);
+                    ">
+                        <div style="font-weight:900; opacity:0.9;">자녀에게 아래 코드를 알려주세요</div>
+                        <div style="
+                            margin-top:10px;
+                            background: rgba(255,255,255,0.95);
+                            color:#111827;
+                            padding: 12px 14px;
+                            border-radius: 12px;
+                            font-size: 32px;
+                            font-weight: 950;
+                            letter-spacing: 4px;
+                            text-align:center;
+                        ">{full_code}</div>
+                        <div style="margin-top:10px; font-size:13px; font-weight:800; opacity:0.92;">
+                            축약 6자리 코드: <span style="background:rgba(255,255,255,0.18); padding:4px 8px; border-radius:999px;">{short_code}</span>
+                        </div>
+                        <div style="margin-top:8px; font-size:12px; font-weight:800; opacity:0.85;">
+                            ※ 자녀 회원가입 화면에서 8자리(전체) 또는 6자리(축약)로 입력할 수 있어요.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                # ✅ 복사 버튼(실사용 UX): Streamlit 버튼 + 토스트 + (클릭 시에만) JS 복사
+                copy_col1, copy_col2 = st.columns(2)
+                with copy_col1:
+                    copy_full_clicked = st.button(
+                        "📋 전체 코드 복사",
+                        use_container_width=True,
+                        key="copy_invite_full_btn",
+                    )
+                with copy_col2:
+                    copy_short_clicked = st.button(
+                        "📋 6자리 복사",
+                        use_container_width=True,
+                        key="copy_invite_short_btn",
+                    )
+
+                to_copy = None
+                if copy_full_clicked:
+                    to_copy = full_code
+                if copy_short_clicked:
+                    to_copy = short_code
+
+                if to_copy:
+                    # st.toast가 없는 환경도 고려
+                    if hasattr(st, "toast"):
+                        st.toast("✅ 복사했어요!", icon="📋")
+                    else:
+                        st.success("✅ 복사했어요!")
+                    components.html(
+                        f"""
+                        <script>
+                          (function(){{
+                            const text = {to_copy!r};
+                            if (navigator.clipboard) {{
+                              navigator.clipboard.writeText(text);
+                            }}
+                          }})();
+                        </script>
+                        """,
+                        height=0,
+                    )
+
+                st.caption("복사가 안 되면 `전체 8자리 코드 보기`에서 복사 아이콘을 눌러주세요.")
+                with st.expander("전체 8자리 코드 보기", expanded=False):
+                    st.code(full_code, language=None)
+
+            with right:
+                st.caption("QR 코드(초대용)")
+                try:
+                    # qrcode가 있으면 로컬 생성, 없으면 외부 QR 이미지로 fallback
+                    try:
+                        import qrcode  # type: ignore
+
+                        qr = qrcode.QRCode(
+                            version=None,
+                            error_correction=getattr(qrcode.constants, "ERROR_CORRECT_M", None),
+                            box_size=8,
+                            border=2,
+                        )
+                        qr.add_data(full_code)
+                        qr.make(fit=True)
+                        img = qr.make_image(fill_color="black", back_color="white")
+                        try:
+                            img = img.convert("RGB")
+                        except Exception:
+                            pass
+                        st.image(img, use_container_width=True)
+                    except Exception:
+                        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={_urlquote(full_code)}"
+                        st.image(qr_url, use_container_width=True)
+
+                    st.caption("QR을 스캔한 뒤, 자녀 회원가입 화면에서 코드를 입력하면 연결돼요.")
+                    with st.expander("QR이 안 나올 때(점검)", expanded=False):
+                        st.caption("권장: `requirements.txt`에 아래 항목이 포함되어 있어야 해요.")
+                        st.code("qrcode[pil]>=7.4.2", language=None)
+                except Exception:
+                    st.caption("QR 표시 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.")
+
     if not children:
         st.info("아직 연결된 자녀가 없어요. 자녀가 회원가입 시 ‘부모 초대 코드’를 입력하면 자동으로 연결돼요.")
         if not parent_code:
             st.warning("부모 코드가 없어요. (부모 계정 생성 시 자동 생성됩니다)")
             return
-
-        short_code = parent_code[-6:].upper()
-        st.markdown("### 🔑 부모 초대 코드")
-
-        left, right = st.columns([1.25, 0.75])
-        with left:
-            st.markdown(
-                f"""
-                <div style="
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    padding: 18px 16px;
-                    border-radius: 16px;
-                    color: white;
-                    box-shadow: 0 16px 32px rgba(102,126,234,0.20);
-                ">
-                    <div style="font-weight:900; opacity:0.9;">자녀에게 이 코드를 알려주세요</div>
-                    <div style="
-                        margin-top:10px;
-                        background: rgba(255,255,255,0.95);
-                        color:#111827;
-                        padding: 12px 14px;
-                        border-radius: 12px;
-                        font-size: 32px;
-                        font-weight: 950;
-                        letter-spacing: 4px;
-                        text-align:center;
-                    ">{short_code}</div>
-                    <div style="margin-top:10px; font-size:13px; font-weight:800; opacity:0.9;">
-                        ※ 6자리(축약) 또는 전체 8자리 코드로도 연결 가능
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("전체 8자리 코드 보기", expanded=False):
-                st.code(parent_code.upper(), language=None)
-
-        with right:
-            st.caption("QR 코드(초대용)")
-            try:
-                import qrcode
-
-                img = qrcode.make(short_code)
-                st.image(img, use_container_width=True)
-                st.caption("자녀가 QR을 보고 6자리 코드를 입력해도 돼요.")
-            except Exception:
-                st.caption("QR 코드 표시를 위해 `qrcode` 설치가 필요해요.")
         return
 
     # ===== 자녀 카드 목록(모바일/PC 공통) =====
