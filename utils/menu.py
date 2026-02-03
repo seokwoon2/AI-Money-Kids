@@ -1,6 +1,7 @@
 """공통 메뉴 유틸리티 - 카카오뱅크 스타일 UI 개편"""
 from __future__ import annotations
 
+from datetime import datetime
 import os
 from pathlib import Path
 
@@ -10,6 +11,16 @@ from database.db_manager import DatabaseManager
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _normalize_user_type(user_type: str) -> str:
+    """user_type 값이 환경/버전별로 달라도 parent/child로 정규화"""
+    ut = str(user_type or "").strip().lower()
+    if ut in ("parent", "parents", "guardian", "부모", "부모님", "부모계정", "엄마", "아빠"):
+        return "parent"
+    if ut in ("child", "kid", "kids", "children", "아이", "자녀"):
+        return "child"
+    return ut or "child"
 
 
 def _page_exists(page_path: str) -> bool:
@@ -37,6 +48,9 @@ def safe_page_link(page_path: str, label: str, icon: str | None = None):
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     """개선된 사이드바 메뉴"""
 
+    # user_type이 예전 데이터/한글 값이어도 메뉴가 정상 노출되도록 정규화
+    user_type = _normalize_user_type(user_type)
+
     # ===== 상단 고정 네비(전 페이지 공통): 홈 + 메뉴 + 보기 =====
     # 사이드바 토글이 막히거나(모바일/오버레이) 사이드바가 접혀도
     # 사용자가 항상 "홈"과 "메뉴"로 이동 가능하도록 제공합니다.
@@ -53,120 +67,167 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         st.session_state["layout_mode"] = "auto"
     layout_mode = st.session_state.get("layout_mode", "auto")
 
-    # ✅ 상단: 홈/메뉴/보기 (한 줄)
-    # - 홈: 아이콘형(짧게)
-    # - 메뉴: 중앙 넓게
-    # - 보기: 우측
-    top_l, top_m, top_r = st.columns([0.12, 0.55, 0.33])
-    with top_l:
-        if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
-            st.session_state["current_page"] = home_key
-            try:
-                st.switch_page(home_path)
-            except Exception:
-                st.rerun()
+    # ===== 전역 날짜/알림 =====
+    today_str = datetime.now().strftime("%Y.%m.%d")
+    unread: list[dict] = []
+    db: DatabaseManager | None = None
+    try:
+        db = DatabaseManager()
+        if hasattr(db, "get_notifications"):
+            unread = db.get_notifications(int(user_id), unread_only=True, limit=20) or []
+    except Exception:
+        unread = []
+        db = None
+    unread_count = len(unread)
 
-    with top_m:
-        with st.popover("☰ 메뉴", use_container_width=True):
-            # 메뉴 항목 (현재 pages 구조 기준)
-            if user_type == "parent":
-                items = [
-                    ("🏠", "홈", "parent_dashboard"),
-                    ("👶", "자녀 관리", "parent_children"),
-                    ("💵", "용돈 관리", "allowance_manage"),
-                    ("📝", "요청 승인", "request_approve"),
-                    ("📊", "리포트", "parent_report"),
-                    ("⚙️", "설정", "settings"),
-                ]
-            else:
-                items = [
-                    ("🏠", "홈", "child_dashboard"),
-                    ("💰", "내 지갑", "wallet"),
-                    ("🎯", "저축 목표", "goals"),
-                    ("📝", "용돈 요청", "allowance_request"),
-                    ("✅", "미션", "missions"),
-                    ("🤖", "AI 친구", "ai_friend"),
-                    ("📚", "경제 교실", "classroom"),
-                    ("🏆", "내 성장", "growth"),
-                    ("⚙️", "설정", "settings"),
-                ]
+    # ✅ 상단(전역) + 보기 토글: 같은 컨테이너로 묶어서 CSS 스코프를 고정
+    with st.container():
+        st.markdown('<span id="amf_topnav_anchor"></span>', unsafe_allow_html=True)
 
-            page_paths = {
-                # parent
-                "parent_dashboard": "pages/1_🏠_대시보드.py",
-                "parent_children": "pages/2_👶_자녀_관리.py",
-                "allowance_manage": "pages/3_💵_용돈_관리.py",
-                "request_approve": "pages/4_📝_요청_승인.py",
-                "parent_report": "pages/5_📊_리포트.py",
-                # child
-                "child_dashboard": "pages/1_🏠_대시보드.py",
-                "wallet": "pages/7_💰_내_지갑.py",
-                "goals": "pages/8_🎯_저축_목표.py",
-                "allowance_request": "pages/9_📝_용돈_요청.py",
-                "missions": "pages/10_✅_미션.py",
-                "ai_friend": "pages/11_🤖_AI_친구.py",
-                "classroom": "pages/12_📚_경제_교실.py",
-                "growth": "pages/13_🏆_내_성장.py",
-                # shared
-                "settings": "pages/6_⚙️_설정.py",
-            }
+        # ✅ 상단(전역): 메뉴(맨왼쪽) / 홈(그다음) / (우측) 날짜 / 알림(맨오른쪽)
+        top_menu, top_home, top_spacer, top_date, top_alarm = st.columns([0.10, 0.09, 0.40, 0.25, 0.16])
 
-            for icon, label, key in items:
-                page_path = page_paths.get(key)
-                ready = bool(page_path and _page_exists(page_path))
-                if st.button(
-                    f"{icon} {label}" + ("" if ready else " (준비중)"),
-                    use_container_width=True,
-                    disabled=not ready,
-                    key=f"amf_top_menu_{key}",
-                ):
-                    st.session_state["current_page"] = key
-                    if page_path and ready:
-                        try:
-                            st.switch_page(page_path)
-                        except Exception:
-                            st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
-                    st.rerun()
+        with top_menu:
+            with st.popover("☰", use_container_width=False):
+                st.markdown("**메뉴**")
+                # 메뉴 항목 (현재 pages 구조 기준)
+                if user_type == "parent":
+                    items = [
+                        ("🏠", "홈", "parent_dashboard"),
+                        ("👶", "자녀 관리", "parent_children"),
+                        ("💵", "용돈 관리", "allowance_manage"),
+                        ("📝", "요청 승인", "request_approve"),
+                        ("📊", "리포트", "parent_report"),
+                        ("⚙️", "설정", "settings"),
+                    ]
+                else:
+                    items = [
+                        ("🏠", "홈", "child_dashboard"),
+                        ("💰", "내 지갑", "wallet"),
+                        ("🎯", "저축 목표", "goals"),
+                        ("📝", "용돈 요청", "allowance_request"),
+                        ("✅", "미션", "missions"),
+                        ("🤖", "AI 친구", "ai_friend"),
+                        ("📚", "경제 교실", "classroom"),
+                        ("🏆", "내 성장", "growth"),
+                        ("⚙️", "설정", "settings"),
+                    ]
 
-            st.markdown("---")
-            if st.session_state.get("logged_in"):
-                if st.button("🚪 로그아웃", use_container_width=True, key="amf_top_logout"):
-                    for k in list(st.session_state.keys()):
-                        if k not in ["current_auth_screen"]:
-                            del st.session_state[k]
-                    st.session_state["logged_in"] = False
-                    st.session_state["current_auth_screen"] = "login"
-                    try:
-                        st.switch_page("app.py")
-                    except Exception:
+                page_paths = {
+                    # parent
+                    "parent_dashboard": "pages/1_🏠_대시보드.py",
+                    "parent_children": "pages/2_👶_자녀_관리.py",
+                    "allowance_manage": "pages/3_💵_용돈_관리.py",
+                    "request_approve": "pages/4_📝_요청_승인.py",
+                    "parent_report": "pages/5_📊_리포트.py",
+                    # child
+                    "child_dashboard": "pages/1_🏠_대시보드.py",
+                    "wallet": "pages/7_💰_내_지갑.py",
+                    "goals": "pages/8_🎯_저축_목표.py",
+                    "allowance_request": "pages/9_📝_용돈_요청.py",
+                    "missions": "pages/10_✅_미션.py",
+                    "ai_friend": "pages/11_🤖_AI_친구.py",
+                    "classroom": "pages/12_📚_경제_교실.py",
+                    "growth": "pages/13_🏆_내_성장.py",
+                    # shared
+                    "settings": "pages/6_⚙️_설정.py",
+                }
+
+                for icon, label, key in items:
+                    page_path = page_paths.get(key)
+                    ready = bool(page_path and _page_exists(page_path))
+                    if st.button(
+                        f"{icon} {label}" + ("" if ready else " (준비중)"),
+                        use_container_width=True,
+                        disabled=not ready,
+                        key=f"amf_top_menu_{key}",
+                    ):
+                        st.session_state["current_page"] = key
+                        if page_path and ready:
+                            try:
+                                st.switch_page(page_path)
+                            except Exception:
+                                st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
                         st.rerun()
 
-    with top_r:
-        # ✅ 우측 상단 "보기" 컨트롤 (메뉴 안에 넣지 않음)
-        # popover가 특정 CSS/레이어에서 클릭이 막히는 케이스가 있어, 항상 클릭되는 segmented/select로 변경
-        current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
-        if hasattr(st, "segmented_control"):
-            picked = st.segmented_control(
-                "보기",
-                options=["자동", "모바일", "PC"],
-                default=current,
-                label_visibility="collapsed",
-                key="amf_layout_mode_segmented",
-            )
-        else:
-            picked = st.selectbox(
-                "보기",
-                options=["자동", "모바일", "PC"],
-                index=["자동", "모바일", "PC"].index(current),
-                label_visibility="collapsed",
-                key="amf_layout_mode_select",
+                st.markdown("---")
+                if st.session_state.get("logged_in"):
+                    if st.button("🚪 로그아웃", use_container_width=True, key="amf_top_logout"):
+                        for k in list(st.session_state.keys()):
+                            if k not in ["current_auth_screen"]:
+                                del st.session_state[k]
+                        st.session_state["logged_in"] = False
+                        st.session_state["current_auth_screen"] = "login"
+                        try:
+                            st.switch_page("app.py")
+                        except Exception:
+                            st.rerun()
+
+        with top_home:
+            if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
+                st.session_state["current_page"] = home_key
+                try:
+                    st.switch_page(home_path)
+                except Exception:
+                    st.rerun()
+
+        with top_date:
+            st.markdown(
+                f"<div style='text-align:right;'><div class='amf-topchip'>📅 <strong>{today_str}</strong></div></div>",
+                unsafe_allow_html=True,
             )
 
-        if picked:
-            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
-            if new_mode != st.session_state.get("layout_mode", "auto"):
-                st.session_state["layout_mode"] = new_mode
-                st.rerun()
+        with top_alarm:
+            alarm_label = f"🔔 {unread_count}" if unread_count else "🔔"
+            with st.popover(alarm_label, use_container_width=True):
+                st.markdown("**알림**")
+                if not unread:
+                    st.caption("새 알림이 없어요.")
+                else:
+                    for n in unread[:8]:
+                        lvl = (n.get("level") or "info").lower()
+                        title = n.get("title") or ""
+                        body = n.get("body") or ""
+                        if lvl == "success":
+                            st.success(f"**{title}**\n\n{body}")
+                        elif lvl == "warning":
+                            st.warning(f"**{title}**\n\n{body}")
+                        else:
+                            st.info(f"**{title}**\n\n{body}")
+                        if st.button("읽음", key=f"amf_top_read_notif_{n.get('id')}", use_container_width=True):
+                            if db and hasattr(db, "mark_notification_read"):
+                                try:
+                                    db.mark_notification_read(int(n["id"]))
+                                except Exception:
+                                    pass
+                            st.rerun()
+
+        # ✅ 보기(자동/모바일/PC)는 한 줄 더(우측 정렬)
+        _, view_col = st.columns([0.72, 0.28])
+        with view_col:
+            current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
+            if hasattr(st, "segmented_control"):
+                picked = st.segmented_control(
+                    "보기",
+                    options=["자동", "모바일", "PC"],
+                    default=current,
+                    label_visibility="collapsed",
+                    key="amf_layout_mode_segmented",
+                )
+            else:
+                picked = st.selectbox(
+                    "보기",
+                    options=["자동", "모바일", "PC"],
+                    index=["자동", "모바일", "PC"].index(current),
+                    label_visibility="collapsed",
+                    key="amf_layout_mode_select",
+                )
+
+            if picked:
+                new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
+                if new_mode != st.session_state.get("layout_mode", "auto"):
+                    st.session_state["layout_mode"] = new_mode
+                    st.rerun()
     
     # CSS 주입
     responsive_css = """
@@ -328,6 +389,63 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         color: #6b7280;
         letter-spacing: 0.2px;
         text-transform: uppercase;
+    }
+
+    /* 전역 상단 날짜 칩 */
+    .amf-topchip{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid rgba(17,24,39,0.08);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+        font-weight: 900;
+        font-size: 12px;
+        color: #374151;
+        white-space: nowrap;
+        justify-content: flex-end;
+    }
+    .amf-topchip strong{ color:#111827; }
+
+    /* ===== 전역 상단바(메뉴/홈/날짜/알림/보기) 컴팩트 ===== */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor){
+        margin-bottom: 0.25rem !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"]{
+        align-items: center !important;
+        gap: 0.55rem !important;
+    }
+    /* 모바일에서도 배치 순서 유지(강제 줄바꿈 방지) */
+    @media (max-width: 768px){
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"]{
+            flex-wrap: nowrap !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stHorizontalBlock"] > div{
+            min-width: 0 !important;
+        }
+    }
+    /* 상단바 버튼(메뉴/홈/알림) */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
+        height: 40px !important;
+        padding: 0 10px !important;
+        border-radius: 999px !important;
+        font-weight: 900 !important;
+        border: 1px solid rgba(17,24,39,0.08) !important;
+        background: rgba(255,255,255,0.92) !important;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
+        line-height: 1 !important;
+    }
+    /* 메뉴/홈 버튼은 더 작게(아이콘형) */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
+        min-width: 40px !important;
+    }
+    /* segmented_control(보기) 주변 간격 축소 */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"]{
+        margin-top: -2px !important;
     }
     
     /* 메뉴 버튼 스타일 */

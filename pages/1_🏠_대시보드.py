@@ -341,20 +341,18 @@ def main():
     user_name = st.session_state.get("user_name", "사용자")
     user = db.get_user_by_id(user_id)
     user_type = (user or {}).get("user_type", st.session_state.get("user_type", "child"))
+    user_type = str(user_type or "").strip().lower()
+    if user_type in ("부모", "부모님", "parent", "guardian"):
+        user_type = "parent"
+    elif user_type in ("아이", "자녀", "child", "kid"):
+        user_type = "child"
+    elif user_type not in ("parent", "child"):
+        user_type = "child"
 
     render_sidebar_menu(user_id, user_name, user_type)
     _inject_dashboard_css()
 
-    # app bar (title + date + notifications)
-    if hasattr(db, "get_notifications"):
-        try:
-            unread = db.get_notifications(user_id, unread_only=True, limit=20)
-        except Exception:
-            unread = []
-    else:
-        unread = []
-    unread_count = len(unread)
-    today_str = datetime.now().strftime("%Y.%m.%d")
+    # app bar (title)
     # ✅ 모바일 우선: 상단을 2줄 구조로(타이틀/액션) 고정
     st.markdown(
         f"""
@@ -368,39 +366,6 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-
-    # ✅ 전역 상단 네비(홈/메뉴/보기)가 이미 있으므로,
-    # 홈 페이지에서 "☰ 메뉴"를 또 그리면 겹칩니다. (중복 메뉴 제거)
-    top1, top2 = st.columns([1.0, 0.55])
-    with top1:
-        st.markdown(
-            f"<div style='text-align:right;'><div class='amf-chip'>📅 <strong>{today_str}</strong></div></div>",
-            unsafe_allow_html=True,
-        )
-    with top2:
-        label = f"🔔 {unread_count}" if unread_count else "🔔"
-        with st.popover(label, use_container_width=False):
-            st.markdown("**알림**")
-            if not unread:
-                st.caption("새 알림이 없어요.")
-            else:
-                for n in unread[:8]:
-                    lvl = (n.get("level") or "info").lower()
-                    title = n.get("title") or ""
-                    body = n.get("body") or ""
-                    if lvl == "success":
-                        st.success(f"**{title}**\n\n{body}")
-                    elif lvl == "warning":
-                        st.warning(f"**{title}**\n\n{body}")
-                    else:
-                        st.info(f"**{title}**\n\n{body}")
-                    if st.button("읽음", key=f"read_notif_{n['id']}", use_container_width=True):
-                        if hasattr(db, "mark_notification_read"):
-                            try:
-                                db.mark_notification_read(int(n["id"]))
-                            except Exception:
-                                pass
-                        st.rerun()
 
     st.divider()
 
