@@ -116,9 +116,9 @@ google_redirect_uri = "https://your-app.streamlit.app"
 │   ├── menu.py            # Sidebar menu
 │   └── auth.py            # Authentication utilities
 ├── pages/                 # Streamlit pages
-│   ├── 1_💬_아이_채팅.py
-│   ├── 7_🎯_금융_미션.py
-│   └── 8_📖_금융_스토리.py
+│   ├── 11_🤖_AI_친구.py
+│   ├── 10_✅_미션.py
+│   └── 12_📚_경제_교실.py
 ├── .env                   # Environment variables (local)
 ├── .env.example           # Environment variables template
 ├── requirements.txt       # Python dependencies
