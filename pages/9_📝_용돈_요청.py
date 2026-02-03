@@ -2,6 +2,8 @@ import streamlit as st
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+from datetime import datetime, timedelta
+import time
 
 
 def _guard_child(db: DatabaseManager):
@@ -125,6 +127,19 @@ def main():
         c1, c2 = st.columns(2)
         with c1:
             if st.button("✅ 잠깐 멈추기 성공(오늘은 안 사기)", use_container_width=True, key="do_stop", type="primary"):
+                # 10초 카운트다운(호흡 가이드)
+                st.info("🧘 10초만 천천히 숨 쉬어볼까? (들숨 4초 · 날숨 6초)")
+                bar = st.progress(0)
+                msg = st.empty()
+                for i in range(10, 0, -1):
+                    bar.progress(int((10 - i) * 10))
+                    msg.markdown(f"**{i}초** 남았어요…")
+                    time.sleep(1)
+                bar.progress(100)
+                msg.markdown("**좋아! 이제 결정해보자.**")
+
+                remind = st.checkbox("내일 다시 생각하라고 알려줘(리마인더)", value=True, key="stop_remind")
+
                 # 멈추기 기록 + 코인 보상
                 try:
                     db.create_emotion_log(user_id, context="pre_spend", emotion=e, note=(note or why))
@@ -139,6 +154,14 @@ def main():
                     if hasattr(db, "add_coins"):
                         db.add_coins(user_id, 10)
                     db.create_notification(user_id, "멈추기 성공! 🛑", "코인 10개를 받았어요 🪙", level="success")
+                    if remind and hasattr(db, "create_reminder"):
+                        due = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+                        db.create_reminder(
+                            user_id,
+                            "내일 다시 생각해볼까? 🌤️",
+                            "어제는 ‘잠깐 멈추기’에 성공했어! 오늘은 어떤 선택을 하고 싶어?",
+                            due_at=due,
+                        )
                 except Exception:
                     pass
                 if hasattr(st, "toast"):

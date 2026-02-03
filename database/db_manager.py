@@ -6,6 +6,7 @@ import bcrypt
 from config import Config
 from datetime import date as _date, timedelta as _timedelta
 from utils.characters import get_skins_for_character
+from datetime import timedelta as _timedelta2
 
 class DatabaseManager:
     """데이터베이스 관리 클래스"""
@@ -33,6 +34,24 @@ class DatabaseManager:
 
         # 기존 DB 마이그레이션(컬럼 추가 등)
         self._ensure_columns()
+
+        # 기존 DB에 새 테이블이 추가되었을 수 있으니 한 번 더 보정
+        self._ensure_tables()
+
+    def _ensure_tables(self):
+        """기존 DB에 누락된 테이블을 보정(CREATE TABLE IF NOT EXISTS)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # schema.sql 전체를 다시 실행하면 안전(CREATE IF NOT EXISTS)
+            with open(os.path.join(os.path.dirname(__file__), "schema.sql"), "r", encoding="utf-8") as f:
+                schema = f.read()
+            conn.executescript(schema)
+            conn.commit()
+        except Exception:
+            pass
+        finally:
+            conn.close()
 
     def _ensure_columns(self):
         """기존 DB에 누락된 컬럼/테이블 보정(안전한 ALTER)"""
@@ -744,6 +763,64 @@ class DatabaseManager:
             "coins_now": coins_now,
             "skins_unlocked": skins_unlocked,
         }
+
+    # ========== 리마인더(예약 알림) ==========
+
+    def create_reminder(self, user_id: int, title: str, body: str, due_at: str) -> int:
+        """due_at: 'YYYY-MM-DD HH:MM:SS'"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO reminders (user_id, title, body, due_at, is_sent)
+                VALUES (?, ?, ?, ?, 0)
+                """,
+                (int(user_id), title, body, due_at),
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    def run_due_reminders(self) -> int:
+        """
+        due_at <= now 인 예약 리마인더를 notifications로 발행하고 is_sent=1 처리.
+        - 스케줄러가 없으므로 앱 실행/페이지 진입 시 호출하는 방식
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        sent = 0
+        try:
+            cursor.execute(
+                """
+                SELECT id, user_id, title, body
+                FROM reminders
+                WHERE is_sent = 0
+                  AND datetime(due_at) <= datetime('now')
+                ORDER BY due_at ASC
+                LIMIT 50
+                """
+            )
+            rows = cursor.fetchall()
+            for r in rows:
+                uid = int(r["user_id"])
+                cursor.execute(
+                    "INSERT INTO notifications (user_id, title, body, level) VALUES (?, ?, ?, ?)",
+                    (uid, r["title"], r["body"], "info"),
+                )
+                cursor.execute("UPDATE reminders SET is_sent = 1 WHERE id = ?", (int(r["id"]),))
+                sent += 1
+            conn.commit()
+            return sent
+        except Exception:
+            try:
+                conn.commit()
+            except Exception:
+                pass
+            return sent
+        finally:
+            conn.close()
 
     def purchase_skin(self, user_id: int, skin_code: str, price: int, required_level: int) -> tuple[bool, str]:
         """스킨 구매(코인 차감 + 해금 + 적용)"""

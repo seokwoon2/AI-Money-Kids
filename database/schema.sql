@@ -138,6 +138,18 @@ CREATE TABLE IF NOT EXISTS risk_signals (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- 리마인더(예약 알림)
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT,
+    due_at TEXT NOT NULL, -- YYYY-MM-DD HH:MM:SS
+    is_sent INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
@@ -153,3 +165,5 @@ CREATE INDEX IF NOT EXISTS idx_requests_child_id ON requests(child_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_risk_signals_user_id ON risk_signals(user_id);
 CREATE INDEX IF NOT EXISTS idx_risk_signals_created_at ON risk_signals(created_at);
+CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_due_at ON reminders(due_at);

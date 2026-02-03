@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from datetime import date, datetime
 from database.db_manager import DatabaseManager
 from utils.auth import generate_parent_code, validate_parent_code
@@ -133,8 +134,6 @@ def handle_oauth_callback():
                         st.success(f"🎉 환영합니다, {nickname}님!")
                         st.balloons()
                         st.query_params.clear()
-import time
-from datetime import date
                         time.sleep(1)
                         st.rerun()
                     else:

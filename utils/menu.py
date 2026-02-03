@@ -73,6 +73,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     db: DatabaseManager | None = None
     try:
         db = DatabaseManager()
+        # 예약 리마인더 실행(스케줄러 대체)
+        try:
+            if hasattr(db, "run_due_reminders"):
+                db.run_due_reminders()
+        except Exception:
+            pass
         if hasattr(db, "get_notifications"):
             unread = db.get_notifications(int(user_id), unread_only=True, limit=20) or []
     except Exception:
