@@ -28,10 +28,10 @@ def _safe_seed_defaults(db: DatabaseManager) -> None:
         cur.execute("SELECT COUNT(*) as cnt FROM mission_templates")
         if int(cur.fetchone()["cnt"] or 0) == 0:
             templates = [
-                ("오늘은 저금통에 1,000원 저축하기", "저축(saving) 기록을 남겨요", "easy", 500),
-                ("계획 지출 1건 기록하기", "planned_spending으로 지출을 계획해요", "normal", 300),
-                ("가격 비교 해보기", "comparing_prices 활동을 해봐요", "easy", 200),
-                ("충동 구매 참기", "delayed_gratification 활동을 해봐요", "hard", 700),
+                ("오늘은 저금통에 1,000원 저축하기", "저축 기록을 남겨요", "easy", 500),
+                ("계획 지출 1건 기록하기", "계획 소비로 지출을 계획해요", "normal", 300),
+                ("가격 비교 해보기", "가격 비교 활동을 해봐요", "easy", 200),
+                ("충동 구매 참기", "충동구매를 잠깐 참아봐요", "hard", 700),
             ]
             cur.executemany(
                 """
@@ -126,6 +126,26 @@ def _compute_balance(db: DatabaseManager, user_id: int) -> dict:
         "total_spend": float(total_spend),
         "balance": float(total_allowance - total_saving - total_spend),
     }
+
+
+def _ko_mission_desc(desc: str | None) -> str:
+    """DB에 영문 키워드가 남아있어도 화면은 한글로 보이게"""
+    if not desc:
+        return ""
+    s = str(desc)
+    s = s.replace("planned_spending으로", "계획 소비로")
+    s = s.replace("comparing_prices 활동", "가격 비교 활동")
+    s = s.replace("delayed_gratification 활동", "참기 활동")
+    s = s.replace("impulse_buying", "충동 소비")
+    s = s.replace("저축(saving)", "저축")
+    for k, v in {
+        "planned_spending": "계획 소비",
+        "saving": "저축",
+        "comparing_prices": "가격 비교",
+        "delayed_gratification": "참기",
+    }.items():
+        s = s.replace(k, v)
+    return " ".join(s.split()).strip()
 
 def _inject_dashboard_css():
     st.markdown(
@@ -836,7 +856,7 @@ def main():
                 with st.container(border=True):
                     st.markdown(f"**{m.get('title')}**")
                     if m.get("description"):
-                        st.caption(m.get("description"))
+                        st.caption(_ko_mission_desc(m.get("description")))
                     st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
                     if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True):
                         # XP/레벨업 토스트(애니메이션 느낌)

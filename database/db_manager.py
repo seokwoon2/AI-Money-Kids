@@ -337,10 +337,10 @@ class DatabaseManager:
             cursor.execute("SELECT COUNT(*) as cnt FROM mission_templates")
             if int(cursor.fetchone()["cnt"] or 0) == 0:
                 templates = [
-                    ("오늘은 저금통에 1,000원 저축하기", "저축(saving) 기록을 남겨요", "easy", 500),
-                    ("계획 지출 1건 기록하기", "planned_spending으로 지출을 계획해요", "normal", 300),
-                    ("가격 비교 해보기", "comparing_prices 활동을 해봐요", "easy", 200),
-                    ("충동 구매 참기", "delayed_gratification 활동을 해봐요", "hard", 700),
+                    ("오늘은 저금통에 1,000원 저축하기", "저축 기록을 남겨요", "easy", 500),
+                    ("계획 지출 1건 기록하기", "계획 소비로 지출을 계획해요", "normal", 300),
+                    ("가격 비교 해보기", "가격 비교 활동을 해봐요", "easy", 200),
+                    ("충동 구매 참기", "충동구매를 잠깐 참아봐요", "hard", 700),
                 ]
                 cursor.executemany(
                     """

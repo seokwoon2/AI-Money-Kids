@@ -13,6 +13,28 @@ def _guard_login() -> bool:
     return True
 
 
+def _ko_mission_desc(desc: str | None) -> str:
+    """DB에 영문 키워드가 남아있어도 화면은 한글로 보이게"""
+    if not desc:
+        return ""
+    s = str(desc)
+    # 조사/문장 패턴 먼저
+    s = s.replace("planned_spending으로", "계획 소비로")
+    s = s.replace("comparing_prices 활동", "가격 비교 활동")
+    s = s.replace("delayed_gratification 활동", "참기 활동")
+    s = s.replace("impulse_buying", "충동 소비")
+    # 괄호/단어 정리
+    s = s.replace("저축(saving)", "저축")
+    for k, v in {
+        "planned_spending": "계획 소비",
+        "saving": "저축",
+        "comparing_prices": "가격 비교",
+        "delayed_gratification": "참기",
+    }.items():
+        s = s.replace(k, v)
+    return " ".join(s.split()).strip()
+
+
 def main():
     if not _guard_login():
         return
@@ -75,7 +97,7 @@ def main():
                     with st.container(border=True):
                         st.markdown(f"**{m.get('title')}**")
                         if m.get("description"):
-                            st.caption(m.get("description"))
+                            st.caption(_ko_mission_desc(m.get("description")))
                         st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
                         if st.button("완료!", key=f"complete_{m['id']}", use_container_width=True, type="primary"):
                             xp_before = 0
@@ -184,7 +206,7 @@ def main():
 
         with st.form("create_custom_mission"):
             title = st.text_input("미션 제목", placeholder="예: 이번 주 3,000원 저축하기")
-            desc = st.text_input("설명(선택)", placeholder="예: 저축(saving) 기록을 3번 남겨요")
+            desc = st.text_input("설명(선택)", placeholder="예: 저축 기록을 3번 남겨요")
             difficulty = st.selectbox("난이도", ["easy", "normal", "hard"])
             reward = st.number_input("보상(원)", min_value=0, step=100, value=500)
             submitted = st.form_submit_button("미션 추가", use_container_width=True, type="primary")
