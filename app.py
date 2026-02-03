@@ -606,10 +606,18 @@ def signup_page():
         <style>
             /* 기본 설정 */
             [data-testid="stSidebar"] { display: none !important; }
+            header, footer { display: none !important; }
+
+            html, body, [data-testid="stAppViewContainer"]{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            }
+            [data-testid="stAppViewContainer"] > .main { background: transparent !important; }
+
+            /* 화면 폭/여백: 모바일에서도 안 깨지게 */
             .main > div { padding: 0 !important; }
-            .block-container { padding: 0 !important; max-width: 100% !important; }
-            .stApp {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            .block-container {
+                max-width: 560px !important;
+                padding: 18px 14px 28px 14px !important;
             }
             header, footer { display: none !important; }
 
@@ -647,12 +655,16 @@ def signup_page():
             .step.completed .step-line { background: #4CAF50; }
 
             /* 카드 스타일 */
-            .signup-card {
-                background: white;
-                border-radius: 24px;
-                padding: 3rem 2.5rem;
-                box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-                animation: slideUp 0.5s ease-out;
+            /* Streamlit 컨테이너(진짜 래핑)로 카드 구현 */
+            div[data-testid="stVerticalBlockBorderWrapper"]{
+                background: rgba(255,255,255,0.98) !important;
+                border: 1px solid rgba(17,24,39,0.10) !important;
+                border-radius: 24px !important;
+                box-shadow: 0 25px 60px rgba(0,0,0,0.30) !important;
+            }
+            div[data-testid="stVerticalBlockBorderWrapper"] > div{
+                padding: 26px 22px !important;
+                border-radius: 24px !important;
             }
             @keyframes slideUp {
                 from { opacity: 0; transform: translateY(30px); }
@@ -758,7 +770,7 @@ def signup_page():
                 font-size: 22px;
                 font-weight: 700;
                 color: #2D3436;
-                margin: 2rem 0 1.5rem 0;
+                margin: 18px 0 10px 0;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
@@ -766,7 +778,15 @@ def signup_page():
             .section-subtitle {
                 font-size: 14px;
                 color: #636E72;
-                margin: -1rem 0 1.5rem 0;
+                margin: 0 0 14px 0;
+            }
+
+            /* 모바일에서 카드 패딩/타이포 살짝 축소 */
+            @media (max-width: 480px){
+                div[data-testid="stVerticalBlockBorderWrapper"] > div{
+                    padding: 22px 16px !important;
+                }
+                .section-title{ font-size: 20px; }
             }
         </style>
         """,
@@ -832,281 +852,276 @@ def signup_page():
             unsafe_allow_html=True,
         )
 
-        # 카드 시작
-        st.markdown('<div class="signup-card">', unsafe_allow_html=True)
+        # 카드(진짜 컨테이너) 시작
+        with st.container(border=True):
 
-        # 공용 입력값(세션)
-        name = st.session_state.get("signup_name_value", "")
-        username = st.session_state.get("signup_username_value", "")
+            # 공용 입력값(세션)
+            name = st.session_state.get("signup_name_value", "")
+            username = st.session_state.get("signup_username_value", "")
 
-        # ========== STEP 1: 사용자 유형 선택 ==========
-        if current_step == 1:
-            st.markdown(
-                """
-                <div class="section-title">👤 사용자 유형을 선택하세요</div>
-                <div class="section-subtitle">부모님과 아이 중 하나를 선택해주세요</div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            type_col1, type_col2 = st.columns(2)
-            with type_col1:
-                st.markdown(
-                    f"""
-                    <div class="user-type-card {'selected' if st.session_state.get('signup_user_type') == 'parent' else ''}">
-                        <span class="user-type-icon">👨‍👩‍👧</span>
-                        <div class="user-type-title">부모님</div>
-                        <div class="user-type-desc">
-                            자녀의 용돈을 관리하고<br>
-                            경제 교육을 도와주세요
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                if st.button("부모님 선택", key="select_parent", use_container_width=True):
-                    st.session_state["signup_user_type"] = "parent"
-                    st.session_state["signup_step"] = 2
-                    st.rerun()
-
-            with type_col2:
-                st.markdown(
-                    f"""
-                    <div class="user-type-card {'selected' if st.session_state.get('signup_user_type') == 'child' else ''}">
-                        <span class="user-type-icon">👶</span>
-                        <div class="user-type-title">아이</div>
-                        <div class="user-type-desc">
-                            용돈을 관리하고<br>
-                            경제를 배워보세요
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                if st.button("아이 선택", key="select_child", use_container_width=True):
-                    st.session_state["signup_user_type"] = "child"
-                    st.session_state["signup_step"] = 2
-                    st.rerun()
-
-        # ========== STEP 2: 정보 입력 ==========
-        elif current_step == 2:
-            user_type = st.session_state.get("signup_user_type")
-            if user_type not in ("parent", "child"):
-                st.session_state["signup_step"] = 1
-                st.rerun()
-
-            # 선택한 유형 표시
-            if user_type == "parent":
+            # ========== STEP 1: 사용자 유형 선택 ==========
+            if current_step == 1:
                 st.markdown(
                     """
-                    <div style='background:linear-gradient(135deg, #667eea, #764ba2);
-                                color:white; padding:1.5rem; border-radius:16px;
-                                text-align:center; margin-bottom:2rem; font-weight:600;
-                                box-shadow: 0 8px 20px rgba(102,126,234,0.3);'>
-                        👨‍👩‍👧 부모님으로 가입합니다
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    """
-                    <div style='background:linear-gradient(135deg, #FFA726, #FF9800);
-                                color:white; padding:1.5rem; border-radius:16px;
-                                text-align:center; margin-bottom:2rem; font-weight:600;
-                                box-shadow: 0 8px 20px rgba(255,167,38,0.3);'>
-                        👶 아이로 가입합니다
-                    </div>
+                    <div class="section-title">👤 사용자 유형을 선택하세요</div>
+                    <div class="section-subtitle">부모님과 아이 중 하나를 선택해주세요</div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-            # 기본 정보
-            st.markdown("<div class='section-title'>📝 기본 정보를 입력하세요</div>", unsafe_allow_html=True)
-
-            col_a, col_b = st.columns(2)
-            with col_a:
-                name = st.text_input("이름", placeholder="홍길동", key="name_input")
-            with col_b:
-                username = st.text_input("아이디", placeholder="gildong123", key="username_input")
-            password = st.text_input("비밀번호", type="password", placeholder="6자리 이상", key="pw_input")
-            password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="pw_confirm")
-
-            # 세션에 저장(3단계에서 사용)
-            st.session_state["signup_name_value"] = name
-            st.session_state["signup_username_value"] = username
-
-            # 아이인 경우 부모 코드
-            parent_user = None
-            parent_code_clean = ""
-            if user_type == "child":
-                st.markdown(
-                    """
-                    <div class="parent-code-section">
-                        <div style='font-size:48px; margin-bottom:1rem;'>🔗</div>
-                        <div style='font-size:22px; font-weight:700; color:#F57C00; margin-bottom:0.5rem;'>
-                            부모님과 연결하기
-                        </div>
-                        <div style='font-size:15px; color:#666;'>
-                            부모님으로부터 받은 초대 코드를 입력하세요
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                parent_code_clean = (
-                    st.text_input(
-                        "부모 초대 코드",
-                        max_chars=8,
-                        placeholder="7C825EA9 또는 825EA9",
-                        help="8자리 전체 또는 마지막 6자리",
-                        key="parent_code",
-                    )
-                    .upper()
-                    .strip()
-                )
-
-                if parent_code_clean:
-                    if validate_parent_code(parent_code_clean):
-                        try:
-                            parent_user = db.find_parent_by_invite_code(parent_code_clean)
-                        except Exception:
-                            parent_user = None
-
-                    if parent_user:
+                type_col1, type_col2 = st.columns(2)
+                with type_col1:
+                    with st.container(border=True):
                         st.markdown(
-                            f"""
-                            <div class="code-verified">
-                                <div style='font-size:48px; margin-bottom:1rem;'>✅</div>
-                                <div style='font-size:20px; font-weight:700; color:#2E7D32; margin-bottom:0.5rem;'>
-                                    연결 성공!
-                                </div>
-                                <div style='font-size:28px; font-weight:700; color:#2D3436; margin:1rem 0;'>
-                                    👨‍👩‍👧 {parent_user.get('name', '부모님')}
-                                </div>
-                                <div style='font-size:14px; color:#666;'>
-                                    @{parent_user.get('username', '')}
-                                </div>
+                            """
+                            <span class="user-type-icon">👨‍👩‍👧</span>
+                            <div class="user-type-title">부모님</div>
+                            <div class="user-type-desc">
+                                자녀의 용돈을 관리하고<br>
+                                경제 교육을 도와주세요
                             </div>
                             """,
                             unsafe_allow_html=True,
                         )
-                    else:
-                        st.error("❌ 올바르지 않은 초대 코드입니다")
-                        st.caption("💡 부모님께 정확한 코드를 확인해주세요")
+                        if st.button("부모님 선택", key="select_parent", use_container_width=True):
+                            st.session_state["signup_user_type"] = "parent"
+                            st.session_state["signup_step"] = 2
+                            st.rerun()
 
-            # 버튼들
-            st.markdown("<br>", unsafe_allow_html=True)
-            btn_col1, btn_col2 = st.columns([1, 2])
-            with btn_col1:
-                if st.button("← 이전", key="btn_prev", use_container_width=True):
+                with type_col2:
+                    with st.container(border=True):
+                        st.markdown(
+                            """
+                            <span class="user-type-icon">👶</span>
+                            <div class="user-type-title">아이</div>
+                            <div class="user-type-desc">
+                                용돈을 관리하고<br>
+                                경제를 배워보세요
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                        if st.button("아이 선택", key="select_child", use_container_width=True):
+                            st.session_state["signup_user_type"] = "child"
+                            st.session_state["signup_step"] = 2
+                            st.rerun()
+
+            # ========== STEP 2: 정보 입력 ==========
+            elif current_step == 2:
+                user_type = st.session_state.get("signup_user_type")
+                if user_type not in ("parent", "child"):
                     st.session_state["signup_step"] = 1
                     st.rerun()
 
-            with btn_col2:
-                if st.button("🚀 가입 완료", type="primary", key="btn_complete", use_container_width=True):
-                    # 유효성 검사
-                    if not name or not username or not password:
-                        st.error("⚠️ 모든 항목을 입력해주세요")
-                    elif password != password_confirm:
-                        st.error("❌ 비밀번호가 일치하지 않습니다")
-                    elif len(password) < 6:
-                        st.error("⚠️ 비밀번호는 6자리 이상이어야 합니다")
-                    elif user_type == "child" and not parent_user:
-                        st.error("⚠️ 올바른 부모 초대 코드를 입력해주세요")
-                    elif db.get_user_by_username(username):
-                        st.error("❌ 이미 사용 중인 아이디입니다")
-                    else:
-                        try:
-                            if user_type == "parent":
-                                new_parent_code = generate_parent_code()
-                                new_user_id = db.create_user(
-                                    username=username,
-                                    password=password,
-                                    name=name,
-                                    age=None,
-                                    parent_code=new_parent_code,
-                                    user_type="parent",
-                                    parent_ssn=None,
-                                    phone_number=None,
-                                )
-                            else:
-                                parent_full_code = (parent_user or {}).get("parent_code") or ""
-                                new_user_id = db.create_user(
-                                    username=username,
-                                    password=password,
-                                    name=name,
-                                    age=None,
-                                    parent_code=str(parent_full_code).strip().upper(),
-                                    user_type="child",
-                                    parent_ssn=None,
-                                    phone_number=None,
-                                )
-                                # 부모에게 알림(가능하면)
-                                try:
-                                    pid = int((parent_user or {}).get("id") or 0)
-                                    if pid:
-                                        db.create_notification(
-                                            pid,
-                                            "새 자녀가 연결되었어요 👶",
-                                            f"{name}({username}) 계정이 가족에 연결되었습니다.",
-                                            level="success",
-                                        )
-                                except Exception:
-                                    pass
+                # 선택한 유형 표시
+                if user_type == "parent":
+                    st.markdown(
+                        """
+                        <div style='background:linear-gradient(135deg, #667eea, #764ba2);
+                                    color:white; padding:1rem; border-radius:16px;
+                                    text-align:center; margin-bottom:1.2rem; font-weight:700;
+                                    box-shadow: 0 8px 20px rgba(102,126,234,0.25);'>
+                            👨‍👩‍👧 부모님으로 가입합니다
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        """
+                        <div style='background:linear-gradient(135deg, #FFA726, #FF9800);
+                                    color:white; padding:1rem; border-radius:16px;
+                                    text-align:center; margin-bottom:1.2rem; font-weight:700;
+                                    box-shadow: 0 8px 20px rgba(255,167,38,0.22);'>
+                            👶 아이로 가입합니다
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
-                            st.session_state["signup_step"] = 3
-                            st.session_state["new_user_id"] = int(new_user_id)
-                            st.session_state["new_user_name"] = name
-                            st.session_state["new_username"] = username
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ 오류가 발생했습니다: {str(e)}")
+                # 기본 정보
+                st.markdown("<div class='section-title'>📝 기본 정보를 입력하세요</div>", unsafe_allow_html=True)
 
-        # ========== STEP 3: 완료 ==========
-        else:
-            st.markdown(
-                """
-                <div style='text-align:center; padding:3rem 0;'>
-                    <div style='font-size:100px; margin-bottom:2rem; animation: scaleUp 0.5s;'>🎉</div>
-                    <div style='font-size:32px; font-weight:700; color:#2D3436; margin-bottom:1rem;'>
-                        회원가입 완료!
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    name = st.text_input("이름", placeholder="홍길동", key="name_input")
+                with col_b:
+                    username = st.text_input("아이디", placeholder="gildong123", key="username_input")
+                password = st.text_input("비밀번호", type="password", placeholder="6자리 이상", key="pw_input")
+                password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="pw_confirm")
+
+                # 세션에 저장(3단계에서 사용)
+                st.session_state["signup_name_value"] = name
+                st.session_state["signup_username_value"] = username
+
+                # 아이인 경우 부모 코드
+                parent_user = None
+                parent_code_clean = ""
+                if user_type == "child":
+                    st.markdown(
+                        """
+                        <div class="parent-code-section">
+                            <div style='font-size:48px; margin-bottom:1rem;'>🔗</div>
+                            <div style='font-size:22px; font-weight:700; color:#F57C00; margin-bottom:0.5rem;'>
+                                부모님과 연결하기
+                            </div>
+                            <div style='font-size:15px; color:#666;'>
+                                부모님으로부터 받은 초대 코드를 입력하세요
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    parent_code_clean = (
+                        st.text_input(
+                            "부모 초대 코드",
+                            max_chars=8,
+                            placeholder="7C825EA9 또는 825EA9",
+                            help="8자리 전체 또는 마지막 6자리",
+                            key="parent_code",
+                        )
+                        .upper()
+                        .strip()
+                    )
+
+                    if parent_code_clean:
+                        if validate_parent_code(parent_code_clean):
+                            try:
+                                parent_user = db.find_parent_by_invite_code(parent_code_clean)
+                            except Exception:
+                                parent_user = None
+
+                        if parent_user:
+                            st.markdown(
+                                f"""
+                                <div class="code-verified">
+                                    <div style='font-size:48px; margin-bottom:1rem;'>✅</div>
+                                    <div style='font-size:20px; font-weight:700; color:#2E7D32; margin-bottom:0.5rem;'>
+                                        연결 성공!
+                                    </div>
+                                    <div style='font-size:28px; font-weight:700; color:#2D3436; margin:1rem 0;'>
+                                        👨‍👩‍👧 {parent_user.get('name', '부모님')}
+                                    </div>
+                                    <div style='font-size:14px; color:#666;'>
+                                        @{parent_user.get('username', '')}
+                                    </div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            st.error("❌ 올바르지 않은 초대 코드입니다")
+                            st.caption("💡 부모님께 정확한 코드를 확인해주세요")
+
+                # 버튼들
+                st.markdown("<br>", unsafe_allow_html=True)
+                btn_col1, btn_col2 = st.columns([1, 2])
+                with btn_col1:
+                    if st.button("← 이전", key="btn_prev", use_container_width=True):
+                        st.session_state["signup_step"] = 1
+                        st.rerun()
+
+                with btn_col2:
+                    if st.button("🚀 가입 완료", type="primary", key="btn_complete", use_container_width=True):
+                        # 유효성 검사
+                        if not name or not username or not password:
+                            st.error("⚠️ 모든 항목을 입력해주세요")
+                        elif password != password_confirm:
+                            st.error("❌ 비밀번호가 일치하지 않습니다")
+                        elif len(password) < 6:
+                            st.error("⚠️ 비밀번호는 6자리 이상이어야 합니다")
+                        elif user_type == "child" and not parent_user:
+                            st.error("⚠️ 올바른 부모 초대 코드를 입력해주세요")
+                        elif db.get_user_by_username(username):
+                            st.error("❌ 이미 사용 중인 아이디입니다")
+                        else:
+                            try:
+                                if user_type == "parent":
+                                    new_parent_code = generate_parent_code()
+                                    new_user_id = db.create_user(
+                                        username=username,
+                                        password=password,
+                                        name=name,
+                                        age=None,
+                                        parent_code=new_parent_code,
+                                        user_type="parent",
+                                        parent_ssn=None,
+                                        phone_number=None,
+                                    )
+                                else:
+                                    parent_full_code = (parent_user or {}).get("parent_code") or ""
+                                    new_user_id = db.create_user(
+                                        username=username,
+                                        password=password,
+                                        name=name,
+                                        age=None,
+                                        parent_code=str(parent_full_code).strip().upper(),
+                                        user_type="child",
+                                        parent_ssn=None,
+                                        phone_number=None,
+                                    )
+                                    # 부모에게 알림(가능하면)
+                                    try:
+                                        pid = int((parent_user or {}).get("id") or 0)
+                                        if pid:
+                                            db.create_notification(
+                                                pid,
+                                                "새 자녀가 연결되었어요 👶",
+                                                f"{name}({username}) 계정이 가족에 연결되었습니다.",
+                                                level="success",
+                                            )
+                                    except Exception:
+                                        pass
+
+                                st.session_state["signup_step"] = 3
+                                st.session_state["new_user_id"] = int(new_user_id)
+                                st.session_state["new_user_name"] = name
+                                st.session_state["new_username"] = username
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ 오류가 발생했습니다: {str(e)}")
+
+            # ========== STEP 3: 완료 ==========
+            else:
+                st.markdown(
+                    """
+                    <div style='text-align:center; padding:2.2rem 0;'>
+                        <div style='font-size:90px; margin-bottom:1.6rem; animation: scaleUp 0.5s;'>🎉</div>
+                        <div style='font-size:30px; font-weight:800; color:#2D3436; margin-bottom:0.8rem;'>
+                            회원가입 완료!
+                        </div>
+                        <div style='font-size:16px; color:#636E72; margin-bottom:2.2rem;'>
+                            AI Money Friends와 함께<br>
+                            즐거운 경제 교육을 시작하세요!
+                        </div>
                     </div>
-                    <div style='font-size:18px; color:#636E72; margin-bottom:3rem;'>
-                        AI Money Friends와 함께<br>
-                        즐거운 경제 교육을 시작하세요!
-                    </div>
-                </div>
-                <style>
-                    @keyframes scaleUp { from { transform: scale(0); } to { transform: scale(1); } }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.balloons()
+                    <style>
+                        @keyframes scaleUp { from { transform: scale(0); } to { transform: scale(1); } }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.balloons()
 
-            if st.button("🏠 시작하기", type="primary", use_container_width=True, key="btn_start"):
-                st.session_state["logged_in"] = True
-                st.session_state["user_id"] = int(st.session_state.get("new_user_id") or 0)
-                st.session_state["user_name"] = st.session_state.get("new_user_name") or ""
-                st.session_state["username"] = st.session_state.get("new_username") or ""
-                st.session_state["user_type"] = st.session_state.get("signup_user_type") or "child"
-                st.session_state["show_login_success"] = True
+                if st.button("🏠 시작하기", type="primary", use_container_width=True, key="btn_start"):
+                    st.session_state["logged_in"] = True
+                    st.session_state["user_id"] = int(st.session_state.get("new_user_id") or 0)
+                    st.session_state["user_name"] = st.session_state.get("new_user_name") or ""
+                    st.session_state["username"] = st.session_state.get("new_username") or ""
+                    st.session_state["user_type"] = st.session_state.get("signup_user_type") or "child"
+                    st.session_state["show_login_success"] = True
 
-                # 세션 정리
-                for k in ["signup_step", "new_user_id", "new_user_name", "new_username", "signup_name_value", "signup_username_value"]:
-                    if k in st.session_state:
-                        del st.session_state[k]
-                st.session_state["show_signup"] = False
-                st.session_state["current_auth_screen"] = "login"
+                    # 세션 정리
+                    for k in ["signup_step", "new_user_id", "new_user_name", "new_username", "signup_name_value", "signup_username_value"]:
+                        if k in st.session_state:
+                            del st.session_state[k]
+                    st.session_state["show_signup"] = False
+                    st.session_state["current_auth_screen"] = "login"
 
-                import time
-                time.sleep(0.6)
-                st.rerun()
-
-        # 카드 닫기
-        st.markdown("</div>", unsafe_allow_html=True)
+                    import time
+                    time.sleep(0.6)
+                    st.rerun()
 
         # 로그인 링크
         if current_step < 3:
@@ -1130,7 +1145,7 @@ def signup_page():
                         del st.session_state[k]
                 st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        # 카드 컨테이너는 with 블록으로 자동 종료됨
 
 
 def show_signup_page():
@@ -1152,6 +1167,47 @@ def login_page():
         show_find_password_page()
         return
 
+    # ✅ 로그인 페이지에서도 보기(자동/모바일/PC) 제공
+    if "layout_mode" not in st.session_state:
+        st.session_state["layout_mode"] = "auto"
+    layout_mode = st.session_state.get("layout_mode", "auto")
+
+    top_spacer, top_view = st.columns([0.78, 0.22])
+    with top_view:
+        current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
+        if hasattr(st, "segmented_control"):
+            picked = st.segmented_control(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                default=current,
+                label_visibility="collapsed",
+                key="amf_login_layout_mode_segmented",
+            )
+        else:
+            picked = st.selectbox(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                index=["자동", "모바일", "PC"].index(current),
+                label_visibility="collapsed",
+                key="amf_login_layout_mode_select",
+            )
+
+        if picked:
+            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
+            if new_mode != st.session_state.get("layout_mode", "auto"):
+                st.session_state["layout_mode"] = new_mode
+                st.rerun()
+
+    # 로그인 페이지 레이아웃 변수(모드별)
+    layout_mode = st.session_state.get("layout_mode", "auto")
+    if layout_mode == "mobile":
+        st.markdown("<style>:root{--login-maxw:520px;--login-pad:1rem 0.75rem;}</style>", unsafe_allow_html=True)
+    elif layout_mode == "pc":
+        st.markdown("<style>:root{--login-maxw:760px;--login-pad:1.2rem 1rem;}</style>", unsafe_allow_html=True)
+    else:
+        # auto
+        st.markdown("<style>:root{--login-maxw:620px;--login-pad:1.1rem 0.85rem;}</style>", unsafe_allow_html=True)
+
     # CSS (최소 + 트렌디 정리)
     st.markdown(
         """
@@ -1171,8 +1227,8 @@ def login_page():
             /* Streamlit 여백/폭 정리 (스크롤 최소화) */
             .main > div { padding: 0 !important; }
             .block-container {
-                padding: 1.1rem 0.75rem !important;
-                max-width: 520px !important;
+                padding: var(--login-pad, 1.1rem 0.75rem) !important;
+                max-width: var(--login-maxw, 520px) !important;
                 min-height: 100vh !important;
                 display: flex !important;
                 flex-direction: column !important;
@@ -1255,7 +1311,7 @@ def login_page():
 
             /* 모바일 */
             @media (max-width: 520px) {
-                .block-container { padding: 1rem 0.75rem !important; }
+                .block-container { padding: 1rem 0.75rem !important; max-width: 520px !important; }
                 div[data-testid="stVerticalBlock"]:has(#login_card_anchor) { padding: 1.4rem 1.1rem !important; }
             }
         </style>
