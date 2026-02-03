@@ -1,7 +1,6 @@
 import streamlit as st
 
 from datetime import date, timedelta
-import html as _html
 from textwrap import dedent as _dedent
 
 from database.db_manager import DatabaseManager
@@ -93,8 +92,8 @@ def _progress_ring(pct: float, label: str) -> str:
     dash = circumference * p
     gap = circumference - dash
     percent_txt = int(round(p * 100))
-    # ⚠️ 들여쓰기/선행 공백이 있으면 Streamlit markdown에서 코드블록으로 깨질 수 있어
-    # HTML은 항상 0열 시작으로 정리해서 반환합니다.
+    # (현재 페이지는 HTML 카드 렌더를 쓰지 않도록 정리했지만,
+    #  링이 필요해질 경우를 대비해 안전하게 유지)
     return _dedent(
         f"""
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:78px;">
@@ -106,7 +105,7 @@ def _progress_ring(pct: float, label: str) -> str:
               transform="rotate(-90 26 26)"></circle>
             <text x="26" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="#0f172a">{percent_txt}%</text>
           </svg>
-          <div style="font-size:11px; font-weight:800; color:rgba(15,23,42,0.60);">{_html.escape(str(label))}</div>
+          <div style="font-size:11px; font-weight:800; color:rgba(15,23,42,0.60);">{label}</div>
         </div>
         """
     ).strip()
@@ -140,6 +139,17 @@ def main():
             """
         <style>
         /* scope only challenge page */
+        /* ✅ HTML 마크다운 깨짐 방지: 페이지는 Streamlit 기본 컴포넌트로만 구성하고,
+           border=True 컨테이너를 카드처럼 CSS로 스타일만 입힙니다. */
+        div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) div[data-testid="stVerticalBlockBorderWrapper"]{
+          border-radius: 18px !important;
+          border: 1px solid rgba(15,23,42,0.08) !important;
+          background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(99,102,241,0.08)) !important;
+          box-shadow: 0 14px 30px rgba(0,0,0,0.08) !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) div[data-testid="stVerticalBlockBorderWrapper"] > div{
+          padding: 12px 12px !important;
+        }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-card {
           border-radius: 18px;
           padding: 14px 14px;
@@ -234,29 +244,15 @@ def main():
                     chips.append(_type_badge(inst.get("challenge_type")))
                     if dl >= 0:
                         chips.append(f"D-{dl}")
-                    chips_html = " ".join([f'<span class="amf-chip">{_html.escape(str(c))}</span>' for c in chips])
-                    ring = _progress_ring(float(prog.get("progress") or 0), "진행")
-                    title_safe = _html.escape(str(inst.get("template_title") or ""))
-                    range_safe = _html.escape(_fmt_range(inst.get("start_date"), inst.get("end_date")))
-                    summary_safe = _html.escape(str(prog.get("summary") or "")).replace("\n", "<br/>")
-                    st.markdown(
-                        _dedent(
-                            f"""
-                            <div class="amf-card">
-                              <div class="amf-row">
-                                <div style="flex:1;">
-                                  <div class="amf-title">{title_safe}</div>
-                                  <div class="amf-sub">{range_safe}</div>
-                                  <div style="margin-top:8px;">{chips_html}</div>
-                                </div>
-                                {ring}
-                              </div>
-                              <div class="amf-sub" style="margin-top:10px;">{summary_safe}</div>
-                            </div>
-                            """
-                        ).strip(),
-                        unsafe_allow_html=True,
-                    )
+                    pct = int(round(float(prog.get("progress") or 0) * 100))
+                    top_l, top_r = st.columns([4, 1])
+                    with top_l:
+                        st.markdown(f"**{inst.get('template_title') or ''}**")
+                        st.caption(_fmt_range(inst.get("start_date"), inst.get("end_date")))
+                        st.caption(" · ".join(chips))
+                    with top_r:
+                        st.metric("진행", f"{pct}%")
+                    st.caption(prog.get("summary") or "")
                     st.progress(float(prog.get("progress") or 0))
 
                     # ✅ 핵심 지표(실사용)
@@ -271,18 +267,10 @@ def main():
                             spent_today = db._sum_spend_in_range(user_id, today, today) if hasattr(db, "_sum_spend_in_range") else 0
                             left = float(cap) - float(spent_so_far)
                             recommend = 0 if days_left <= 0 else int(max(0.0, left) / float(days_left))
-                            st.markdown(
-                                _dedent(
-                                    f"""
-                                    <div class="amf-kpi">
-                                      <div class="k"><div class="t">남은 금액</div><div class="v">{int(max(0,left)):,}원</div></div>
-                                      <div class="k"><div class="t">오늘 소비</div><div class="v">{int(spent_today):,}원</div></div>
-                                      <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
-                                    </div>
-                                    """
-                                ).strip(),
-                                unsafe_allow_html=True,
-                            )
+                            k1, k2, k3 = st.columns(3)
+                            k1.metric("남은 금액", f"{int(max(0,left)):,}원")
+                            k2.metric("오늘 소비", f"{int(spent_today):,}원")
+                            k3.metric("오늘 권장 사용", f"{int(recommend):,}원")
                         else:
                             cat = str(params.get("category") or "").strip()
                             baseline = float(params.get("baseline_amount") or 0)
@@ -292,18 +280,10 @@ def main():
                             today_cat = db._sum_spend_in_range(user_id, today, today, category=cat or None) if hasattr(db, "_sum_spend_in_range") else 0
                             left = float(target) - float(cur_cat)
                             recommend = 0 if days_left <= 0 else int(max(0.0, left) / float(days_left))
-                            st.markdown(
-                                _dedent(
-                                    f"""
-                                    <div class="amf-kpi">
-                                      <div class="k"><div class="t">남은 금액({cat or "카테고리"})</div><div class="v">{int(max(0,left)):,}원</div></div>
-                                      <div class="k"><div class="t">오늘 소비({cat or "카테고리"})</div><div class="v">{int(today_cat):,}원</div></div>
-                                      <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
-                                    </div>
-                                    """
-                                ).strip(),
-                                unsafe_allow_html=True,
-                            )
+                            k1, k2, k3 = st.columns(3)
+                            k1.metric(f"남은 금액({cat or '카테고리'})", f"{int(max(0,left)):,}원")
+                            k2.metric(f"오늘 소비({cat or '카테고리'})", f"{int(today_cat):,}원")
+                            k3.metric("오늘 권장 사용", f"{int(recommend):,}원")
 
                     if ctype in ("daily_save_fixed", "daily_save_increasing"):
                         start_s = str(inst.get("start_date") or date.today().isoformat())
@@ -328,18 +308,10 @@ def main():
                         else:
                             today_req = float(params.get("start_amount") or 500) + float(params.get("daily_increment") or 100) * max(0, idx_today)
                         today_left = max(0.0, float(today_req) - float(today_saved))
-                        st.markdown(
-                            _dedent(
-                                f"""
-                                <div class="amf-kpi">
-                                  <div class="k"><div class="t">오늘 목표</div><div class="v">{int(today_req):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 저축</div><div class="v">{int(today_saved):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 남은 목표</div><div class="v">{int(today_left):,}원</div></div>
-                                </div>
-                                """
-                            ).strip(),
-                            unsafe_allow_html=True,
-                        )
+                        k1, k2, k3 = st.columns(3)
+                        k1.metric("오늘 목표", f"{int(today_req):,}원")
+                        k2.metric("오늘 저축", f"{int(today_saved):,}원")
+                        k3.metric("오늘 남은 목표", f"{int(today_left):,}원")
                         bcta1, bcta2 = st.columns(2)
                         with bcta1:
                             if st.button("🐷 저축하러 가기", key=f"go_save_{inst.get('id')}", use_container_width=True, type="primary"):
