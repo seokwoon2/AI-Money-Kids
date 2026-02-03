@@ -25,19 +25,28 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     layout_mode = st.session_state.get("layout_mode", "auto")
 
     # ✅ 우측 상단 "보기" 컨트롤 (메뉴 안에 넣지 않음)
-    # 페이지들에서 render_sidebar_menu()를 가장 위쪽에 호출하므로 사실상 상단에 고정됨
+    # popover가 특정 CSS/레이어에서 클릭이 막히는 케이스가 있어, 항상 클릭되는 segmented/select로 변경
     _, view_col = st.columns([0.78, 0.22])
     with view_col:
-        label = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
-        with st.popover(f"보기 · {label}", use_container_width=True):
-            picked = st.radio(
-                "보기 모드",
+        current = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
+        if hasattr(st, "segmented_control"):
+            picked = st.segmented_control(
+                "보기",
                 options=["자동", "모바일", "PC"],
-                index={"auto": 0, "mobile": 1, "pc": 2}.get(layout_mode, 0),
-                horizontal=True,
+                default=current,
                 label_visibility="collapsed",
-                key="amf_layout_mode_radio_global",
+                key="amf_layout_mode_segmented",
             )
+        else:
+            picked = st.selectbox(
+                "보기",
+                options=["자동", "모바일", "PC"],
+                index=["자동", "모바일", "PC"].index(current),
+                label_visibility="collapsed",
+                key="amf_layout_mode_select",
+            )
+
+        if picked:
             new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
             if new_mode != st.session_state.get("layout_mode", "auto"):
                 st.session_state["layout_mode"] = new_mode
