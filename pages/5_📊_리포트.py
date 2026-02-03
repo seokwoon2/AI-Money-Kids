@@ -43,13 +43,13 @@ def main():
     monthly_total = int(monthly.get("monthly_total") or 0)
     yesterday_total = int(monthly.get("yesterday_total") or 0)
 
-    a, b, c = st.columns(3)
+    # ✅ 모바일 우선: 3열 → 2열 + 단일
+    a, b = st.columns(2)
     with a:
         st.metric("이번달 가족 저축", f"{monthly_total:,}원")
     with b:
         st.metric("어제 저축", f"{yesterday_total:,}원")
-    with c:
-        st.metric("자녀 수", f"{len(children)}명")
+    st.metric("자녀 수", f"{len(children)}명")
 
     st.divider()
 

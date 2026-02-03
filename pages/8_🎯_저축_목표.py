@@ -65,25 +65,26 @@ def main():
             st.progress(pct)
             st.caption(f"{int(saved):,}원 / {int(target):,}원 · 남은 금액 {int(left):,}원")
 
-            c1, c2, c3 = st.columns([1.2, 1, 0.8])
-            with c1:
-                with st.form(f"add_contrib_{gid}"):
-                    amt = st.number_input("저축 추가(원)", min_value=100, step=100, value=1000, key=f"amt_{gid}")
-                    note = st.text_input("메모(선택)", key=f"note_{gid}")
-                    add = st.form_submit_button("저축하기", use_container_width=True, type="primary")
-                if add:
-                    db.add_goal_contribution(gid, float(amt), note or None)
-                    # 저축 행동도 같이 기록(지갑/리포트 연동)
-                    db.save_behavior_v2(user_id, "saving", float(amt), description="목표 저축", category="저축")
-                    st.balloons()
-                    st.rerun()
-            with c2:
-                if pct >= 1.0:
-                    st.success("목표 달성! 🎉")
+            # ✅ 모바일 우선: 3컬럼 대신 세로 스택 (폼/버튼이 좁아지는 문제 방지)
+            with st.form(f"add_contrib_{gid}"):
+                amt = st.number_input("저축 추가(원)", min_value=100, step=100, value=1000, key=f"amt_{gid}")
+                note = st.text_input("메모(선택)", key=f"note_{gid}")
+                add = st.form_submit_button("저축하기", use_container_width=True, type="primary")
+            if add:
+                db.add_goal_contribution(gid, float(amt), note or None)
+                # 저축 행동도 같이 기록(지갑/리포트 연동)
+                db.save_behavior_v2(user_id, "saving", float(amt), description="목표 저축", category="저축")
+                st.balloons()
+                st.rerun()
+
+            if pct >= 1.0:
+                st.success("목표 달성! 🎉")
+            a1, a2 = st.columns(2)
+            with a1:
                 if st.button("비활성/보관", key=f"archive_{gid}", use_container_width=True):
                     db.set_goal_active(gid, False)
                     st.rerun()
-            with c3:
+            with a2:
                 if st.button("활성화", key=f"activate_{gid}", use_container_width=True, disabled=int(g.get("is_active") or 0) == 1):
                     db.set_goal_active(gid, True)
                     st.rerun()

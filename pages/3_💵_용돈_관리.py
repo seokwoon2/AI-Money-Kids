@@ -105,11 +105,13 @@ def main():
     stats = _compute_balance(db, target_user_id)
     st.caption(f"대상: **{target_label}**")
 
-    m1, m2, m3, m4 = st.columns(4)
+    # ✅ 모바일 우선: 4열 → 2열(2줄)
+    m1, m2 = st.columns(2)
     with m1:
         st.metric("잔액(추정)", f"{int(stats['balance']):,}원")
     with m2:
         st.metric("용돈(지급)", f"{int(stats['total_allowance']):,}원")
+    m3, m4 = st.columns(2)
     with m3:
         st.metric("저축", f"{int(stats['total_saving']):,}원")
     with m4:

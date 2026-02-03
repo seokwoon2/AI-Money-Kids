@@ -72,16 +72,16 @@ def main():
 
     st.divider()
     st.subheader("추천 액션")
-    c1, c2, c3 = st.columns(3)
+    # ✅ 모바일 우선: 3열 → 2열 + 단일
+    c1, c2 = st.columns(2)
     with c1:
         if st.button("✅ 미션 하러 가기", use_container_width=True):
             st.switch_page("pages/10_✅_미션.py")
     with c2:
         if st.button("🎯 목표 저축하기", use_container_width=True):
             st.switch_page("pages/8_🎯_저축_목표.py")
-    with c3:
-        if st.button("📚 경제 교실", use_container_width=True):
-            st.switch_page("pages/12_📚_경제_교실.py")
+    if st.button("📚 경제 교실", use_container_width=True):
+        st.switch_page("pages/12_📚_경제_교실.py")
 
 
 if __name__ == "__main__":

@@ -32,18 +32,17 @@ def main():
 
     with tab_profile:
         st.subheader("프로필")
-        c1, c2 = st.columns([1.2, 0.8])
-        with c1:
-            st.write(f"- 이름: **{(user or {}).get('name', user_name)}**")
-            if username:
-                st.write(f"- 아이디: **{username}**")
-            st.write(f"- 유형: **{(user or {}).get('user_type', user_type)}**")
-            st.write("- 부모 코드:")
-            st.code((user or {}).get("parent_code", ""), language=None)
-        with c2:
-            st.caption("프로필 사진(임시)")
-            st.file_uploader("사진 업로드", type=["png", "jpg", "jpeg"])
-            st.caption("※ 현재는 저장소 연동이 없어 업로드는 미리보기용입니다.")
+        # ✅ 모바일 우선: 프로필은 세로 스택(파일 업로더가 옆에 있으면 너무 좁아짐)
+        st.write(f"- 이름: **{(user or {}).get('name', user_name)}**")
+        if username:
+            st.write(f"- 아이디: **{username}**")
+        st.write(f"- 유형: **{(user or {}).get('user_type', user_type)}**")
+        st.write("- 부모 코드:")
+        st.code((user or {}).get("parent_code", ""), language=None)
+
+        st.caption("프로필 사진(임시)")
+        st.file_uploader("사진 업로드", type=["png", "jpg", "jpeg"])
+        st.caption("※ 현재는 저장소 연동이 없어 업로드는 미리보기용입니다.")
 
         st.divider()
         with st.form("update_name"):

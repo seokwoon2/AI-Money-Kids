@@ -37,13 +37,13 @@ def main():
     st.title("👶 자녀 관리")
     st.caption("자녀 계정 연결/현황/기록을 한 곳에서 관리해요.")
 
-    c1, c2, c3 = st.columns(3)
+    # ✅ 모바일 우선: 3열 대신 2열(2줄)
+    c1, c2 = st.columns(2)
     with c1:
         st.metric("연결된 자녀", f"{len(children)}명")
     with c2:
-        st.metric("부모 코드", parent_code or "없음")
-    with c3:
         st.metric("오늘", datetime.now().strftime("%Y.%m.%d"))
+    st.metric("부모 코드", parent_code or "없음")
 
     st.divider()
 
@@ -68,11 +68,13 @@ def main():
     balance = total_allowance - total_saving - total_spend
     stats = db.get_child_stats(child_id)
 
-    m1, m2, m3, m4 = st.columns(4)
+    # ✅ 모바일 우선: 4열 → 2열(2줄)
+    m1, m2 = st.columns(2)
     with m1:
         st.metric("잔액(추정)", f"{int(balance):,}원")
     with m2:
         st.metric("총 용돈(지급)", f"{int(total_allowance):,}원")
+    m3, m4 = st.columns(2)
     with m3:
         st.metric("총 저축", f"{int(stats.get('total_savings') or 0):,}원")
     with m4:

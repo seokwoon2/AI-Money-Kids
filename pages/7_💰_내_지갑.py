@@ -41,7 +41,7 @@ def main():
         f"""
         <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; border-radius:18px; padding:18px 16px;">
             <div style="font-weight:800; opacity:0.9;">현재 잔액</div>
-            <div style="font-size:44px; font-weight:900; letter-spacing:-0.6px; margin-top:4px;">{int(balance):,}원</div>
+            <div style="font-size:40px; font-weight:900; letter-spacing:-0.6px; margin-top:4px; line-height:1.05;">{int(balance):,}원</div>
             <div style="margin-top:6px; opacity:0.9; font-weight:700; font-size:13px;">
                 받은 용돈 {int(total_allowance):,}원 · 저축 {int(total_saving):,}원 · 지출 {int(total_spend):,}원
             </div>
@@ -72,16 +72,16 @@ def main():
         st.dataframe(rows, use_container_width=True, hide_index=True)
 
     st.divider()
-    c1, c2, c3 = st.columns(3)
+    # ✅ 모바일 우선: 3열 → 2열 + 단일
+    c1, c2 = st.columns(2)
     with c1:
         if st.button("📝 용돈 요청", use_container_width=True):
             st.switch_page("pages/9_📝_용돈_요청.py")
     with c2:
         if st.button("🎯 저축 목표", use_container_width=True):
             st.switch_page("pages/8_🎯_저축_목표.py")
-    with c3:
-        if st.button("✅ 미션", use_container_width=True):
-            st.switch_page("pages/10_✅_미션.py")
+    if st.button("✅ 미션", use_container_width=True):
+        st.switch_page("pages/10_✅_미션.py")
 
 
 if __name__ == "__main__":
