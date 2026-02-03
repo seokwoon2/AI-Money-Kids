@@ -374,24 +374,6 @@ def main():
     with top0:
         with st.popover("☰ 메뉴", use_container_width=False):
             st.markdown("**메뉴**")
-            # 보기 모드(자동/모바일/PC) - 사이드바를 열지 않아도 설정 가능
-            if "layout_mode" not in st.session_state:
-                st.session_state["layout_mode"] = "auto"
-            layout_mode = st.session_state.get("layout_mode", "auto")
-            picked = st.radio(
-                "보기 모드",
-                options=["자동", "모바일", "PC"],
-                index={"auto": 0, "mobile": 1, "pc": 2}.get(layout_mode, 0),
-                horizontal=True,
-                label_visibility="collapsed",
-                key="amf_layout_mode_radio_top",
-            )
-            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
-            if new_mode != st.session_state.get("layout_mode", "auto"):
-                st.session_state["layout_mode"] = new_mode
-                st.rerun()
-
-            st.divider()
             items = []
             if user_type == "parent":
                 items = [

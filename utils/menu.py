@@ -15,9 +15,97 @@ def safe_page_link(page_path: str, label: str, icon: str = None):
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     """개선된 사이드바 메뉴"""
+
+    # ===== 전역 보기 모드(자동/모바일/PC) =====
+    # auto: 기기 폭(미디어쿼리) 기반
+    # mobile: 넓은 화면에서도 모바일처럼 강제
+    # pc: 좁은 화면에서도 PC처럼 강제
+    if "layout_mode" not in st.session_state:
+        st.session_state["layout_mode"] = "auto"
+    layout_mode = st.session_state.get("layout_mode", "auto")
+
+    # ✅ 우측 상단 "보기" 컨트롤 (메뉴 안에 넣지 않음)
+    # 페이지들에서 render_sidebar_menu()를 가장 위쪽에 호출하므로 사실상 상단에 고정됨
+    _, view_col = st.columns([0.78, 0.22])
+    with view_col:
+        label = {"auto": "자동", "mobile": "모바일", "pc": "PC"}.get(layout_mode, "자동")
+        with st.popover(f"보기 · {label}", use_container_width=True):
+            picked = st.radio(
+                "보기 모드",
+                options=["자동", "모바일", "PC"],
+                index={"auto": 0, "mobile": 1, "pc": 2}.get(layout_mode, 0),
+                horizontal=True,
+                label_visibility="collapsed",
+                key="amf_layout_mode_radio_global",
+            )
+            new_mode = {"자동": "auto", "모바일": "mobile", "PC": "pc"}[picked]
+            if new_mode != st.session_state.get("layout_mode", "auto"):
+                st.session_state["layout_mode"] = new_mode
+                st.rerun()
     
     # CSS 주입
-    st.markdown("""
+    responsive_css = """
+    /* ====== Responsive (global) ====== */
+    /* auto: 작은 화면에서 컬럼 래핑 + 터치 타겟/타이포 조정 */
+    @media (max-width: 768px){
+        .block-container{
+            padding-top: 0.6rem !important;
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+        }
+        /* st.columns() 래핑: 모바일에서 2열/1열로 자연스럽게 줄바꿈 */
+        div[data-testid="stHorizontalBlock"]{
+            flex-wrap: wrap !important;
+            gap: 0.75rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 calc(50% - 0.5rem) !important;
+            min-width: calc(50% - 0.5rem) !important;
+        }
+    }
+    @media (max-width: 420px){
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+    }
+    """
+
+    # 강제 모바일: 화면이 넓어도 1열 위주(모바일처럼)
+    if layout_mode == "mobile":
+        responsive_css += """
+        /* ====== Force Mobile ====== */
+        .block-container{
+            max-width: 740px !important;
+            padding-top: 0.6rem !important;
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+        }
+        div[data-testid="stHorizontalBlock"]{
+            flex-wrap: wrap !important;
+            gap: 0.75rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+        """
+
+    # 강제 PC: 작은 화면에서도 래핑을 막고 PC처럼 유지(필요 시 가로 스크롤)
+    if layout_mode == "pc":
+        responsive_css += """
+        /* ====== Force PC ====== */
+        div[data-testid="stHorizontalBlock"]{
+            flex-wrap: nowrap !important;
+            gap: 1rem !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div{
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+        }
+        """
+
+    st.markdown(f"""
     <style>
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
@@ -153,6 +241,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         background-color: #FF6B6B !important;
         box-shadow: 0 4px 12px rgba(255, 118, 117, 0.4) !important;
     }
+
+    {responsive_css}
     </style>
     """, unsafe_allow_html=True)
 
@@ -185,26 +275,27 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         if 'current_page' not in st.session_state:
             st.session_state['current_page'] = 'home'
         
-        # 메뉴 항목 (부모/아이에 따라 다름)
-        if user_type == 'parent':
+        # 메뉴 항목 (현재 pages 구조 기준)
+        if user_type == "parent":
             menu_items = [
-                ("🏠", "대시보드", "home"),
-                ("👶", "자녀 관리", "children"),
-                ("💰", "용돈 관리", "allowance"),
-                ("📊", "리포트", "report"),
+                ("🏠", "대시보드", "parent_dashboard"),
+                ("👶", "자녀 관리", "parent_children"),
+                ("💵", "용돈 관리", "allowance_manage"),
+                ("📝", "요청 승인", "request_approve"),
+                ("📊", "리포트", "parent_report"),
                 ("⚙️", "설정", "settings"),
             ]
-        elif user_type == 'child':
+        else:  # child
             menu_items = [
-                ("🏠", "홈", "home"),
-                ("💰", "내 용돈", "my_money"),
-                ("🎯", "미션", "missions"),
-                ("🤖", "AI 채팅", "ai_chat"),
-                ("📚", "금융 스토리", "learning"),
-            ]
-        else:
-            menu_items = [
-                ("🏠", "홈", "home"),
+                ("🏠", "홈", "child_dashboard"),
+                ("💰", "내 지갑", "wallet"),
+                ("🎯", "저축 목표", "goals"),
+                ("📝", "용돈 요청", "allowance_request"),
+                ("✅", "미션", "missions"),
+                ("🤖", "AI 친구", "ai_friend"),
+                ("📚", "경제 교실", "classroom"),
+                ("🏆", "내 성장", "growth"),
+                ("⚙️", "설정", "settings"),
             ]
         
         # 메뉴 버튼 렌더링
@@ -215,17 +306,25 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         for icon, label, key in menu_items:
             is_active = current_page == key
             
-            # 페이지 경로 매핑
+            # 페이지 경로 매핑 (새 구조)
             page_paths = {
-                'home': 'app.py',
-                'children': 'pages/2_📊_부모_대시보드.py',
-                'allowance': 'pages/9_💵_용돈_관리.py',
-                'report': 'pages/3_💼_부모_상담실.py',
-                'settings': 'pages/4_👤_내정보.py',
-                'my_money': 'pages/9_💵_용돈_관리.py',
-                'missions': 'pages/7_🎯_금융_미션.py',
-                'ai_chat': 'pages/1_💬_아이_채팅.py',
-                'learning': 'pages/8_📖_금융_스토리.py',
+                # parent
+                "parent_dashboard": "pages/1_🏠_대시보드.py",
+                "parent_children": "pages/2_👶_자녀_관리.py",
+                "allowance_manage": "pages/3_💵_용돈_관리.py",
+                "request_approve": "pages/4_📝_요청_승인.py",
+                "parent_report": "pages/5_📊_리포트.py",
+                # child
+                "child_dashboard": "pages/1_🏠_대시보드.py",
+                "wallet": "pages/7_💰_내_지갑.py",
+                "goals": "pages/8_🎯_저축_목표.py",
+                "allowance_request": "pages/9_📝_용돈_요청.py",
+                "missions": "pages/10_✅_미션.py",
+                "ai_friend": "pages/11_🤖_AI_친구.py",
+                "classroom": "pages/12_📚_경제_교실.py",
+                "growth": "pages/13_🏆_내_성장.py",
+                # shared
+                "settings": "pages/6_⚙️_설정.py",
             }
             
             page_path = page_paths.get(key)
@@ -239,8 +338,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 st.session_state['current_page'] = key
                 if page_path and os.path.exists(page_path):
                     st.switch_page(page_path)
-                elif key == 'home':
-                    st.switch_page("app.py")
+                else:
+                    st.info("페이지가 준비 중입니다.")
                 st.rerun()
 
         st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
