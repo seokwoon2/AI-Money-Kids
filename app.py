@@ -1284,13 +1284,16 @@ def login_page():
             }
 
             /* 카드: form 자체를 카드로 */
-            /* 카드: login_card_anchor가 있는 블록만 카드로 */
-            div[data-testid="stVerticalBlock"]:has(#login_card_anchor) {
+            /* 카드: login_card_anchor가 있는 "border wrapper"만 카드로 (PC 2열에서 전체가 덮이는 문제 방지) */
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#login_card_anchor){
                 background: white !important;
-                padding: 1.75rem 1.5rem !important;
                 border-radius: 22px !important;
                 box-shadow: 0 18px 45px rgba(0,0,0,0.28) !important;
+                border: 1px solid rgba(17,24,39,0.08) !important;
                 overflow: hidden !important;
+            }
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#login_card_anchor) > div{
+                padding: 1.75rem 1.5rem !important;
             }
 
             /* 탭(요즘 느낌: pill) */
@@ -1330,7 +1333,7 @@ def login_page():
             /* 모바일: 패딩만 조정(모드 전환을 막지 않도록 max-width 강제는 제거) */
             @media (max-width: 520px) {
                 .block-container { padding: 1rem 0.75rem !important; }
-                div[data-testid="stVerticalBlock"]:has(#login_card_anchor) { padding: 1.4rem 1.1rem !important; }
+                div[data-testid="stVerticalBlockBorderWrapper"]:has(#login_card_anchor) > div { padding: 1.4rem 1.1rem !important; }
             }
         </style>
         """,
@@ -1377,34 +1380,36 @@ def login_page():
             )
 
         with right:
-            # 카드 내용: 탭으로 '한 화면에 너무 많은 기능' 문제 해결
+            # 카드 내용: 컨테이너로 "진짜 래핑" (PC에서 카드 CSS 범위가 커지는 문제 방지)
+            with st.container(border=True):
+                st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
+                st.markdown(
+                    """
+                    <div style='text-align:center;'>
+                        <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
+                        <div style='font-size:22px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                        <div style='color:#636E72; margin:0.45rem 0 0.95rem 0; font-size:13px;'>아이들의 경제 교육 친구</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
+    else:
+        # 모바일 톤: 기존 1열 레이아웃
+        with st.container(border=True):
             st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
             st.markdown(
                 """
                 <div style='text-align:center;'>
-                    <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
-                    <div style='font-size:22px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
-                    <div style='color:#636E72; margin:0.45rem 0 0.95rem 0; font-size:13px;'>아이들의 경제 교육 친구</div>
+                    <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
+                    <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                    <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-
             tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
-    else:
-        # 모바일 톤: 기존 1열 레이아웃
-        st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div style='text-align:center;'>
-                <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
-                <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
-                <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
 
     with tab_social:
         # 소셜 버튼은 줄바꿈을 줄여 스크롤 최소화 + '점/불릿' 느낌 제거
