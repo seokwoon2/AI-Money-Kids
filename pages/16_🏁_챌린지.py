@@ -2,6 +2,7 @@ import streamlit as st
 
 from datetime import date, timedelta
 import html as _html
+from textwrap import dedent as _dedent
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
@@ -131,7 +132,8 @@ def main():
 
     st.markdown('<div id="amf_challenge_anchor"></div>', unsafe_allow_html=True)
     st.markdown(
-        """
+        _dedent(
+            """
         <style>
         /* scope only challenge page */
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-card {
@@ -195,7 +197,8 @@ def main():
           letter-spacing: -0.02em;
         }
         </style>
-        """,
+        """
+        ).strip(),
         unsafe_allow_html=True,
     )
 
@@ -233,19 +236,21 @@ def main():
                     range_safe = _html.escape(_fmt_range(inst.get("start_date"), inst.get("end_date")))
                     summary_safe = _html.escape(str(prog.get("summary") or "")).replace("\n", "<br/>")
                     st.markdown(
-                        f"""
-                        <div class="amf-card">
-                          <div class="amf-row">
-                            <div style="flex:1;">
-                              <div class="amf-title">{title_safe}</div>
-                              <div class="amf-sub">{range_safe}</div>
-                              <div style="margin-top:8px;">{chips_html}</div>
+                        _dedent(
+                            f"""
+                            <div class="amf-card">
+                              <div class="amf-row">
+                                <div style="flex:1;">
+                                  <div class="amf-title">{title_safe}</div>
+                                  <div class="amf-sub">{range_safe}</div>
+                                  <div style="margin-top:8px;">{chips_html}</div>
+                                </div>
+                                {ring}
+                              </div>
+                              <div class="amf-sub" style="margin-top:10px;">{summary_safe}</div>
                             </div>
-                            {ring}
-                          </div>
-                          <div class="amf-sub" style="margin-top:10px;">{summary_safe}</div>
-                        </div>
-                        """,
+                            """
+                        ).strip(),
                         unsafe_allow_html=True,
                     )
                     st.progress(float(prog.get("progress") or 0))
@@ -263,13 +268,15 @@ def main():
                             left = float(cap) - float(spent_so_far)
                             recommend = 0 if days_left <= 0 else int(max(0.0, left) / float(days_left))
                             st.markdown(
-                                f"""
-                                <div class="amf-kpi">
-                                  <div class="k"><div class="t">남은 금액</div><div class="v">{int(max(0,left)):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 소비</div><div class="v">{int(spent_today):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
-                                </div>
-                                """,
+                                _dedent(
+                                    f"""
+                                    <div class="amf-kpi">
+                                      <div class="k"><div class="t">남은 금액</div><div class="v">{int(max(0,left)):,}원</div></div>
+                                      <div class="k"><div class="t">오늘 소비</div><div class="v">{int(spent_today):,}원</div></div>
+                                      <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
+                                    </div>
+                                    """
+                                ).strip(),
                                 unsafe_allow_html=True,
                             )
                         else:
@@ -282,13 +289,15 @@ def main():
                             left = float(target) - float(cur_cat)
                             recommend = 0 if days_left <= 0 else int(max(0.0, left) / float(days_left))
                             st.markdown(
-                                f"""
-                                <div class="amf-kpi">
-                                  <div class="k"><div class="t">남은 금액({cat or "카테고리"})</div><div class="v">{int(max(0,left)):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 소비({cat or "카테고리"})</div><div class="v">{int(today_cat):,}원</div></div>
-                                  <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
-                                </div>
-                                """,
+                                _dedent(
+                                    f"""
+                                    <div class="amf-kpi">
+                                      <div class="k"><div class="t">남은 금액({cat or "카테고리"})</div><div class="v">{int(max(0,left)):,}원</div></div>
+                                      <div class="k"><div class="t">오늘 소비({cat or "카테고리"})</div><div class="v">{int(today_cat):,}원</div></div>
+                                      <div class="k"><div class="t">오늘 권장 사용</div><div class="v">{int(recommend):,}원</div></div>
+                                    </div>
+                                    """
+                                ).strip(),
                                 unsafe_allow_html=True,
                             )
 
@@ -316,13 +325,15 @@ def main():
                             today_req = float(params.get("start_amount") or 500) + float(params.get("daily_increment") or 100) * max(0, idx_today)
                         today_left = max(0.0, float(today_req) - float(today_saved))
                         st.markdown(
-                            f"""
-                            <div class="amf-kpi">
-                              <div class="k"><div class="t">오늘 목표</div><div class="v">{int(today_req):,}원</div></div>
-                              <div class="k"><div class="t">오늘 저축</div><div class="v">{int(today_saved):,}원</div></div>
-                              <div class="k"><div class="t">오늘 남은 목표</div><div class="v">{int(today_left):,}원</div></div>
-                            </div>
-                            """,
+                            _dedent(
+                                f"""
+                                <div class="amf-kpi">
+                                  <div class="k"><div class="t">오늘 목표</div><div class="v">{int(today_req):,}원</div></div>
+                                  <div class="k"><div class="t">오늘 저축</div><div class="v">{int(today_saved):,}원</div></div>
+                                  <div class="k"><div class="t">오늘 남은 목표</div><div class="v">{int(today_left):,}원</div></div>
+                                </div>
+                                """
+                            ).strip(),
                             unsafe_allow_html=True,
                         )
                         bcta1, bcta2 = st.columns(2)
