@@ -118,6 +118,24 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
 
+    /* ✅ 상단 header 오버레이가 클릭을 가리는 문제 방지 */
+    header[data-testid="stHeader"]{
+        pointer-events: none !important;
+        background: transparent !important;
+    }
+    header[data-testid="stHeader"] *{
+        pointer-events: none !important;
+    }
+    /* 단, 사이드바 토글/접기 버튼은 클릭 가능하게 예외 처리 */
+    button[data-testid="collapsedControl"],
+    button[aria-label="Open sidebar"],
+    button[title="Open sidebar"],
+    button[aria-label="Expand sidebar"],
+    button[title="Expand sidebar"],
+    button[data-testid="stSidebarCollapseButton"]{
+        pointer-events: auto !important;
+    }
+
     /* 사이드바 접힘(»») 컨트롤을 '메뉴'처럼 보이게 */
     button[data-testid="collapsedControl"],
     button[aria-label="Open sidebar"],
