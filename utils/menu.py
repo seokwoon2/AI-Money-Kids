@@ -434,9 +434,9 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
         line-height: 1 !important;
     }
-    /* 메뉴/홈/알림 버튼은 아이콘형 고정 폭 */
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
-    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
+    /* ✅ 아이콘형(팝오버 트리거) 버튼만 고정 폭 적용
+       (전역 버튼까지 폭이 줄어 글자가 깨지는 현상 방지) */
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"]{
         width: 44px !important;
         min-width: 44px !important;
         padding: 0 !important;
