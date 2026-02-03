@@ -4,6 +4,7 @@ from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
 from datetime import datetime, timedelta
 import time
+from utils.money_format import format_korean_won
 
 
 def _guard_child(db: DatabaseManager):
@@ -39,6 +40,8 @@ def main():
 
     request_type = st.selectbox("요청 종류", ["💵 용돈 요청", "🧾 지출 승인 요청"], key="req_type")
     amount = st.number_input("금액(원)", min_value=100, step=100, value=1000, key="req_amount")
+    # ✅ 입력 금액 한글 표시(사용자 요청)
+    st.caption(f"입력: **{int(amount):,}원** · 한글: **{format_korean_won(amount)}**")
     category = st.selectbox("카테고리", ["간식", "장난감", "학용품", "저축", "기타"], key="req_category")
     reason = st.text_input("이유", placeholder="예: 친구 생일 선물 사고 싶어요", key="req_reason")
 
@@ -78,6 +81,19 @@ def main():
             _send_request("allowance", stop_used=False, risk_score=0, emotion=None, note=None)
     else:
         # ✅ 지출 요청: '잠깐 멈추기' 개입
+        # ✅ 잔액(추정) 표시 + 초과 요청 방지(0원 아래 지출 방지)
+        try:
+            beh = db.get_user_behaviors(user_id, limit=5000)
+            total_allow = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "allowance")
+            total_save = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "saving")
+            total_spend = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") in ("planned_spending", "impulse_buying"))
+            balance = float(total_allow - total_save - total_spend)
+        except Exception:
+            balance = 0.0
+        st.caption(f"현재 잔액(추정): **{int(balance):,}원**")
+        if float(amount or 0) > float(balance or 0):
+            st.warning("잔액보다 큰 지출은 요청할 수 없어요. 용돈을 먼저 요청하거나 금액을 줄여주세요.")
+
         st.divider()
         st.subheader("🛑 잠깐 멈추기 (충동구매 방지)")
         st.caption("요청 보내기 전 10초만! 지금 기분과 이유를 확인해봐요.")
@@ -168,7 +184,8 @@ def main():
                     st.toast("🪙 코인 +10 (멈추기 성공!)", icon="🛑")
                 st.success("좋아! 오늘은 한 번 참아봤어. 내일 다시 생각해도 늦지 않아.")
         with c2:
-            if st.button("👉 그래도 부모님께 요청 보내기", use_container_width=True, key="send_spend_req"):
+            send_disabled = float(amount or 0) > float(balance or 0)
+            if st.button("👉 그래도 부모님께 요청 보내기", use_container_width=True, key="send_spend_req", disabled=send_disabled):
                 _send_request("spend", stop_used=False, risk_score=score, emotion=e, note=(note or why))
 
     st.divider()

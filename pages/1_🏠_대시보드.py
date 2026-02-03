@@ -733,22 +733,22 @@ def main():
         # 감정 기록(소비 전/후/오늘 기분)
         st.subheader("😊 감정 기록")
         st.caption("돈 쓰기 전/후 기분을 남기면, 머니프렌즈가 더 잘 도와줘요.")
-        emotions = ["😄", "🙂", "😐", "😟", "😡", "🤩", "😴"]
+        # ✅ 이모지 대신 요즘 톤(라벨+짧은 이모지)로 정리
+        emotion_options = ["신남 ✨", "좋아 🙂", "그냥 그래 😐", "걱정돼 😟", "화났어 😡"]
         tab_pre, tab_post, tab_daily = st.tabs(["🛑 지출 전", "🛍️ 지출 후", "🌤️ 오늘 기분"])
 
         def _emotion_form(context: str, title: str, placeholder: str):
             with st.form(f"emotion_{context}"):
-                picked = st.radio(
-                    title,
-                    options=emotions,
-                    horizontal=True,
-                    label_visibility="visible",
-                )
+                if hasattr(st, "segmented_control"):
+                    picked = st.segmented_control(title, options=emotion_options, default=emotion_options[2], key=f"emo_seg_{context}")
+                else:
+                    picked = st.radio(title, options=emotion_options, horizontal=True, key=f"emo_radio_{context}")
                 note = st.text_input("한 줄 메모(선택)", placeholder=placeholder)
                 submitted = st.form_submit_button("기록하기", use_container_width=True, type="primary")
             if submitted:
                 try:
-                    db.create_emotion_log(user_id, context=context, emotion=picked, note=(note or "").strip() or None)
+                    # 저장은 짧게(라벨 그대로)
+                    db.create_emotion_log(user_id, context=context, emotion=str(picked), note=(note or "").strip() or None)
                     if hasattr(st, "toast"):
                         st.toast("✅ 기록했어요!", icon="😊")
                     else:

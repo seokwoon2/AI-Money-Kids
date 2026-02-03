@@ -57,13 +57,33 @@ def main():
             reject = c2.button("❌ 거절", use_container_width=True, key=f"reject_{req['id']}")
 
             if approve or reject:
+                child_id = int(req["child_id"])
                 new_status = "approved" if approve else "rejected"
+
+                # ✅ 지출 승인 시 잔액 체크(0원 아래로 내려가는 지출 방지)
+                if approve and rtype == "spend":
+                    try:
+                        beh = db.get_user_behaviors(child_id, limit=5000)
+                        total_allow = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "allowance")
+                        total_save = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "saving")
+                        total_spend = sum(
+                            (b.get("amount") or 0)
+                            for b in beh
+                            if b.get("behavior_type") in ("planned_spending", "impulse_buying")
+                        )
+                        balance = float(total_allow - total_save - total_spend)
+                    except Exception:
+                        balance = 0.0
+                    need = float(req.get("amount") or 0)
+                    if need > balance:
+                        st.error(f"잔액이 부족해서 승인할 수 없어요. (잔액 {int(balance):,}원 / 요청 {int(need):,}원)")
+                        continue
+
                 ok = db.decide_request(int(req["id"]), parent_id, new_status)
                 if not ok:
                     st.error("처리에 실패했어요.")
                     continue
 
-                child_id = int(req["child_id"])
                 if new_status == "approved":
                     # 승인 시: 행동 기록 생성
                     if rtype == "allowance":
