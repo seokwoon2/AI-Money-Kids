@@ -1223,20 +1223,36 @@ def signup_page():
 
             /* 오른쪽 폼 카드 */
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor){
-                background: white !important;
+                /* Glass 카드: 보라 배경 위에서도 화이트 폰트가 자연스럽게 */
+                background: rgba(255,255,255,0.12) !important;
                 border-radius: 22px !important;
                 box-shadow: 0 18px 45px rgba(0,0,0,0.28) !important;
-                border: 1px solid rgba(17,24,39,0.08) !important;
+                border: 1px solid rgba(255,255,255,0.22) !important;
                 overflow: hidden !important;
+                backdrop-filter: blur(14px);
             }
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) > div{
                 padding: 1.85rem 1.6rem !important;
+            }
+
+            /* 카드 내부 텍스트 컬러(화이트 톤) */
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h1,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h2,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h3{
+                color: rgba(255,255,255,0.96) !important;
+                letter-spacing: -0.2px;
+            }
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) p,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) span,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) label{
+                color: rgba(255,255,255,0.88) !important;
             }
 
             .stTextInput input {
                 border-radius: 12px !important;
                 border: 2px solid #E0E0E0 !important;
                 padding: 12px 16px !important;
+                background: rgba(255,255,255,0.92) !important;
             }
             .stTextInput input:focus {
                 border-color: #667eea !important;
@@ -1249,6 +1265,25 @@ def signup_page():
                 border: none !important;
                 color: white !important;
                 box-shadow: 0 10px 22px rgba(102,126,234,0.25) !important;
+            }
+
+            /* 가입 유형 선택 안내(노란 warning 대신) */
+            .amf-type-pill{
+                display:flex;
+                align-items:center;
+                gap:10px;
+                padding: 12px 14px;
+                border-radius: 14px;
+                border: 1px solid rgba(255,255,255,0.18);
+                background: rgba(0,0,0,0.10);
+                color: rgba(255,255,255,0.94);
+                font-weight: 900;
+                margin: 0.4rem 0 0.6rem 0;
+            }
+            .amf-type-pill small{
+                margin-left:auto;
+                font-weight: 800;
+                opacity: 0.85;
             }
 
             .parent-code-box{
@@ -1279,8 +1314,8 @@ def signup_page():
             """
             <div style='text-align:center;'>
                 <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
-                <div style='font-size:22px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
-                <div style='color:#636E72; margin:0.45rem 0 0.95rem 0; font-size:13px;'>아이들의 경제 교육 친구</div>
+                <div style='font-size:22px; font-weight:950; color:rgba(255,255,255,0.96); line-height:1.15;'>AI Money Friends</div>
+                <div style='color:rgba(255,255,255,0.82); margin:0.45rem 0 0.95rem 0; font-size:13px; font-weight:800;'>아이들의 경제 교육 친구</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1299,9 +1334,9 @@ def signup_page():
 
         user_type = st.session_state.get("signup_user_type")
         if user_type == "parent":
-            st.info("👨‍👩‍👧 부모님으로 가입합니다")
+            st.markdown('<div class="amf-type-pill">👨‍👩‍👧 부모님으로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
         elif user_type == "child":
-            st.warning("👶 아이로 가입합니다")
+            st.markdown('<div class="amf-type-pill">👶 아이로 가입합니다 <small>선택됨</small></div>', unsafe_allow_html=True)
         else:
             st.caption("가입 유형을 선택해주세요")
             if st.button("← 로그인으로 돌아가기", key="signup_back_login_top", use_container_width=True):
