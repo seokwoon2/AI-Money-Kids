@@ -6,6 +6,65 @@ from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
 
 
+def _safe_seed_defaults(db: DatabaseManager) -> None:
+    """
+    Streamlit Cloud에서 db_manager.py가 구버전일 때(메서드 없음)도
+    페이지가 죽지 않도록 기본 미션/배지를 직접 시드합니다.
+    """
+    if hasattr(db, "seed_default_missions_and_badges"):
+        try:
+            db.seed_default_missions_and_badges()
+        except Exception:
+            pass
+        return
+
+    # fallback: 직접 SQL로 시드(테이블이 있으면)
+    try:
+        conn = db._get_connection()  # pylint: disable=protected-access
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mission_templates'")
+        if not cur.fetchone():
+            return
+        cur.execute("SELECT COUNT(*) as cnt FROM mission_templates")
+        if int(cur.fetchone()["cnt"] or 0) == 0:
+            templates = [
+                ("오늘은 저금통에 1,000원 저축하기", "저축(saving) 기록을 남겨요", "easy", 500),
+                ("계획 지출 1건 기록하기", "planned_spending으로 지출을 계획해요", "normal", 300),
+                ("가격 비교 해보기", "comparing_prices 활동을 해봐요", "easy", 200),
+                ("충동 구매 참기", "delayed_gratification 활동을 해봐요", "hard", 700),
+            ]
+            cur.executemany(
+                """
+                INSERT INTO mission_templates (parent_code, title, description, difficulty, reward_amount, is_active)
+                VALUES (NULL, ?, ?, ?, ?, 1)
+                """,
+                templates,
+            )
+            conn.commit()
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='badges'")
+        if cur.fetchone():
+            cur.execute("SELECT COUNT(*) as cnt FROM badges")
+            if int(cur.fetchone()["cnt"] or 0) == 0:
+                badges = [
+                    ("xp_10", "새싹 경제가", "활동을 10번 완료했어요", "🌱", 10),
+                    ("xp_50", "성실한 저축가", "활동을 50번 완료했어요", "💎", 50),
+                    ("xp_100", "금융 마스터", "활동을 100번 완료했어요", "🏆", 100),
+                ]
+                cur.executemany(
+                    "INSERT INTO badges (code, title, description, icon, required_xp) VALUES (?, ?, ?, ?, ?)",
+                    badges,
+                )
+                conn.commit()
+    except Exception:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def _guard_login() -> bool:
     if not st.session_state.get("logged_in"):
         st.switch_page("app.py")
@@ -158,7 +217,7 @@ def main():
 
     hide_sidebar_navigation()
     db = DatabaseManager()
-    db.seed_default_missions_and_badges()
+    _safe_seed_defaults(db)
     # ✅ 스케줄러 대체: 앱 진입 시 정기용돈 자동 실행
     try:
         db.run_due_recurring_allowances()
@@ -174,7 +233,13 @@ def main():
     _inject_dashboard_css()
 
     # app bar (title + date + notifications)
-    unread = db.get_notifications(user_id, unread_only=True, limit=20)
+    if hasattr(db, "get_notifications"):
+        try:
+            unread = db.get_notifications(user_id, unread_only=True, limit=20)
+        except Exception:
+            unread = []
+    else:
+        unread = []
     unread_count = len(unread)
     left, right = st.columns([0.74, 0.26])
     with left:
@@ -212,7 +277,11 @@ def main():
                         else:
                             st.info(f"**{title}**\n\n{body}")
                         if st.button("읽음", key=f"read_notif_{n['id']}", use_container_width=True):
-                            db.mark_notification_read(int(n["id"]))
+                            if hasattr(db, "mark_notification_read"):
+                                try:
+                                    db.mark_notification_read(int(n["id"]))
+                                except Exception:
+                                    pass
                             st.rerun()
 
     st.divider()
