@@ -92,6 +92,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
             if user_type == "parent":
                 items = [
                     ("🏠", "홈", "parent_dashboard"),
+                    ("🔗", "연동하기", "linking"),
                     ("👶", "자녀 관리", "parent_children"),
                     ("💵", "용돈 관리", "allowance_manage"),
                     ("📝", "요청 승인", "request_approve"),
@@ -623,6 +624,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         if user_type == "parent":
             menu_items = [
                 ("🏠", "홈", "parent_dashboard"),
+                ("🔗", "연동하기", "linking"),
                 ("👶", "자녀 관리", "parent_children"),
                 ("💵", "용돈 관리", "allowance_manage"),
                 ("📝", "요청 승인", "request_approve"),
