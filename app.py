@@ -1253,6 +1253,10 @@ def signup_page():
                 border: 2px solid #E0E0E0 !important;
                 padding: 12px 16px !important;
                 background: rgba(255,255,255,0.92) !important;
+                color: #111827 !important; /* ✅ 입력값은 어둡게(가독성) */
+            }
+            .stTextInput input::placeholder{
+                color: rgba(17,24,39,0.45) !important;
             }
             .stTextInput input:focus {
                 border-color: #667eea !important;

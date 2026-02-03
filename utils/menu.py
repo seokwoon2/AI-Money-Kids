@@ -279,19 +279,9 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         }
         """
 
-    # 강제 PC: 작은 화면에서도 래핑을 막고 PC처럼 유지(필요 시 가로 스크롤)
-    if layout_mode == "pc":
-        responsive_css += """
-        /* ====== Force PC ====== */
-        div[data-testid="stHorizontalBlock"]{
-            flex-wrap: nowrap !important;
-            gap: 1rem !important;
-        }
-        div[data-testid="stHorizontalBlock"] > div{
-            flex: 1 1 0 !important;
-            min-width: 0 !important;
-        }
-        """
+    # ⚠️ Force PC는 전역 st.columns() 레이아웃을 과하게 눌러
+    # 버튼/라벨 텍스트가 한 글자씩 깨지는 문제가 있어 비활성화합니다.
+    # (상단바는 별도의 스코프 CSS로 PC/모바일 배치를 안정화)
 
     base_css = """
     /* 기본 네비게이션 제거 */
