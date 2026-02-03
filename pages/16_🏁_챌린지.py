@@ -1,6 +1,7 @@
 import streamlit as st
 
 from datetime import date, timedelta
+import html as _html
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
@@ -166,6 +167,7 @@ def main():
           color: rgba(15,23,42,0.70);
           font-weight: 900;
           font-size: 12px;
+          white-space: nowrap;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-kpi {
           display:flex;
@@ -225,20 +227,23 @@ def main():
                     chips.append(_type_badge(inst.get("challenge_type")))
                     if dl >= 0:
                         chips.append(f"D-{dl}")
-                    chips_html = " ".join([f'<span class="amf-chip">{c}</span>' for c in chips])
+                    chips_html = " ".join([f'<span class="amf-chip">{_html.escape(str(c))}</span>' for c in chips])
                     ring = _progress_ring(float(prog.get("progress") or 0), "진행")
+                    title_safe = _html.escape(str(inst.get("template_title") or ""))
+                    range_safe = _html.escape(_fmt_range(inst.get("start_date"), inst.get("end_date")))
+                    summary_safe = _html.escape(str(prog.get("summary") or "")).replace("\n", "<br/>")
                     st.markdown(
                         f"""
                         <div class="amf-card">
                           <div class="amf-row">
                             <div style="flex:1;">
-                              <div class="amf-title">{inst.get('template_title') or ''}</div>
-                              <div class="amf-sub">{_fmt_range(inst.get('start_date'), inst.get('end_date'))}</div>
+                              <div class="amf-title">{title_safe}</div>
+                              <div class="amf-sub">{range_safe}</div>
                               <div style="margin-top:8px;">{chips_html}</div>
                             </div>
                             {ring}
                           </div>
-                          <div class="amf-sub" style="margin-top:10px;">{prog.get('summary') or ''}</div>
+                          <div class="amf-sub" style="margin-top:10px;">{summary_safe}</div>
                         </div>
                         """,
                         unsafe_allow_html=True,
@@ -517,7 +522,8 @@ def main():
             start = date.today()
             end = start + timedelta(days=d - 1)
             st.caption(f"기간: **{_fmt_range(start.isoformat(), end.isoformat())}** · 하루 **{int(fixed_amt):,}원({format_korean_won(fixed_amt)})**")
-            if st.button("🐷 하루 저축 챌린지 시작", use_container_width=True, type="primary", key="start_daily_save_fixed"):
+            st.caption("버튼을 누르면 ‘하루 저축(고정)’ 챌린지가 시작돼요.")
+            if st.button("🏁 챌린지 시작", use_container_width=True, type="primary", key="start_daily_save_fixed"):
                 try:
                     cur_act = db.get_challenge_instances(user_id, status="active", limit=50) or []
                     exists = any(str(x.get("challenge_type")) == "daily_save_fixed" for x in cur_act)
@@ -561,7 +567,8 @@ def main():
             st.caption(
                 f"기간: **{_fmt_range(s2.isoformat(), e2.isoformat())}** · 첫날 **{int(inc_start):,}원({format_korean_won(inc_start)})** → 매일 +{int(inc_step):,}원"
             )
-            if st.button("📈 늘리는 저축 챌린지 시작", use_container_width=True, type="primary", key="start_daily_save_inc"):
+            st.caption("버튼을 누르면 ‘늘리는 저축’ 챌린지가 시작돼요.")
+            if st.button("🏁 챌린지 시작", use_container_width=True, type="primary", key="start_daily_save_inc"):
                 try:
                     cur_act = db.get_challenge_instances(user_id, status="active", limit=50) or []
                     exists = any(str(x.get("challenge_type")) == "daily_save_increasing" for x in cur_act)
