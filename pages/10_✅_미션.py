@@ -146,7 +146,7 @@ def main():
                     """,
                     (user_id,),
                 )
-                rows = cur.fetchall()
+                rows = [dict(r) for r in (cur.fetchall() or [])]
             finally:
                 conn.close()
             if not rows:
