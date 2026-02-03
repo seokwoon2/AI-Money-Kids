@@ -1,16 +1,37 @@
 """공통 메뉴 유틸리티 - 카카오뱅크 스타일 UI 개편"""
-import streamlit as st
+from __future__ import annotations
+
 import os
+from pathlib import Path
+
+import streamlit as st
+
 from database.db_manager import DatabaseManager
 
-def safe_page_link(page_path: str, label: str, icon: str = None):
-    """안전하게 페이지 링크를 생성하는 헬퍼 함수"""
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _page_exists(page_path: str) -> bool:
+    """Streamlit 페이지 파일 존재 여부(환경 무관)"""
     try:
-        # 파일 존재 여부 확인
-        if os.path.exists(page_path):
+        p = Path(page_path)
+        if not p.is_absolute():
+            p = _PROJECT_ROOT / p
+        return p.exists()
+    except Exception:
+        return False
+
+def safe_page_link(page_path: str, label: str, icon: str | None = None):
+    """안전하게 페이지 링크를 생성하는 헬퍼 함수
+
+    - Streamlit Cloud에서 페이지 파일 누락/경로 변경 시에도 앱이 죽지 않도록 방어
+    """
+    try:
+        if _page_exists(page_path):
+            # page_link가 가능한 환경이면 사용(실패 시에도 try로 보호)
             st.page_link(page_path, label=label, icon=icon)
     except Exception:
-        # 페이지가 없거나 오류가 발생하면 무시
         pass
 
 def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
@@ -366,8 +387,11 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 type="primary" if is_active else "secondary"
             ):
                 st.session_state['current_page'] = key
-                if page_path and os.path.exists(page_path):
-                    st.switch_page(page_path)
+                if page_path and _page_exists(page_path):
+                    try:
+                        st.switch_page(page_path)
+                    except Exception:
+                        st.info("페이지 이동에 실패했어요. 잠시 후 다시 시도해주세요.")
                 else:
                     st.info("페이지가 준비 중입니다.")
                 st.rerun()
@@ -396,7 +420,10 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
                 st.session_state.current_auth_screen = 'login'
                 
                 # 메인 페이지로 이동
-                st.switch_page("app.py")
+                try:
+                    st.switch_page("app.py")
+                except Exception:
+                    st.rerun()
 
 def hide_sidebar_navigation():
     st.markdown("<style>[data-testid='stSidebarNav'] {display: none !important;}</style>", unsafe_allow_html=True)

@@ -7,6 +7,7 @@ def generate_parent_code() -> str:
 
 def validate_parent_code(parent_code: str) -> bool:
     """부모 코드 유효성 검증"""
-    if not parent_code or len(parent_code) != 8:
+    # 부모 코드(8자리) 또는 초대용 축약 코드(마지막 6자리) 허용
+    if not parent_code or len(parent_code) not in (6, 8):
         return False
     return True

@@ -797,8 +797,8 @@ def show_signup_page():
             
             signup_parent_code = st.text_input(
                 "부모 코드",
-                placeholder="예: ABC123",
-                max_chars=6,
+                placeholder="예: ABC123 (6자리) 또는 7C825EA9 (8자리)",
+                max_chars=8,
                 label_visibility="collapsed",
                 key="signup_parent_code"
             )
@@ -842,8 +842,8 @@ def show_signup_page():
             if signup_user_type_value == 'child':
                 if not signup_name:
                     errors.append("아이의 이름을 입력해주세요.")
-                if not signup_parent_code or len(signup_parent_code) != 6:
-                    errors.append("올바른 부모 코드를 입력해주세요 (6자리).")
+                if not signup_parent_code or len(signup_parent_code.strip()) not in (6, 8):
+                    errors.append("올바른 부모 초대 코드를 입력해주세요 (6자리 또는 8자리).")
             elif signup_user_type_value == 'parent':
                 if not signup_name:
                     errors.append("이름을 입력해주세요.")
@@ -880,10 +880,16 @@ def show_signup_page():
                             if not validate_parent_code(signup_parent_code):
                                 st.error("❌ 부모 코드가 올바르지 않습니다.")
                             else:
-                                parent_user = db.get_parent_by_code(signup_parent_code)
+                                # 6자리(마지막 6) 또는 8자리(전체)로 부모 찾기
+                                if hasattr(db, "find_parent_by_invite_code"):
+                                    parent_user = db.find_parent_by_invite_code(signup_parent_code)
+                                else:
+                                    parent_user = db.get_parent_by_code(signup_parent_code)
                                 if not parent_user:
                                     st.error("❌ 유효하지 않은 부모 코드입니다.")
                                 else:
+                                    # 자녀는 부모의 '전체 8자리 코드'로 연결 저장
+                                    signup_parent_code = (parent_user or {}).get("parent_code") or signup_parent_code
                                     # 사용자 생성
                                     user_id = db.create_user(
                                         username=signup_username,
@@ -895,6 +901,19 @@ def show_signup_page():
                                         parent_ssn=None,
                                         phone_number=None
                                     )
+
+                                    # 부모에게 알림(있으면)
+                                    try:
+                                        parent_id = int((parent_user or {}).get("id") or 0)
+                                        if parent_id:
+                                            db.create_notification(
+                                                parent_id,
+                                                "새 자녀가 연결되었어요 👶",
+                                                f"{signup_name}({signup_username}) 계정이 가족에 연결되었습니다.",
+                                                level="success",
+                                            )
+                                    except Exception:
+                                        pass
                                     
                                     # 자동 로그인 처리
                                     st.session_state.logged_in = True
@@ -1007,7 +1026,7 @@ def login_page():
                 min-height: 100vh !important;
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: center !important; /* 세로 중앙 정렬 */
+                justify-content: flex-start !important; /* 상단 정렬(모바일에서 자연스러움) */
             }
 
             /* 입력 필드 */
@@ -1155,14 +1174,14 @@ def login_page():
         _social_btn(naver_url, "#03C75A", "white", "none", "🟢 네이버로 시작하기")
         _social_btn(google_url, "white", "#5F6368", "1.5px solid #E0E0E0", "🔴 구글로 시작하기")
 
-        st.caption("아이디/비밀번호 로그인은 오른쪽 탭에서 진행하세요.")
+        st.caption("아이디/비밀번호 로그인은 ‘아이디 로그인’ 탭에서 진행하세요.")
 
     with tab_id:
         username = st.text_input("ID", placeholder="아이디를 입력하세요", key="login_username", label_visibility="collapsed")
         password = st.text_input("PW", type="password", placeholder="비밀번호를 입력하세요", key="login_password", label_visibility="collapsed")
 
-        # 로그인 버튼 (요청 반영: 💜)
-        if st.button("💜 로그인하기", key="do_login_btn", use_container_width=True, type="primary"):
+        # 로그인 버튼(간결/요즘 앱 톤: 🚀)
+        if st.button("🚀 로그인하기", key="do_login_btn", use_container_width=True, type="primary"):
             if not username or not password:
                 st.error("⚠️ 아이디와 비밀번호를 입력하세요")
             else:
@@ -1209,132 +1228,13 @@ def login_page():
 def main_page():
     """로그인 후 대시보드로 이동(새 구조 통일)"""
     # 이제 로그인 후 첫 화면은 `pages/1_🏠_대시보드.py`로 통일합니다.
-    st.switch_page("pages/1_🏠_대시보드.py")
-    return
-    
-    # 메인페이지 전용 CSS (로그인 페이지 스타일 완전 초기화)
-    st.markdown("""
-        <style>
-            /* 메인페이지 기본 스타일 복원 */
-            .block-container {
-                padding-top: 0.75rem !important;
-                padding-bottom: 1.25rem !important;
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-                max-width: 1200px !important;
-                display: block !important;
-            }
-            
-            /* 상단 Streamlit 기본 툴바/메뉴 숨김 (대시보드가 주인공) */
-            [data-testid="stToolbar"] { display: none !important; }
-            #MainMenu { display: none !important; }
-            footer { display: none !important; }
-            header { display: none !important; }
-
-            /* 좌상단 사이드바 토글(»») 숨김 - 대신 페이지 내 메뉴 제공 */
-            button[data-testid="collapsedControl"],
-            button[aria-label*="sidebar"],
-            button[title*="sidebar"] {
-                display: none !important;
-            }
-
-            /* 상단 메뉴 버튼(팝오버) - 작은 캡슐 버튼처럼 */
-            button[aria-haspopup="dialog"] {
-                border-radius: 999px !important;
-                padding: 7px 12px !important;
-                font-weight: 900 !important;
-                background: rgba(255,255,255,0.95) !important;
-                border: 1px solid rgba(17,24,39,0.10) !important;
-                box-shadow: 0 10px 24px rgba(17,24,39,0.08) !important;
-            }
-            button[aria-haspopup="dialog"]:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 14px 30px rgba(17,24,39,0.12) !important;
-            }
-            
-            /* 메인페이지 배경 - 로그인 페이지 그라데이션 제거 */
-            .stApp {
-                background: #f0f2f6 !important;
-            }
-            
-            /* 헤더 표시 */
-            header {
-                display: block !important;
-            }
-            
-            /* 사이드바 표시 */
-            [data-testid="stSidebar"] {
-                display: block !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    user = db.get_user_by_id(st.session_state.user_id)
-    user_type = user.get('user_type', 'child') if user else 'child'
-
-    # ✅ 사이드바가 접혀 있어도 접근 가능한 "메뉴" (요즘 UI: 작은 캡슐 + 우측 정렬)
-    top_l, top_r = st.columns([0.85, 0.15])
-    with top_l:
-        st.markdown(
-            "<div style='height:4px;'></div>",
-            unsafe_allow_html=True,
-        )
-    with top_r:
-        with st.popover("☰ 메뉴", use_container_width=False):
-            # 메뉴 항목 (부모/아이에 따라 다름)
-            if user_type == "parent":
-                menu_items = [
-                    ("🏠", "대시보드", "pages/1_🏠_대시보드.py"),
-                    ("👶", "자녀 관리", "pages/2_👶_자녀_관리.py"),
-                    ("💵", "용돈 관리", "pages/3_💵_용돈_관리.py"),
-                    ("📝", "요청 승인", "pages/4_📝_요청_승인.py"),
-                    ("📊", "리포트", "pages/5_📊_리포트.py"),
-                    ("⚙️", "설정", "pages/6_⚙️_설정.py"),
-                ]
-            else:
-                menu_items = [
-                    ("🏠", "홈", "pages/1_🏠_대시보드.py"),
-                    ("💰", "내 지갑", "pages/7_💰_내_지갑.py"),
-                    ("🎯", "저축 목표", "pages/8_🎯_저축_목표.py"),
-                    ("📝", "용돈 요청", "pages/9_📝_용돈_요청.py"),
-                    ("✅", "미션", "pages/10_✅_미션.py"),
-                    ("🤖", "AI 친구", "pages/11_🤖_AI_친구.py"),
-                    ("📚", "경제 교실", "pages/12_📚_경제_교실.py"),
-                    ("🏆", "내 성장", "pages/13_🏆_내_성장.py"),
-                    ("⚙️", "설정", "pages/6_⚙️_설정.py"),
-                ]
-
-            import os
-            for icon, label, path in menu_items:
-                is_ready = (path == "app.py") or os.path.exists(path)
-                if st.button(
-                    f"{icon} {label}" + ("" if is_ready else " (준비중)"),
-                    use_container_width=True,
-                    key=f"popover_menu_{label}",
-                    disabled=not is_ready,
-                ):
-                    st.switch_page(path)
-
-            st.markdown("---")
-            if st.button("🚪 로그아웃", use_container_width=True, key="popover_logout"):
-                for key in list(st.session_state.keys()):
-                    if key not in ["current_auth_screen"]:
-                        del st.session_state[key]
-                st.session_state.logged_in = False
-                st.session_state.current_auth_screen = "login"
-                st.switch_page("app.py")
-
-    # 기존 사이드바 메뉴도 유지 (펼친 사용자에게는 더 편함)
-    render_sidebar_menu(st.session_state.user_id, st.session_state.user_name, user_type)
-    
-    if user_type == 'parent':
-        parent_dashboard(st.session_state.user_name)
-    else:
-        child_dashboard(st.session_state.user_name)
-
-    if st.session_state.get('show_login_success', False):
-        st.balloons()
-        st.session_state.show_login_success = False
+    # (페이지 누락/라우팅 이슈가 있어도 앱이 죽지 않도록 예외 처리)
+    try:
+        st.switch_page("pages/1_🏠_대시보드.py")
+    except Exception:
+        st.session_state["logged_in"] = False
+        st.session_state["current_auth_screen"] = "login"
+        st.rerun()
 
 def parent_dashboard(user_name):
     """부모용 대시보드 - Style B (전문적인 분석형)"""
@@ -1582,7 +1482,11 @@ def child_dashboard(user_name):
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f'<div class="dashboard-header"><div class="mascot-piggy">🐷</div><div class="welcome-msg"><h1>안녕, {user_name}! 👋</h1><p style="font-size: 17px; color: #555; font-weight: 600; margin-top:5px;">오늘도 재미있게 돈 공부 해볼까? ✨</p></div></div>', unsafe_allow_html=True)
+    # NOTE: 호칭(“~아/야”)은 어색하다는 피드백이 있어 제거하고 중립 문구로 표시
+    st.markdown(
+        f'<div class="dashboard-header"><div class="mascot-piggy">🐷</div><div class="welcome-msg"><h1>안녕하세요, {user_name}! 👋</h1><p style="font-size: 17px; color: #555; font-weight: 600; margin-top:5px;">오늘도 재미있게 돈 공부 해볼까? ✨</p></div></div>',
+        unsafe_allow_html=True,
+    )
 
     col1, col2 = st.columns(2)
     with col1:
@@ -1620,7 +1524,7 @@ def child_dashboard(user_name):
 # OAuth 콜백 처리
 handle_oauth_callback()
 
-if st.session_state.logged_in:
+if st.session_state.get("logged_in", False):
     main_page()
 else:
     login_page()

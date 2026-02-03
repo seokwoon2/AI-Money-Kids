@@ -97,10 +97,25 @@ def main():
             return
 
         child_label_to_id = {f"{c['name']} ({c['username']})": c["id"] for c in children}
-        selected_label = st.selectbox("대상 자녀", list(child_label_to_id.keys()))
+        # 자녀 관리 카드에서 넘어온 경우 자동 선택
+        preselect_id = st.session_state.get("allowance_target_child_id")
+        labels = list(child_label_to_id.keys())
+        default_idx = 0
+        if preselect_id:
+            for i, lbl in enumerate(labels):
+                if int(child_label_to_id[lbl]) == int(preselect_id):
+                    default_idx = i
+                    break
+        selected_label = st.selectbox("대상 자녀", labels, index=default_idx, key="allowance_target_select")
         target_user_id = int(child_label_to_id[selected_label])
         target_user = db.get_user_by_id(target_user_id)
         target_label = (target_user or {}).get("name") or selected_label
+        # 1회 프리셀렉트는 소비
+        if "allowance_target_child_id" in st.session_state:
+            try:
+                del st.session_state["allowance_target_child_id"]
+            except Exception:
+                pass
 
     stats = _compute_balance(db, target_user_id)
     st.caption(f"대상: **{target_label}**")

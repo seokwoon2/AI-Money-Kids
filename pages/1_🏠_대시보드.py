@@ -437,17 +437,63 @@ def main():
         parent_code = (user or {}).get("parent_code", "")
         children = db.get_users_by_parent_code(parent_code) if parent_code else []
 
-        # 1) 전체 자녀 용돈 현황 요약
+        now = datetime.now()
+        ym = f"{now.year}-{now.month:02d}"
+
+        # 1) 전체 자녀 용돈 현황 요약 + (자녀별) 이번 달 통계 캐시
         total_balance = 0
         total_allowance = 0
         total_saving = 0
         total_spend = 0
+        month_allowance = 0.0
+        month_saving = 0.0
+        month_spend = 0.0
+        month_impulse = 0.0
+        child_cards = []
         for ch in children:
-            cstats = _compute_balance(db, int(ch["id"]))
+            cid = int(ch["id"])
+            cstats = _compute_balance(db, cid)
             total_balance += cstats["balance"]
             total_allowance += cstats["total_allowance"]
             total_saving += cstats["total_saving"]
             total_spend += cstats["total_spend"]
+
+            cm_allow = 0.0
+            cm_save = 0.0
+            cm_spend = 0.0
+            cm_impulse = 0.0
+            for b in cstats["behaviors"]:
+                ts = str(b.get("timestamp") or "")
+                if not ts.startswith(ym):
+                    continue
+                t = b.get("behavior_type")
+                amt = float(b.get("amount") or 0)
+                if t == "allowance":
+                    cm_allow += amt
+                elif t == "saving":
+                    cm_save += amt
+                elif t == "planned_spending":
+                    cm_spend += amt
+                elif t == "impulse_buying":
+                    cm_impulse += amt
+            month_allowance += cm_allow
+            month_saving += cm_save
+            month_spend += cm_spend
+            month_impulse += cm_impulse
+
+            child_cards.append(
+                {
+                    "id": cid,
+                    "name": ch.get("name") or ch.get("username") or f"ID {cid}",
+                    "username": ch.get("username") or "",
+                    "balance": float(cstats["balance"]),
+                    "month_allowance": float(cm_allow),
+                    "month_saving": float(cm_save),
+                    "month_spend": float(cm_spend),
+                    "month_impulse": float(cm_impulse),
+                    "behaviors": cstats["behaviors"],
+                }
+            )
 
         st.markdown("### 👨‍👩‍👧 가족 요약")
         r1c1, r1c2 = st.columns(2)
@@ -485,85 +531,194 @@ def main():
                     st.switch_page("pages/3_💵_용돈_관리.py")
             return
 
-        # 2) 이번 달 지출 통계(가족)
-        now = datetime.now()
-        ym = f"{now.year}-{now.month:02d}"
-        month_spend = 0
-        month_impulse = 0
-        for ch in children:
-            beh = db.get_user_behaviors(int(ch["id"]), limit=2000)
-            for b in beh:
-                ts = str(b.get("timestamp") or "")
-                if not ts.startswith(ym):
-                    continue
-                if b.get("behavior_type") == "planned_spending":
-                    month_spend += float(b.get("amount") or 0)
-                elif b.get("behavior_type") == "impulse_buying":
-                    month_impulse += float(b.get("amount") or 0)
+        # ✅ 모바일 스크롤 줄이기: 탭으로 정리
+        tab_overview, tab_children, tab_timeline, tab_missions = st.tabs(["요약", "자녀", "타임라인", "미션"])
 
-        col_a, col_b = st.columns([1.15, 0.85])
-        with col_a:
-            st.subheader("📉 이번 달 지출")
-            st.caption("‘계획 지출/충동 구매’ 기반의 통계예요.")
-            m1, m2, m3 = st.columns(3)
-            with m1:
-                st.metric("계획 지출", f"{int(month_spend):,}원")
-            with m2:
-                st.metric("충동 구매", f"{int(month_impulse):,}원")
-            with m3:
+        with tab_overview:
+            col_a, col_b = st.columns([1.1, 0.9])
+            with col_a:
+                st.subheader("📉 이번 달 지출/저축")
+                st.caption("‘계획 지출/충동 구매’ 기반의 통계예요.")
+                m1, m2 = st.columns(2)
+                with m1:
+                    st.metric("계획 지출", f"{int(month_spend):,}원")
+                with m2:
+                    st.metric("충동 구매", f"{int(month_impulse):,}원")
                 st.metric("총 지출", f"{int(month_spend + month_impulse):,}원")
-        with col_b:
-            st.subheader("🧯 긴급 알림")
-            pending = _safe_get_pending_requests(db, parent_code)
-            if not pending:
-                st.success("대기 중인 요청이 없어요.")
+
+                st.divider()
+                x1, x2 = st.columns(2)
+                with x1:
+                    st.metric("이번 달 용돈(지급)", f"{int(month_allowance):,}원")
+                with x2:
+                    st.metric("이번 달 저축", f"{int(month_saving):,}원")
+            with col_b:
+                st.subheader("🧯 긴급 알림")
+                pending = _safe_get_pending_requests(db, parent_code)
+                if not pending:
+                    st.success("대기 중인 요청이 없어요.")
+                else:
+                    st.warning(f"대기 중 요청 {len(pending)}건")
+                    for r in pending[:3]:
+                        amount = int(r.get("amount") or 0)
+                        rt = "용돈" if r.get("request_type") == "allowance" else "지출"
+                        st.markdown(f"- **{r.get('child_name')}** · {amount:,}원 · {rt}")
+                    if st.button("📝 요청 승인으로 이동", use_container_width=True, key="go_req_from_dash"):
+                        st.switch_page("pages/4_📝_요청_승인.py")
+
+        with tab_children:
+            st.subheader("👶 자녀별 현황")
+            st.caption("자녀를 선택해서 바로 관리하거나, 용돈 지급으로 이동할 수 있어요.")
+            cols = st.columns(2)
+            for i, c in enumerate(child_cards):
+                with cols[i % 2]:
+                    with st.container(border=True):
+                        st.markdown(f"**{c['name']}**")
+                        if c["username"]:
+                            st.caption(c["username"])
+                        st.metric("잔액(추정)", f"{int(c['balance']):,}원")
+                        a1, a2 = st.columns(2)
+                        with a1:
+                            st.caption(f"이번 달 용돈: **{int(c['month_allowance']):,}원**")
+                        with a2:
+                            st.caption(f"이번 달 저축: **{int(c['month_saving']):,}원**")
+                        s1, s2 = st.columns(2)
+                        with s1:
+                            st.caption(f"계획 지출: **{int(c['month_spend']):,}원**")
+                        with s2:
+                            st.caption(f"충동 구매: **{int(c['month_impulse']):,}원**")
+
+                        b1, b2 = st.columns(2)
+                        with b1:
+                            if st.button("👶 관리", key=f"dash_child_manage_{c['id']}", use_container_width=True):
+                                st.session_state["selected_child_id"] = int(c["id"])
+                                st.switch_page("pages/2_👶_자녀_관리.py")
+                        with b2:
+                            if st.button("💵 용돈 주기", key=f"dash_child_give_{c['id']}", use_container_width=True):
+                                st.session_state["allowance_target_child_id"] = int(c["id"])
+                                st.switch_page("pages/3_💵_용돈_관리.py")
+
+        with tab_timeline:
+            st.subheader("🕒 최근 가족 활동")
+            timeline = []
+            for c in child_cards:
+                cname = c["name"]
+                for b in c["behaviors"][:40]:
+                    ts = str(b.get("timestamp") or "")
+                    btype = b.get("behavior_type") or ""
+                    amt = float(b.get("amount") or 0)
+                    cat = (b.get("category") or "").strip()
+                    desc = (b.get("description") or "").strip()
+                    if btype == "allowance":
+                        label = "💵 용돈"
+                        signed = f"+{int(amt):,}원"
+                    elif btype == "saving":
+                        label = "🏦 저축"
+                        signed = f"-{int(amt):,}원"
+                    elif btype == "planned_spending":
+                        label = "🧾 계획지출"
+                        signed = f"-{int(amt):,}원"
+                    elif btype == "impulse_buying":
+                        label = "🛍️ 충동구매"
+                        signed = f"-{int(amt):,}원"
+                    else:
+                        label = btype
+                        signed = f"{int(amt):,}원" if amt else "-"
+                    timeline.append(
+                        {
+                            "ts": ts,
+                            "자녀": cname,
+                            "유형": label,
+                            "금액": signed,
+                            "카테고리": cat,
+                            "내용": desc,
+                        }
+                    )
+            timeline.sort(key=lambda x: x.get("ts") or "", reverse=True)
+            if not timeline:
+                st.caption("아직 기록이 없어요.")
             else:
-                st.warning(f"대기 중 요청 {len(pending)}건")
-                for r in pending[:3]:
-                    amount = int(r.get("amount") or 0)
-                    rt = "용돈" if r.get("request_type") == "allowance" else "지출"
-                    st.markdown(f"- **{r.get('child_name')}** · {amount:,}원 · {rt}")
-                if st.button("📝 요청 승인으로 이동", use_container_width=True):
-                    st.switch_page("pages/4_📝_요청_승인.py")
+                for row in timeline[:10]:
+                    tshort = (row.get("ts") or "")[:16]
+                    line = f"**{row['자녀']}** · {tshort} · {row['유형']} · **{row['금액']}**"
+                    meta = " · ".join([v for v in [row.get("카테고리") or "", row.get("내용") or ""] if v]).strip()
+                    with st.container(border=True):
+                        st.markdown(line)
+                        if meta:
+                            st.caption(meta)
 
-        st.divider()
-
-        # 3) 최근 미션 완료 현황(가족) - 간단: 최근 7일 완료 수
-        st.subheader("✅ 최근 7일 미션 완료")
-        # mission_assignments는 새로 추가된 테이블: 직접 SQL로 최근 완료 수 요약
-        conn = db._get_connection()  # internal 사용(페이지 전용)
-        cur = conn.cursor()
-        try:
-            cur.execute(
-                """
-                SELECT u.name, COUNT(a.id) as completed
-                FROM mission_assignments a
-                JOIN users u ON a.user_id = u.id
-                WHERE u.parent_code = ?
-                  AND u.user_type = 'child'
-                  AND a.status = 'completed'
-                  AND a.completed_at >= datetime('now', '-7 days')
-                GROUP BY u.name
-                ORDER BY completed DESC
-                """,
-                (parent_code,),
-            )
-            rows = cur.fetchall()
-        except Exception:
+        with tab_missions:
+            st.subheader("✅ 미션 완료(가족)")
             rows = []
-        finally:
-            conn.close()
+            month_missions = 0
+            try:
+                conn = db._get_connection()  # pylint: disable=protected-access
+                cur = conn.cursor()
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mission_assignments'")
+                has_m = bool(cur.fetchone())
+                if has_m:
+                    cur.execute(
+                        """
+                        SELECT u.name, COUNT(a.id) as completed
+                        FROM mission_assignments a
+                        JOIN users u ON a.user_id = u.id
+                        WHERE u.parent_code = ?
+                          AND u.user_type = 'child'
+                          AND a.status = 'completed'
+                          AND a.completed_at >= datetime('now', '-7 days')
+                        GROUP BY u.name
+                        ORDER BY completed DESC
+                        """,
+                        (parent_code,),
+                    )
+                    rows = cur.fetchall()
+                    cur.execute(
+                        """
+                        SELECT COUNT(*) as cnt
+                        FROM mission_assignments a
+                        JOIN users u ON a.user_id = u.id
+                        WHERE u.parent_code = ?
+                          AND u.user_type = 'child'
+                          AND a.status = 'completed'
+                          AND strftime('%Y-%m', a.completed_at) = ?
+                        """,
+                        (parent_code, ym),
+                    )
+                    month_missions = int((cur.fetchone() or {}).get("cnt") or 0)
+            except Exception:
+                rows = []
+                month_missions = 0
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
-        if not rows:
-            st.caption("최근 7일 동안 완료된 미션이 아직 없어요.")
-        else:
-            st.dataframe(
-                [{"자녀": r["name"], "최근 7일 완료": int(r["completed"] or 0)} for r in rows],
-                use_container_width=True,
-                hide_index=True,
-            )
+            if month_missions == 0:
+                # fallback: 보상 기록(용돈/미션 카테고리)로 대략 추정
+                try:
+                    est = 0
+                    for c in child_cards:
+                        for b in c["behaviors"][:500]:
+                            ts = str(b.get("timestamp") or "")
+                            if not ts.startswith(ym):
+                                continue
+                            if b.get("behavior_type") == "allowance" and (b.get("category") or "").strip() == "미션":
+                                est += 1
+                    month_missions = est
+                except Exception:
+                    month_missions = 0
 
-        st.divider()
+            st.metric("이번 달 가족 미션 완료(합계)", f"{month_missions}개")
+            if not rows:
+                st.caption("최근 7일 동안 완료된 미션이 아직 없어요.")
+            else:
+                st.dataframe(
+                    [{"자녀": r["name"], "최근 7일 완료": int(r["completed"] or 0)} for r in rows],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
         st.subheader("빠른 메뉴")
         q1, q2 = st.columns(2)
         with q1:
@@ -592,6 +747,32 @@ def main():
         )
 
         st.divider()
+
+        # 이번 달 요약
+        now = datetime.now()
+        ym = f"{now.year}-{now.month:02d}"
+        m_allow = 0.0
+        m_save = 0.0
+        m_spend = 0.0
+        for b in cstats["behaviors"]:
+            ts = str(b.get("timestamp") or "")
+            if not ts.startswith(ym):
+                continue
+            t = b.get("behavior_type")
+            amt = float(b.get("amount") or 0)
+            if t == "allowance":
+                m_allow += amt
+            elif t == "saving":
+                m_save += amt
+            elif t in ("planned_spending", "impulse_buying"):
+                m_spend += amt
+        st.subheader("📅 이번 달 요약")
+        y1, y2 = st.columns(2)
+        with y1:
+            st.metric("받은 용돈", f"{int(m_allow):,}원")
+        with y2:
+            st.metric("저축", f"{int(m_save):,}원")
+        st.metric("지출", f"{int(m_spend):,}원")
 
         # 진행 중인 미션(오늘)
         today = date.today().isoformat()
@@ -659,6 +840,41 @@ def main():
         else:
             tip = "오늘은 작은 미션부터 해보자! 저금통에 1,000원 넣기 어때요?"
         st.info(tip)
+
+        st.divider()
+
+        # 최근 활동(내 기록)
+        st.subheader("🕒 최근 활동")
+        recent = cstats["behaviors"][:10]
+        if not recent:
+            st.caption("아직 기록이 없어요.")
+        else:
+            for b in recent:
+                ts = str(b.get("timestamp") or "")[:16]
+                t = b.get("behavior_type") or ""
+                amt = float(b.get("amount") or 0)
+                cat = (b.get("category") or "").strip()
+                desc = (b.get("description") or "").strip()
+                if t == "allowance":
+                    label = "💵 용돈"
+                    signed = f"+{int(amt):,}원"
+                elif t == "saving":
+                    label = "🏦 저축"
+                    signed = f"-{int(amt):,}원"
+                elif t == "planned_spending":
+                    label = "🧾 계획지출"
+                    signed = f"-{int(amt):,}원"
+                elif t == "impulse_buying":
+                    label = "🛍️ 충동구매"
+                    signed = f"-{int(amt):,}원"
+                else:
+                    label = t
+                    signed = f"{int(amt):,}원" if amt else "-"
+                with st.container(border=True):
+                    st.markdown(f"{ts} · {label} · **{signed}**")
+                    meta = " · ".join([v for v in [cat, desc] if v]).strip()
+                    if meta:
+                        st.caption(meta)
 
         st.divider()
         q1, q2 = st.columns(2)

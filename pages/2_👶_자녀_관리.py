@@ -48,12 +48,136 @@ def main():
     st.divider()
 
     if not children:
-        st.info("아직 연결된 자녀가 없어요. 자녀가 가입할 때 부모 코드를 입력하면 자동으로 연결돼요.")
-        st.code(parent_code or "부모 코드 없음", language=None)
+        st.info("아직 연결된 자녀가 없어요. 자녀가 회원가입 시 ‘부모 초대 코드’를 입력하면 자동으로 연결돼요.")
+        if not parent_code:
+            st.warning("부모 코드가 없어요. (부모 계정 생성 시 자동 생성됩니다)")
+            return
+
+        short_code = parent_code[-6:].upper()
+        st.markdown("### 🔑 부모 초대 코드")
+
+        left, right = st.columns([1.25, 0.75])
+        with left:
+            st.markdown(
+                f"""
+                <div style="
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    padding: 18px 16px;
+                    border-radius: 16px;
+                    color: white;
+                    box-shadow: 0 16px 32px rgba(102,126,234,0.20);
+                ">
+                    <div style="font-weight:900; opacity:0.9;">자녀에게 이 코드를 알려주세요</div>
+                    <div style="
+                        margin-top:10px;
+                        background: rgba(255,255,255,0.95);
+                        color:#111827;
+                        padding: 12px 14px;
+                        border-radius: 12px;
+                        font-size: 32px;
+                        font-weight: 950;
+                        letter-spacing: 4px;
+                        text-align:center;
+                    ">{short_code}</div>
+                    <div style="margin-top:10px; font-size:13px; font-weight:800; opacity:0.9;">
+                        ※ 6자리(축약) 또는 전체 8자리 코드로도 연결 가능
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("전체 8자리 코드 보기", expanded=False):
+                st.code(parent_code.upper(), language=None)
+
+        with right:
+            st.caption("QR 코드(초대용)")
+            try:
+                import qrcode
+
+                img = qrcode.make(short_code)
+                st.image(img, use_container_width=True)
+                st.caption("자녀가 QR을 보고 6자리 코드를 입력해도 돼요.")
+            except Exception:
+                st.caption("QR 코드 표시를 위해 `qrcode` 설치가 필요해요.")
         return
 
+    # ===== 자녀 카드 목록(모바일/PC 공통) =====
+    st.subheader(f"👶 연결된 자녀 ({len(children)}명)")
+    st.caption("카드를 눌러 자녀를 선택하거나, 바로 용돈 관리로 이동할 수 있어요.")
+
+    # 완료 미션 수(있으면) 한 번에 조회
+    completed_map = {}
+    try:
+        conn = db._get_connection()  # pylint: disable=protected-access
+        cur = conn.cursor()
+        ids = [int(c["id"]) for c in children]
+        if ids:
+            placeholders = ",".join(["?"] * len(ids))
+            cur.execute(
+                f"""
+                SELECT user_id, COUNT(*) as cnt
+                FROM mission_assignments
+                WHERE status = 'completed' AND user_id IN ({placeholders})
+                GROUP BY user_id
+                """,
+                tuple(ids),
+            )
+            for r in cur.fetchall():
+                completed_map[int(r["user_id"])] = int(r["cnt"] or 0)
+    except Exception:
+        completed_map = {}
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    cols = st.columns(2)
+    for idx, c in enumerate(children):
+        cid = int(c["id"])
+        with cols[idx % 2]:
+            # 잔액(추정)
+            beh = db.get_user_behaviors(cid, limit=2000)
+            total_allowance = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "allowance")
+            total_saving = sum((b.get("amount") or 0) for b in beh if b.get("behavior_type") == "saving")
+            total_spend = sum(
+                (b.get("amount") or 0)
+                for b in beh
+                if b.get("behavior_type") in ("planned_spending", "impulse_buying")
+            )
+            balance = total_allowance - total_saving - total_spend
+
+            created_at = str(c.get("created_at") or "")[:10]
+            done = int(completed_map.get(cid, 0))
+
+            with st.container(border=True):
+                st.markdown(f"### 👶 {c.get('name')}")
+                st.caption(f"{c.get('username')} · 가입일 {created_at or '-'}")
+                st.metric("현재 잔액(추정)", f"{int(balance):,}원")
+                st.caption(f"✅ 완료 미션: **{done}개**")
+
+                b1, b2 = st.columns(2)
+                with b1:
+                    if st.button("관리", key=f"pick_{cid}", use_container_width=True):
+                        st.session_state["selected_child_id"] = cid
+                        st.rerun()
+                with b2:
+                    if st.button("💵 용돈 주기", key=f"give_{cid}", use_container_width=True):
+                        st.session_state["allowance_target_child_id"] = cid
+                        st.switch_page("pages/3_💵_용돈_관리.py")
+
+    st.divider()
+
     child_label_to_id = {f"{c['name']} ({c['username']})": c["id"] for c in children}
-    selected_label = st.selectbox("자녀 선택", list(child_label_to_id.keys()))
+    labels = list(child_label_to_id.keys())
+    selected_child_id = st.session_state.get("selected_child_id")
+    default_idx = 0
+    if selected_child_id:
+        for i, lbl in enumerate(labels):
+            if int(child_label_to_id[lbl]) == int(selected_child_id):
+                default_idx = i
+                break
+    selected_label = st.selectbox("자녀 선택", labels, index=default_idx, key="child_manage_select")
     child_id = int(child_label_to_id[selected_label])
     child = db.get_user_by_id(child_id)
 

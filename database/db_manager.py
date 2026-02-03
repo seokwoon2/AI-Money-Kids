@@ -422,6 +422,36 @@ class DatabaseManager:
             return dict(row) if row else None
         finally:
             conn.close()
+
+    def find_parent_by_invite_code(self, invite_code: str) -> Optional[Dict]:
+        """
+        자녀 회원가입용: 6자리(부모코드 마지막 6자리) 또는 8자리(전체) 코드로 부모 조회
+        - 저장된 parent_code는 8자리(UUID 앞 8)
+        """
+        code = (invite_code or "").strip().upper()
+        if len(code) not in (6, 8):
+            return None
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # SQLite: UPPER / SUBSTR 사용
+            cursor.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE user_type = 'parent'
+                  AND (
+                        UPPER(parent_code) = ?
+                        OR UPPER(SUBSTR(parent_code, -6)) = ?
+                  )
+                LIMIT 1
+                """,
+                (code, code),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
     
     def update_user_name(self, user_id: int, new_name: str) -> bool:
         """사용자 이름 업데이트"""
