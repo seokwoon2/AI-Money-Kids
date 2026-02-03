@@ -375,28 +375,28 @@ def main():
 
         with tab_spend:
             st.markdown("#### 1) 소비 N원 이하 도전")
+            # ✅ 프리셋은 위젯 생성(number_input) 전에 session_state를 세팅해야 Streamlit 오류가 안 납니다.
+            if "spend_cap" not in st.session_state:
+                st.session_state["spend_cap"] = 10_000
+
+            p1, p2, p3 = st.columns(3)
+            if p1.button("1만원", use_container_width=True, key="cap_1w"):
+                st.session_state["spend_cap"] = 10_000
+            if p2.button("2만원", use_container_width=True, key="cap_2w"):
+                st.session_state["spend_cap"] = 20_000
+            if p3.button("5만원", use_container_width=True, key="cap_5w"):
+                st.session_state["spend_cap"] = 50_000
+
             c1, c2 = st.columns(2)
             with c1:
                 period = st.selectbox("기간", ["하루", "3일", "일주일"], index=2, key="spend_period")
             with c2:
-                cap = st.number_input("목표 소비 상한(원)", min_value=0, step=1000, value=10000, key="spend_cap")
+                cap = st.number_input("목표 소비 상한(원)", min_value=0, step=1000, key="spend_cap")
 
             days = 1 if period == "하루" else (3 if period == "3일" else 7)
             start = date.today()
             end = start + timedelta(days=days - 1)
             st.caption(f"기간: **{_fmt_range(start.isoformat(), end.isoformat())}** · 목표: **{int(cap):,}원({format_korean_won(cap)}) 이하**")
-
-            # 프리셋(실사용 UX)
-            p1, p2, p3 = st.columns(3)
-            if p1.button("1만원", use_container_width=True, key="cap_1w"):
-                st.session_state["spend_cap"] = 10_000
-                st.rerun()
-            if p2.button("2만원", use_container_width=True, key="cap_2w"):
-                st.session_state["spend_cap"] = 20_000
-                st.rerun()
-            if p3.button("5만원", use_container_width=True, key="cap_5w"):
-                st.session_state["spend_cap"] = 50_000
-                st.rerun()
 
             if st.button("🏁 소비 챌린지 시작", use_container_width=True, type="primary", key="start_spend_cap"):
                 # 중복 시작 방지(교체 토글로 해결)
