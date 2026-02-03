@@ -41,7 +41,8 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     # 사이드바 토글이 막히거나(모바일/오버레이) 사이드바가 접혀도
     # 사용자가 항상 "홈"과 "메뉴"로 이동 가능하도록 제공합니다.
     home_key = "parent_dashboard" if user_type == "parent" else "child_dashboard"
-    home_label = "🏠 홈"
+    # 홈 버튼이 너무 길어 보이지 않도록 아이콘형으로 축소
+    home_button_label = "🏠"
     home_path = "pages/1_🏠_대시보드.py"
 
     # ===== 전역 보기 모드(자동/모바일/PC) =====
@@ -53,9 +54,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     layout_mode = st.session_state.get("layout_mode", "auto")
 
     # ✅ 상단: 홈/메뉴/보기 (한 줄)
-    top_l, top_m, top_r = st.columns([0.58, 0.20, 0.22])
+    # - 홈: 아이콘형(짧게)
+    # - 메뉴: 중앙 넓게
+    # - 보기: 우측
+    top_l, top_m, top_r = st.columns([0.12, 0.55, 0.33])
     with top_l:
-        if st.button(home_label, use_container_width=True, key="amf_top_home_btn"):
+        if st.button(home_button_label, help="홈", use_container_width=False, key="amf_top_home_btn"):
             st.session_state["current_page"] = home_key
             try:
                 st.switch_page(home_path)

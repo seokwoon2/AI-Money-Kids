@@ -369,38 +369,9 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # 액션 바: 메뉴 / 날짜(우측 정렬) / 알림 (한 줄)
-    top0, top1, top2 = st.columns([1.15, 1.0, 0.55])
-    with top0:
-        with st.popover("☰ 메뉴", use_container_width=False):
-            st.markdown("**메뉴**")
-            items = []
-            if user_type == "parent":
-                items = [
-                    ("🏠 홈", "pages/1_🏠_대시보드.py"),
-                    ("👶 자녀 관리", "pages/2_👶_자녀_관리.py"),
-                    ("💵 용돈 관리", "pages/3_💵_용돈_관리.py"),
-                    ("📝 요청 승인", "pages/4_📝_요청_승인.py"),
-                    ("📊 리포트", "pages/5_📊_리포트.py"),
-                    ("⚙️ 설정", "pages/6_⚙️_설정.py"),
-                ]
-            else:
-                items = [
-                    ("🏠 홈", "pages/1_🏠_대시보드.py"),
-                    ("💰 내 지갑", "pages/7_💰_내_지갑.py"),
-                    ("🎯 저축 목표", "pages/8_🎯_저축_목표.py"),
-                    ("📝 용돈 요청", "pages/9_📝_용돈_요청.py"),
-                    ("✅ 미션", "pages/10_✅_미션.py"),
-                    ("🤖 AI 친구", "pages/11_🤖_AI_친구.py"),
-                    ("📚 경제 교실", "pages/12_📚_경제_교실.py"),
-                    ("🏆 내 성장", "pages/13_🏆_내_성장.py"),
-                    ("⚙️ 설정", "pages/6_⚙️_설정.py"),
-                ]
-
-            for label, path in items:
-                if st.button(label, use_container_width=True, key=f"dash_menu_{label}"):
-                    st.switch_page(path)
-
+    # ✅ 전역 상단 네비(홈/메뉴/보기)가 이미 있으므로,
+    # 홈 페이지에서 "☰ 메뉴"를 또 그리면 겹칩니다. (중복 메뉴 제거)
+    top1, top2 = st.columns([1.0, 0.55])
     with top1:
         st.markdown(
             f"<div style='text-align:right;'><div class='amf-chip'>📅 <strong>{today_str}</strong></div></div>",
