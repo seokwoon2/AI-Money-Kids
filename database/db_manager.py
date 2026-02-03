@@ -485,7 +485,8 @@ class DatabaseManager:
                     """,
                     (user_id,),
                 )
-                mxp = int((cursor.fetchone() or {}).get("xp") or 0)
+                row = cursor.fetchone()
+                mxp = int((row["xp"] if row else 0) or 0)
             except Exception:
                 cursor.execute(
                     "SELECT COUNT(*) as cnt FROM mission_assignments WHERE user_id = ? AND status='completed'",
@@ -1538,7 +1539,8 @@ class DatabaseManager:
                 """,
                 (int(user_id), start, end),
             )
-            allow_sum = float((cursor.fetchone() or {}).get("s") or 0)
+            row = cursor.fetchone()
+            allow_sum = float((row["s"] if row else 0) or 0)
             if allow_sum <= 0:
                 return False, "지난주에 받은 용돈이 없어서 보상이 없어요."
 
@@ -1553,7 +1555,8 @@ class DatabaseManager:
                 """,
                 (int(user_id), start, end),
             )
-            auto_save_sum = float((cursor.fetchone() or {}).get("s") or 0)
+            row = cursor.fetchone()
+            auto_save_sum = float((row["s"] if row else 0) or 0)
             expected = allow_sum * (pct / 100.0)
             if auto_save_sum + 0.0001 < expected:
                 return False, "지난주 자동저축 달성이 부족해요."
@@ -1687,7 +1690,8 @@ class DatabaseManager:
                 q += " AND COALESCE(category,'') = ?"
                 params.append(str(category))
             cursor.execute(q, params)
-            return float((cursor.fetchone() or {}).get("s") or 0)
+            row = cursor.fetchone()
+            return float((row["s"] if row else 0) or 0)
         finally:
             conn.close()
 
@@ -1705,7 +1709,8 @@ class DatabaseManager:
                 """,
                 (int(user_id), str(day)),
             )
-            return float((cursor.fetchone() or {}).get("s") or 0)
+            row = cursor.fetchone()
+            return float((row["s"] if row else 0) or 0)
         finally:
             conn.close()
 
@@ -1828,7 +1833,8 @@ class DatabaseManager:
                     """,
                     (int(inst.get("id")), start_date, min(today, end_date)),
                 )
-                cnt = int((cursor.fetchone() or {}).get("cnt") or 0)
+                row = cursor.fetchone()
+                cnt = int((row["cnt"] if row else 0) or 0)
             finally:
                 conn.close()
             prog = 0.0 if target <= 0 else min(1.0, cnt / float(target))
@@ -1900,6 +1906,26 @@ class DatabaseManager:
             conn.commit()
             inst["status"] = new_status
             return inst
+        finally:
+            conn.close()
+
+    def cancel_challenge_instance(self, instance_id: int, user_id: int | None = None) -> bool:
+        """진행 중 챌린지 취소"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            if user_id is None:
+                cursor.execute(
+                    "UPDATE challenge_instances SET status = 'cancelled' WHERE id = ? AND status = 'active'",
+                    (int(instance_id),),
+                )
+            else:
+                cursor.execute(
+                    "UPDATE challenge_instances SET status = 'cancelled' WHERE id = ? AND user_id = ? AND status = 'active'",
+                    (int(instance_id), int(user_id)),
+                )
+            conn.commit()
+            return cursor.rowcount > 0
         finally:
             conn.close()
 
