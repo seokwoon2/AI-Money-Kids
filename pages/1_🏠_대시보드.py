@@ -730,6 +730,58 @@ def main():
         else:
             st.caption("내 캐릭터가 아직 없어요. 설정에서 선택할 수 있어요.")
 
+        # 감정 기록(소비 전/후/오늘 기분)
+        st.subheader("😊 감정 기록")
+        st.caption("돈 쓰기 전/후 기분을 남기면, 머니프렌즈가 더 잘 도와줘요.")
+        emotions = ["😄", "🙂", "😐", "😟", "😡", "🤩", "😴"]
+        tab_pre, tab_post, tab_daily = st.tabs(["🛑 지출 전", "🛍️ 지출 후", "🌤️ 오늘 기분"])
+
+        def _emotion_form(context: str, title: str, placeholder: str):
+            with st.form(f"emotion_{context}"):
+                picked = st.radio(
+                    title,
+                    options=emotions,
+                    horizontal=True,
+                    label_visibility="visible",
+                )
+                note = st.text_input("한 줄 메모(선택)", placeholder=placeholder)
+                submitted = st.form_submit_button("기록하기", use_container_width=True, type="primary")
+            if submitted:
+                try:
+                    db.create_emotion_log(user_id, context=context, emotion=picked, note=(note or "").strip() or None)
+                    if hasattr(st, "toast"):
+                        st.toast("✅ 기록했어요!", icon="😊")
+                    else:
+                        st.success("✅ 기록했어요!")
+                    st.rerun()
+                except Exception:
+                    st.error("기록에 실패했어요. 잠시 후 다시 시도해주세요.")
+
+        with tab_pre:
+            _emotion_form("pre_spend", "지금 기분은 어때?", "예: 갖고 싶지만 참기 어려워…")
+        with tab_post:
+            _emotion_form("post_spend", "사고 나서 기분은 어때?", "예: 샀는데 좀 후회돼…")
+        with tab_daily:
+            _emotion_form("daily", "오늘 기분은 어때?", "예: 오늘은 기분이 좋아!")
+
+        recent_emotions = []
+        try:
+            recent_emotions = db.get_emotion_logs(user_id, limit=8)
+        except Exception:
+            recent_emotions = []
+        if recent_emotions:
+            with st.expander("최근 감정 기록", expanded=False):
+                for e in recent_emotions[:8]:
+                    ts = str(e.get("created_at") or "")[:16].replace("T", " ")
+                    ctx = e.get("context") or ""
+                    ctx_kr = {"pre_spend": "지출 전", "post_spend": "지출 후", "daily": "오늘"}.get(ctx, ctx)
+                    emo = e.get("emotion") or ""
+                    note = (e.get("note") or "").strip()
+                    line = f"{emo} **{ctx_kr}** · {ts}"
+                    st.markdown(line)
+                    if note:
+                        st.caption(note)
+
         # hero card (모바일 대응을 위해 클래스 기반 스타일)
         st.markdown(
             f"""

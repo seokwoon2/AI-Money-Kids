@@ -339,6 +339,148 @@ class DatabaseManager:
             return [dict(r) for r in rows]
         finally:
             conn.close()
+
+    # ========== 감정 기록 ==========
+
+    def create_emotion_log(
+        self,
+        user_id: int,
+        context: str,
+        emotion: str,
+        note: str = None,
+        related_behavior_id: int = None,
+    ) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO emotion_logs (user_id, context, emotion, note, related_behavior_id)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    int(user_id),
+                    str(context or "").strip(),
+                    str(emotion or "").strip(),
+                    (note or None),
+                    (int(related_behavior_id) if related_behavior_id else None),
+                ),
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    def get_emotion_logs(self, user_id: int, limit: int = 30) -> List[Dict]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT *
+                FROM emotion_logs
+                WHERE user_id = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """,
+                (int(user_id), int(limit)),
+            )
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_family_emotion_logs(self, parent_code: str, limit: int = 80) -> List[Dict]:
+        """부모 코드 기준: 자녀들의 감정 기록(최근)"""
+        if not parent_code:
+            return []
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT e.*, u.name as child_name, u.username as child_username
+                FROM emotion_logs e
+                JOIN users u ON e.user_id = u.id
+                WHERE u.parent_code = ?
+                  AND u.user_type = 'child'
+                ORDER BY e.created_at DESC, e.id DESC
+                LIMIT ?
+                """,
+                (str(parent_code), int(limit)),
+            )
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    # ========== 리스크 시그널(충동구매 감지/멈추기) ==========
+
+    def create_risk_signal(
+        self,
+        user_id: int,
+        signal_type: str,
+        score: int = 0,
+        context: str = None,
+        note: str = None,
+    ) -> int:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO risk_signals (user_id, signal_type, score, context, note)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (int(user_id), str(signal_type), int(score or 0), (context or None), (note or None)),
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    def get_latest_risk_signal(self, user_id: int, within_minutes: int = 60) -> Optional[Dict]:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT *
+                FROM risk_signals
+                WHERE user_id = ?
+                  AND created_at >= datetime('now', ?)
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                """,
+                (int(user_id), f"-{int(within_minutes)} minutes"),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_family_risk_signals(self, parent_code: str, limit: int = 80) -> List[Dict]:
+        if not parent_code:
+            return []
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT rs.*, u.name as child_name, u.username as child_username
+                FROM risk_signals rs
+                JOIN users u ON rs.user_id = u.id
+                WHERE u.parent_code = ?
+                  AND u.user_type = 'child'
+                ORDER BY rs.created_at DESC, rs.id DESC
+                LIMIT ?
+                """,
+                (str(parent_code), int(limit)),
+            )
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
     
     def _get_connection(self):
         """데이터베이스 연결 반환"""

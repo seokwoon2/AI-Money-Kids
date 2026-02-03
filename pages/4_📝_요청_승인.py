@@ -76,10 +76,17 @@ def main():
                             related_request_id=int(req["id"]),
                         )
                     elif rtype == "spend":
-                        # 지출 승인은 planned_spending으로 기록
+                        # 지출 승인: 최근 충동 시그널이 높으면 impulse_buying으로 기록
+                        btype = "planned_spending"
+                        try:
+                            sig = db.get_latest_risk_signal(child_id, within_minutes=60) if hasattr(db, "get_latest_risk_signal") else None
+                            if sig and (sig.get("signal_type") in ("impulse_request", "impulse_stop")) and int(sig.get("score") or 0) >= 70:
+                                btype = "impulse_buying"
+                        except Exception:
+                            btype = "planned_spending"
                         db.save_behavior_v2(
                             child_id,
-                            "planned_spending",
+                            btype,
                             float(req.get("amount") or 0),
                             description="부모 승인 지출",
                             category=req.get("category"),

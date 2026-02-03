@@ -117,6 +117,61 @@ def main():
 
     st.caption("잔액은 ‘용돈 지급 - 저축 - (계획/충동)지출’로 계산한 추정치입니다.")
 
+    st.divider()
+
+    st.subheader("😊 감정 타임라인(최근)")
+    st.caption("자녀가 지출 전/후 기분을 기록하면, 패턴을 더 잘 볼 수 있어요.")
+    logs = []
+    try:
+        logs = db.get_family_emotion_logs(parent_code, limit=80) if hasattr(db, "get_family_emotion_logs") else []
+    except Exception:
+        logs = []
+    if not logs:
+        st.caption("아직 감정 기록이 없어요.")
+    else:
+        ctx_map = {"pre_spend": "지출 전", "post_spend": "지출 후", "daily": "오늘"}
+        rows = []
+        for e in logs[:60]:
+            ts = str(e.get("created_at") or "")[:16].replace("T", " ")
+            rows.append(
+                {
+                    "시간": ts,
+                    "자녀": e.get("child_name") or e.get("child_username") or "-",
+                    "상황": ctx_map.get(e.get("context") or "", e.get("context") or ""),
+                    "감정": e.get("emotion") or "",
+                    "메모": (e.get("note") or "").strip(),
+                }
+            )
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+
+    st.divider()
+
+    st.subheader("🧯 충동구매/리스크 시그널(최근)")
+    st.caption("아이가 ‘잠깐 멈추기’를 사용했거나, 충동 신호가 감지된 기록이에요.")
+    sigs = []
+    try:
+        sigs = db.get_family_risk_signals(parent_code, limit=80) if hasattr(db, "get_family_risk_signals") else []
+    except Exception:
+        sigs = []
+    if not sigs:
+        st.caption("리스크 시그널이 아직 없어요.")
+    else:
+        type_map = {"impulse_stop": "멈추기 성공", "impulse_request": "충동 의심 요청", "request": "요청"}
+        rows3 = []
+        for s in sigs[:60]:
+            ts = str(s.get("created_at") or "")[:16].replace("T", " ")
+            rows3.append(
+                {
+                    "시간": ts,
+                    "자녀": s.get("child_name") or s.get("child_username") or "-",
+                    "유형": type_map.get(s.get("signal_type") or "", s.get("signal_type") or ""),
+                    "점수": int(s.get("score") or 0),
+                    "컨텍스트": s.get("context") or "",
+                    "메모": (s.get("note") or "").strip(),
+                }
+            )
+        st.dataframe(rows3, use_container_width=True, hide_index=True)
+
 
 if __name__ == "__main__":
     main()

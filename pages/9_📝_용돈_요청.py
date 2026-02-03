@@ -35,22 +35,118 @@ def main():
         st.error("부모 코드가 없어서 요청을 보낼 수 없어요. 부모님에게 코드를 확인해달라고 해주세요.")
         return
 
-    with st.form("request_form"):
-        request_type = st.selectbox("요청 종류", ["💵 용돈 요청", "🧾 지출 승인 요청"])
-        amount = st.number_input("금액(원)", min_value=100, step=100, value=1000)
-        category = st.selectbox("카테고리", ["간식", "장난감", "학용품", "저축", "기타"])
-        reason = st.text_input("이유", placeholder="예: 친구 생일 선물 사고 싶어요")
-        submitted = st.form_submit_button("요청 보내기", use_container_width=True)
+    request_type = st.selectbox("요청 종류", ["💵 용돈 요청", "🧾 지출 승인 요청"], key="req_type")
+    amount = st.number_input("금액(원)", min_value=100, step=100, value=1000, key="req_amount")
+    category = st.selectbox("카테고리", ["간식", "장난감", "학용품", "저축", "기타"], key="req_category")
+    reason = st.text_input("이유", placeholder="예: 친구 생일 선물 사고 싶어요", key="req_reason")
 
-    if submitted:
-        rtype = "allowance" if "용돈" in request_type else "spend"
+    def _send_request(rtype: str, stop_used: bool, risk_score: int, emotion: str | None, note: str | None):
+        # 감정 로그(지출 전) 저장
+        try:
+            if emotion:
+                db.create_emotion_log(user_id, context="pre_spend", emotion=emotion, note=note or None)
+        except Exception:
+            pass
+
+        # 리스크 시그널 저장
+        try:
+            stype = "impulse_stop" if stop_used else ("impulse_request" if rtype == "spend" else "request")
+            db.create_risk_signal(
+                user_id,
+                signal_type=stype,
+                score=int(risk_score or 0),
+                context=f"{rtype}:{category}",
+                note=(note or reason or "").strip()[:300] or None,
+            )
+        except Exception:
+            pass
+
+        # 실제 요청 생성
         rid = db.create_request(user_id, parent_code, rtype, float(amount), category=category, reason=reason or None)
-        # 부모에게 알림(부모 찾기)
         parent = db.get_parent_by_code(parent_code)
         if parent:
             db.create_notification(int(parent["id"]), "새 요청이 도착했어요", f"{user_name}의 요청: {int(amount):,}원", level="info")
         st.success("요청을 보냈어요!")
         st.rerun()
+
+    if "용돈" in request_type:
+        if st.button("요청 보내기", use_container_width=True, type="primary", key="send_allowance_req"):
+            if not reason:
+                st.info("이유를 간단히 적어주면 부모님이 더 잘 이해해요.")
+            _send_request("allowance", stop_used=False, risk_score=0, emotion=None, note=None)
+    else:
+        # ✅ 지출 요청: '잠깐 멈추기' 개입
+        st.divider()
+        st.subheader("🛑 잠깐 멈추기 (충동구매 방지)")
+        st.caption("요청 보내기 전 10초만! 지금 기분과 이유를 확인해봐요.")
+
+        emotions = ["🤩", "😄", "🙂", "😐", "😟", "😡"]
+        e = st.radio("지금 기분은 어때?", options=emotions, horizontal=True, key="stop_emotion")
+        why = st.selectbox(
+            "왜 사고 싶어?",
+            ["그냥 갖고 싶어", "친구가 있어서", "스트레스/화가 나서", "배고파서/심심해서", "꼭 필요해서", "기타"],
+            key="stop_why",
+        )
+        note = st.text_input("한 줄 메모(선택)", placeholder="예: 오늘 기분이 안 좋아서…", key="stop_note")
+
+        # 간단 리스크 점수(휴리스틱)
+        score = 0
+        if category in ("간식", "장난감"):
+            score += 35
+        if float(amount or 0) >= 5000:
+            score += 25
+        if float(amount or 0) >= 10000:
+            score += 15
+        if e in ("🤩", "😡"):
+            score += 20
+        if why in ("스트레스/화가 나서", "배고파서/심심해서", "그냥 갖고 싶어"):
+            score += 20
+        if not (reason or "").strip():
+            score += 10
+        score = min(100, score)
+
+        if score >= 70:
+            st.warning(f"지금은 충동구매일 가능성이 높아요. (시그널 점수 {score}/100)")
+        elif score >= 50:
+            st.info(f"잠깐만 더 생각해보면 좋아요. (시그널 점수 {score}/100)")
+        else:
+            st.success(f"좋아요! 그래도 한 번만 확인하고 요청 보내요. (시그널 점수 {score}/100)")
+
+        with st.expander("대체 행동 추천", expanded=True):
+            st.markdown(
+                """
+                - **30초 쉬기**: 물 한 모금 마시고, 깊게 숨 쉬기  
+                - **내일 다시**: 장바구니(메모)에 적고 내일 다시 보기  
+                - **작게 시작**: 같은 카테고리에서 더 싼 선택지 찾기  
+                - **목표 생각**: 저축 목표가 있으면 ‘목표’에 더 가까운지 확인하기
+                """
+            )
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("✅ 잠깐 멈추기 성공(오늘은 안 사기)", use_container_width=True, key="do_stop", type="primary"):
+                # 멈추기 기록 + 코인 보상
+                try:
+                    db.create_emotion_log(user_id, context="pre_spend", emotion=e, note=(note or why))
+                except Exception:
+                    pass
+                try:
+                    db.create_risk_signal(user_id, signal_type="impulse_stop", score=score, context=f"spend:{category}", note=(note or why))
+                except Exception:
+                    pass
+                try:
+                    # 멈추면 코인 보상(10)
+                    if hasattr(db, "add_coins"):
+                        db.add_coins(user_id, 10)
+                    db.create_notification(user_id, "멈추기 성공! 🛑", "코인 10개를 받았어요 🪙", level="success")
+                except Exception:
+                    pass
+                if hasattr(st, "toast"):
+                    st.toast("🪙 코인 +10 (멈추기 성공!)", icon="🛑")
+                st.success("좋아! 오늘은 한 번 참아봤어. 내일 다시 생각해도 늦지 않아.")
+        with c2:
+            if st.button("👉 그래도 부모님께 요청 보내기", use_container_width=True, key="send_spend_req"):
+                _send_request("spend", stop_used=False, risk_score=score, emotion=e, note=(note or why))
 
     st.divider()
     st.subheader("내 요청 히스토리")
