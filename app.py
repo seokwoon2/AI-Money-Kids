@@ -1203,10 +1203,16 @@ def login_page():
     if layout_mode == "mobile":
         st.markdown("<style>:root{--login-maxw:520px;--login-pad:1rem 0.75rem;}</style>", unsafe_allow_html=True)
     elif layout_mode == "pc":
-        st.markdown("<style>:root{--login-maxw:760px;--login-pad:1.2rem 1rem;}</style>", unsafe_allow_html=True)
+        st.markdown("<style>:root{--login-maxw:980px;--login-pad:1.25rem 1rem;}</style>", unsafe_allow_html=True)
     else:
-        # auto
-        st.markdown("<style>:root{--login-maxw:620px;--login-pad:1.1rem 0.85rem;}</style>", unsafe_allow_html=True)
+        # auto: 큰 화면은 PC 톤, 작은 화면은 모바일 톤으로 자동
+        st.markdown(
+            "<style>"
+            ":root{--login-maxw:980px;--login-pad:1.25rem 1rem;}"
+            "@media (max-width: 720px){:root{--login-maxw:520px;--login-pad:1rem 0.75rem;}}"
+            "</style>",
+            unsafe_allow_html=True,
+        )
 
     # CSS (최소 + 트렌디 정리)
     st.markdown(
@@ -1233,6 +1239,18 @@ def login_page():
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: flex-start !important; /* 상단 정렬(모바일에서 자연스러움) */
+            }
+
+            /* PC 레이아웃(2열)도 모바일에서는 자연스럽게 1열로 */
+            @media (max-width: 720px) {
+                div[data-testid="stHorizontalBlock"]{
+                    flex-wrap: wrap !important;
+                    gap: 0.85rem !important;
+                }
+                div[data-testid="stHorizontalBlock"] > div{
+                    flex: 1 1 100% !important;
+                    min-width: 100% !important;
+                }
             }
 
             /* 입력 필드 */
@@ -1309,9 +1327,9 @@ def login_page():
             /* 소셜 버튼 내부 점(•) 같은 브라우저 기본 스타일 방지 */
             button { -webkit-appearance: none; appearance: none; }
 
-            /* 모바일 */
+            /* 모바일: 패딩만 조정(모드 전환을 막지 않도록 max-width 강제는 제거) */
             @media (max-width: 520px) {
-                .block-container { padding: 1rem 0.75rem !important; max-width: 520px !important; }
+                .block-container { padding: 1rem 0.75rem !important; }
                 div[data-testid="stVerticalBlock"]:has(#login_card_anchor) { padding: 1.4rem 1.1rem !important; }
             }
         </style>
@@ -1331,21 +1349,62 @@ def login_page():
     except Exception:
         pass
 
-    # 카드 내용: 탭으로 '한 화면에 너무 많은 기능' 문제 해결
-    st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
+    # ====== 레이아웃에 따라 실제 UI 구조 변경 ======
+    # mobile: 1열(현재 톤)
+    # pc/auto: 2열(브랜딩 패널 + 로그인 카드) → 모바일 폭에서는 자동으로 1열로 래핑
+    is_desktop_layout = st.session_state.get("layout_mode") in ("pc", "auto")
 
-    st.markdown(
-        """
-        <div style='text-align:center;'>
-            <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
-            <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
-            <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    if is_desktop_layout:
+        left, right = st.columns([1.05, 0.95], vertical_alignment="top")
+        with left:
+            st.markdown(
+                """
+                <div style='color:white; padding: 10px 6px 2px 6px;'>
+                    <div style='font-size:64px; line-height:1; margin: 10px 0 10px 0;'>🐷</div>
+                    <div style='font-size:34px; font-weight:950; letter-spacing:-0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.18);'>
+                        AI Money Friends
+                    </div>
+                    <div style='margin-top:8px; font-size:15px; font-weight:800; opacity:0.95;'>
+                        아이들의 경제 교육 친구
+                    </div>
+                    <div style='margin-top:16px; font-size:14px; font-weight:800; opacity:0.92; line-height:1.6;'>
+                        ✅ 용돈 관리 · ✅ 미션 · ✅ 저축 목표 · ✅ 리포트<br>
+                        가족과 함께 돈 습관을 만들어봐요.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
+        with right:
+            # 카드 내용: 탭으로 '한 화면에 너무 많은 기능' 문제 해결
+            st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div style='text-align:center;'>
+                    <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
+                    <div style='font-size:22px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                    <div style='color:#636E72; margin:0.45rem 0 0.95rem 0; font-size:13px;'>아이들의 경제 교육 친구</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
+    else:
+        # 모바일 톤: 기존 1열 레이아웃
+        st.markdown('<div id="login_card_anchor"></div>', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div style='text-align:center;'>
+                <div style='font-size:58px; margin-bottom:0.75rem;'>🐷</div>
+                <div style='font-size:26px; font-weight:900; color:#2D3436; line-height:1.15;'>AI Money Friends</div>
+                <div style='color:#636E72; margin:0.5rem 0 1.1rem 0; font-size:14px;'>아이들의 경제 교육 친구</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        tab_social, tab_id = st.tabs(["✨ 간편 로그인", "📝 아이디 로그인"])
 
     with tab_social:
         # 소셜 버튼은 줄바꿈을 줄여 스크롤 최소화 + '점/불릿' 느낌 제거
