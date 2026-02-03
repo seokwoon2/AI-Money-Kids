@@ -7,6 +7,8 @@ from config import Config
 from datetime import date as _date, timedelta as _timedelta
 from utils.characters import get_skins_for_character
 from datetime import timedelta as _timedelta2
+import random as _random
+import re as _re
 
 class DatabaseManager:
     """데이터베이스 관리 클래스"""
@@ -50,6 +52,208 @@ class DatabaseManager:
             conn.commit()
         except Exception:
             pass
+        finally:
+            conn.close()
+
+    # ========== 초대코드(MF-XXXX) ==========
+
+    @staticmethod
+    def _normalize_invite_code(code: str | None) -> str:
+        return str(code or "").strip().upper()
+
+    def create_invite_code(self, parent_id: int, ttl_hours: int = 24) -> Dict:
+        """
+        MF-XXXX 초대코드 생성(24시간 유효)
+        - 기본은 1회 사용 처리(is_used=1)지만, 필요하면 재생성하면 됩니다.
+        """
+        parent_id = int(parent_id)
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # 최대 30회 시도(중복 회피)
+            for _ in range(30):
+                code = f"MF-{_random.randint(0, 9999):04d}"
+                cursor.execute("SELECT code FROM invite_codes WHERE code = ?", (code,))
+                if cursor.fetchone():
+                    continue
+                expires_at = (datetime.now() + _timedelta2(hours=int(ttl_hours))).strftime("%Y-%m-%d %H:%M:%S")
+                cursor.execute(
+                    """
+                    INSERT INTO invite_codes (code, parent_id, expires_at, is_used)
+                    VALUES (?, ?, ?, 0)
+                    """,
+                    (code, parent_id, expires_at),
+                )
+                conn.commit()
+                return {"code": code, "expires_at": expires_at}
+            raise RuntimeError("초대코드 생성에 실패했습니다.")
+        finally:
+            conn.close()
+
+    def get_invite_code(self, code: str) -> Optional[Dict]:
+        code = self._normalize_invite_code(code)
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM invite_codes WHERE code = ? LIMIT 1", (code,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def verify_invite_code(self, code: str) -> Optional[Dict]:
+        """
+        유효한 초대코드인지 확인하고 부모 사용자 반환
+        return: {"invite":..., "parent":...}
+        """
+        code = self._normalize_invite_code(code)
+        if not _re.fullmatch(r"MF-\d{4}", code):
+            return None
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT *
+                FROM invite_codes
+                WHERE code = ?
+                  AND is_used = 0
+                  AND datetime(expires_at) > datetime('now')
+                LIMIT 1
+                """,
+                (code,),
+            )
+            inv = cursor.fetchone()
+            if not inv:
+                return None
+            invd = dict(inv)
+            cursor.execute("SELECT * FROM users WHERE id = ? AND user_type = 'parent' LIMIT 1", (int(invd["parent_id"]),))
+            p = cursor.fetchone()
+            if not p:
+                return None
+            return {"invite": invd, "parent": dict(p)}
+        finally:
+            conn.close()
+
+    def consume_invite_code(self, code: str, child_id: int) -> bool:
+        """연동 완료 시 1회 사용 처리"""
+        code = self._normalize_invite_code(code)
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                UPDATE invite_codes
+                SET is_used = 1, used_by_child_id = ?, used_at = CURRENT_TIMESTAMP
+                WHERE code = ? AND is_used = 0
+                """,
+                (int(child_id), code),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def get_active_invite_code(self, parent_id: int) -> Optional[Dict]:
+        """부모의 사용 가능(미사용/미만료) 초대코드 중 최신 1개"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT code, expires_at, parent_id, is_used
+                FROM invite_codes
+                WHERE parent_id = ?
+                  AND is_used = 0
+                  AND datetime(expires_at) > datetime('now')
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (int(parent_id),),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def link_child_with_invite_code(self, code: str, child_id: int) -> Optional[Dict]:
+        """
+        초대코드(MF-XXXX)로 자녀 계정을 부모와 연동(원자적 처리).
+        - invite_codes 유효성(미사용/미만료) 확인
+        - 자녀 users.parent_code 를 부모의 parent_code 로 업데이트(기존 구조 유지)
+        - invite_codes 1회 사용 처리
+        return: {"code":..., "expires_at":..., "parent_id":..., "parent_name":..., "parent_code":...}
+        """
+        code = self._normalize_invite_code(code)
+        if not _re.fullmatch(r"MF-\d{4}", code):
+            return None
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("BEGIN")
+            cursor.execute(
+                """
+                SELECT ic.code, ic.expires_at, ic.parent_id, u.name AS parent_name, u.parent_code AS parent_code
+                FROM invite_codes ic
+                JOIN users u ON u.id = ic.parent_id
+                WHERE ic.code = ?
+                  AND ic.is_used = 0
+                  AND datetime(ic.expires_at) > datetime('now')
+                  AND u.user_type = 'parent'
+                LIMIT 1
+                """,
+                (code,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.rollback()
+                return None
+
+            d = dict(row)
+            parent_code = str(d.get("parent_code") or "").strip().upper()
+            if not parent_code:
+                conn.rollback()
+                return None
+
+            cursor.execute(
+                """
+                UPDATE users
+                SET parent_code = ?
+                WHERE id = ? AND user_type = 'child'
+                """,
+                (parent_code, int(child_id)),
+            )
+            if cursor.rowcount <= 0:
+                conn.rollback()
+                return None
+
+            cursor.execute(
+                """
+                UPDATE invite_codes
+                SET is_used = 1, used_by_child_id = ?, used_at = CURRENT_TIMESTAMP
+                WHERE code = ? AND is_used = 0
+                """,
+                (int(child_id), code),
+            )
+            if cursor.rowcount <= 0:
+                conn.rollback()
+                return None
+
+            conn.commit()
+            return {
+                "code": d.get("code"),
+                "expires_at": d.get("expires_at"),
+                "parent_id": d.get("parent_id"),
+                "parent_name": d.get("parent_name"),
+                "parent_code": parent_code,
+            }
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            return None
         finally:
             conn.close()
 

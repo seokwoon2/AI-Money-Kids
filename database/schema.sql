@@ -126,6 +126,19 @@ CREATE TABLE IF NOT EXISTS recurring_allowances (
     FOREIGN KEY (child_id) REFERENCES users(id)
 );
 
+-- 초대코드(부모-자녀 연결) : MF-XXXX (24시간)
+CREATE TABLE IF NOT EXISTS invite_codes (
+    code TEXT PRIMARY KEY, -- MF-XXXX
+    parent_id INTEGER NOT NULL,
+    expires_at TEXT NOT NULL, -- YYYY-MM-DD HH:MM:SS
+    is_used INTEGER NOT NULL DEFAULT 0,
+    used_by_child_id INTEGER,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES users(id),
+    FOREIGN KEY (used_by_child_id) REFERENCES users(id)
+);
+
 -- 충동구매/리스크 시그널(부모 리포트/알림용)
 CREATE TABLE IF NOT EXISTS risk_signals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,6 +176,8 @@ CREATE INDEX IF NOT EXISTS idx_user_skins_user_id ON user_skins(user_id);
 CREATE INDEX IF NOT EXISTS idx_requests_parent_code ON requests(parent_code);
 CREATE INDEX IF NOT EXISTS idx_requests_child_id ON requests(child_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_invite_codes_parent_id ON invite_codes(parent_id);
+CREATE INDEX IF NOT EXISTS idx_invite_codes_expires_at ON invite_codes(expires_at);
 CREATE INDEX IF NOT EXISTS idx_risk_signals_user_id ON risk_signals(user_id);
 CREATE INDEX IF NOT EXISTS idx_risk_signals_created_at ON risk_signals(created_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);

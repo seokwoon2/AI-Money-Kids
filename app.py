@@ -5,6 +5,7 @@ from database.db_manager import DatabaseManager
 from utils.auth import generate_parent_code, validate_parent_code
 from utils.menu import hide_sidebar_navigation
 from services.oauth_service import OAuthService
+import re
 
 # OAuth 서비스 지연 초기화 (Streamlit 초기화 후에만 접근)
 def get_oauth_service():
@@ -1541,47 +1542,121 @@ def signup_page():
                         부모님과 연결하기
                     </div>
                     <div style="font-size: 13px; color: #666;">
-                        부모님의 초대 코드를 입력하세요
+                        부모님의 초대 코드를 입력하거나 QR을 업로드하세요
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            parent_code = (
-                st.text_input(
-                    "부모 초대 코드",
-                    max_chars=8,
-                    placeholder="7C825EA9 또는 825EA9",
-                    key="signup_parent_code_input",
-                )
-                .upper()
-                .strip()
-            )
-            if parent_code:
-                if validate_parent_code(parent_code):
+
+            # MF-XXXX 키패드 입력
+            st.markdown("#### 🔢 코드 입력(MF-XXXX)")
+            if "signup_invite_digits" not in st.session_state:
+                st.session_state["signup_invite_digits"] = ""
+            digits = str(st.session_state.get("signup_invite_digits") or "")
+            code_preview = f"MF-{digits.ljust(4, '_')}"
+            st.code(code_preview, language=None)
+
+            grid = [
+                ["1", "2", "3"],
+                ["4", "5", "6"],
+                ["7", "8", "9"],
+                ["C", "0", "←"],
+            ]
+            for r_i, row in enumerate(grid):
+                cols = st.columns(3)
+                for c_i, keycap in enumerate(row):
+                    with cols[c_i]:
+                        if st.button(keycap, use_container_width=True, key=f"invite_key_{r_i}_{c_i}"):
+                            if keycap == "C":
+                                digits = ""
+                            elif keycap == "←":
+                                digits = digits[:-1]
+                            else:
+                                if len(digits) < 4 and keycap.isdigit():
+                                    digits = digits + keycap
+                            st.session_state["signup_invite_digits"] = digits
+                            st.rerun()
+
+            parent_code = f"MF-{digits}" if len(digits) == 4 else ""
+
+            # QR 업로드(옵션): 외부 API로 decode
+            with st.expander("📷 QR 업로드로 입력(옵션)", expanded=False):
+                up = st.file_uploader("QR 이미지 업로드", type=["png", "jpg", "jpeg"], key="signup_qr_upload")
+                if up is not None:
                     try:
-                        parent_user = db.find_parent_by_invite_code(parent_code)
+                        import requests
+
+                        resp = requests.post(
+                            "https://api.qrserver.com/v1/read-qr-code/",
+                            files={"file": (up.name, up.getvalue(), up.type or "application/octet-stream")},
+                            timeout=15,
+                        )
+                        data = resp.json()
+                        txt = ""
+                        try:
+                            txt = (data[0].get("symbol") or [{}])[0].get("data") or ""
+                        except Exception:
+                            txt = ""
+                        m = re.search(r"MF-\d{4}", str(txt).upper())
+                        if m:
+                            digits = m.group(0).split("-")[1]
+                            st.session_state["signup_invite_digits"] = digits
+                            st.success(f"인식됨: {m.group(0)}")
+                            st.rerun()
+                        else:
+                            st.info("QR에서 MF-XXXX 코드를 찾지 못했어요. 다른 이미지로 시도해보세요.")
+                    except Exception:
+                        st.info("QR 인식에 실패했어요. 키패드로 입력해주세요.")
+
+            # 기존 호환: 6/8자리 코드 입력(선택)
+            legacy = st.text_input(
+                "기존 코드(호환용, 6~8자리)",
+                placeholder="예: 7C825EA9 또는 825EA9",
+                key="signup_parent_code_legacy",
+            ).upper().strip()
+
+            parent_user = None
+            invite_record = None
+            if parent_code:
+                try:
+                    if hasattr(db, "verify_invite_code"):
+                        vr = db.verify_invite_code(parent_code)
+                        if vr:
+                            invite_record = (vr or {}).get("invite")
+                            parent_user = (vr or {}).get("parent")
+                except Exception:
+                    parent_user = None
+
+            if not parent_user and legacy:
+                if validate_parent_code(legacy):
+                    try:
+                        parent_user = db.find_parent_by_invite_code(legacy)
                     except Exception:
                         parent_user = None
-                if parent_user:
-                    st.markdown(
-                        f"""
-                        <div class="code-verified">
-                            <div style="text-align: center;">
-                                <div style="font-size: 32px;">✅</div>
-                                <div style="font-weight: 900; margin: 0.5rem 0;">
-                                    {parent_user.get('name', '부모님')}과 연결됩니다!
-                                </div>
-                                <div style="font-size: 14px; color: #666;">
-                                    @{parent_user.get('username', '')}
-                                </div>
+
+            if parent_user:
+                exp = ""
+                if invite_record and invite_record.get("expires_at"):
+                    exp = f" (만료: {invite_record.get('expires_at')})"
+                st.markdown(
+                    f"""
+                    <div class="code-verified">
+                        <div style="text-align: center;">
+                            <div style="font-size: 32px;">✅</div>
+                            <div style="font-weight: 900; margin: 0.5rem 0;">
+                                {parent_user.get('name', '부모님')}과 연결됩니다!{exp}
+                            </div>
+                            <div style="font-size: 14px; color: #666;">
+                                @{parent_user.get('username', '')}
                             </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.error("❌ 올바르지 않은 초대 코드입니다")
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            elif parent_code or legacy:
+                st.error("❌ 올바르지 않은 초대 코드입니다")
 
         st.markdown("---")
         if st.button("🚀 가입하기", type="primary", use_container_width=True, key="signup_submit_btn"):
@@ -1658,6 +1733,25 @@ def signup_page():
                                 db.unlock_skin(int(new_user_id), skin_code)
                             if hasattr(db, "grant_level_rewards_if_needed"):
                                 db.grant_level_rewards_if_needed(int(new_user_id))
+                        except Exception:
+                            pass
+                        # ✅ 초대코드 1회 사용 처리(MF-XXXX)
+                        try:
+                            if parent_code and hasattr(db, "consume_invite_code"):
+                                db.consume_invite_code(parent_code, int(new_user_id))
+                        except Exception:
+                            pass
+                        # ✅ 첫 미션 도착 메시지(스토리보드)
+                        try:
+                            db.create_notification(
+                                int(new_user_id),
+                                "첫 미션이 도착했어요! 🎁",
+                                "홈에서 오늘의 미션을 확인해볼까요?",
+                                level="success",
+                            )
+                            # 오늘 미션 바로 배정(가능한 경우)
+                            if hasattr(db, "assign_daily_missions_if_needed"):
+                                db.assign_daily_missions_if_needed(int(new_user_id), date.today().isoformat())
                         except Exception:
                             pass
                         try:

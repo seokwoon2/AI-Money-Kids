@@ -45,16 +45,30 @@ def main():
         st.metric("연결된 자녀", f"{len(children)}명")
     with c2:
         st.metric("오늘", datetime.now().strftime("%Y.%m.%d"))
-    st.metric("부모 코드", parent_code or "없음")
+    st.metric("부모 코드(내부)", parent_code or "없음")
 
     st.divider()
 
-    # ✅ 실사용 UX: 자녀가 있어도 항상 "자녀 초대(코드/QR)" 제공 (기본은 접힘)
-    if parent_code:
-        full_code = (parent_code or "").strip().upper()
-        short_code = full_code[-6:] if len(full_code) >= 6 else full_code
+    # ✅ 스토리보드: MF-XXXX 초대코드 + QR + 24시간 유효
+    # - 기존 parent_code(8자리/6자리)는 내부 호환용으로 유지
+    invite = st.session_state.get("latest_invite")
+    if st.button("🔗 초대코드 생성(MF-XXXX)", use_container_width=True, key="gen_invite_code_btn", type="primary"):
+        try:
+            inv = db.create_invite_code(user_id, ttl_hours=24) if hasattr(db, "create_invite_code") else None
+        except Exception:
+            inv = None
+        if inv:
+            st.session_state["latest_invite"] = inv
+            invite = inv
+            if hasattr(st, "toast"):
+                st.toast("✅ 초대코드를 만들었어요!", icon="🔗")
+        else:
+            st.error("초대코드를 만들 수 없어요. 잠시 후 다시 시도해주세요.")
 
-        with st.expander("👶 자녀 초대하기 (코드/QR)", expanded=(len(children) == 0)):
+    if invite:
+        code = (invite or {}).get("code") or ""
+        expires_at = (invite or {}).get("expires_at") or ""
+        with st.expander("👶 자녀 초대하기 (코드/QR)", expanded=True):
             left, right = st.columns([1.25, 0.75])
             with left:
                 st.markdown(
@@ -77,12 +91,9 @@ def main():
                             font-weight: 950;
                             letter-spacing: 4px;
                             text-align:center;
-                        ">{full_code}</div>
-                        <div style="margin-top:10px; font-size:13px; font-weight:800; opacity:0.92;">
-                            축약 6자리 코드: <span style="background:rgba(255,255,255,0.18); padding:4px 8px; border-radius:999px;">{short_code}</span>
-                        </div>
-                        <div style="margin-top:8px; font-size:12px; font-weight:800; opacity:0.85;">
-                            ※ 자녀 회원가입 화면에서 8자리(전체) 또는 6자리(축약)로 입력할 수 있어요.
+                        ">{code}</div>
+                        <div style="margin-top:10px; font-size:12px; font-weight:900; opacity:0.92;">
+                            24시간 유효 · 만료: <span style="background:rgba(255,255,255,0.18); padding:4px 8px; border-radius:999px;">{expires_at}</span>
                         </div>
                     </div>
                     """,
@@ -90,27 +101,7 @@ def main():
                 )
 
                 # ✅ 복사 버튼(실사용 UX): Streamlit 버튼 + 토스트 + (클릭 시에만) JS 복사
-                copy_col1, copy_col2 = st.columns(2)
-                with copy_col1:
-                    copy_full_clicked = st.button(
-                        "📋 전체 코드 복사",
-                        use_container_width=True,
-                        key="copy_invite_full_btn",
-                    )
-                with copy_col2:
-                    copy_short_clicked = st.button(
-                        "📋 6자리 복사",
-                        use_container_width=True,
-                        key="copy_invite_short_btn",
-                    )
-
-                to_copy = None
-                if copy_full_clicked:
-                    to_copy = full_code
-                if copy_short_clicked:
-                    to_copy = short_code
-
-                if to_copy:
+                if st.button("📋 코드 복사", use_container_width=True, key="copy_invite_mf_btn"):
                     # st.toast가 없는 환경도 고려
                     if hasattr(st, "toast"):
                         st.toast("✅ 복사했어요!", icon="📋")
@@ -120,7 +111,7 @@ def main():
                         f"""
                         <script>
                           (function(){{
-                            const text = {to_copy!r};
+                            const text = {code!r};
                             if (navigator.clipboard) {{
                               navigator.clipboard.writeText(text);
                             }}
@@ -130,9 +121,7 @@ def main():
                         height=0,
                     )
 
-                st.caption("복사가 안 되면 `전체 8자리 코드 보기`에서 복사 아이콘을 눌러주세요.")
-                with st.expander("전체 8자리 코드 보기", expanded=False):
-                    st.code(full_code, language=None)
+                st.caption("카카오 공유는 앱키가 필요해서, 일단 ‘복사’ 후 카톡에 붙여넣어 공유해주세요.")
 
             with right:
                 st.caption("QR 코드(초대용)")
@@ -156,7 +145,7 @@ def main():
                             pass
                         st.image(img, use_container_width=True)
                     except Exception:
-                        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={_urlquote(full_code)}"
+                        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={_urlquote(code)}"
                         st.image(qr_url, use_container_width=True)
 
                     st.caption("QR을 스캔한 뒤, 자녀 회원가입 화면에서 코드를 입력하면 연결돼요.")
@@ -165,6 +154,12 @@ def main():
                         st.code("qrcode[pil]>=7.4.2", language=None)
                 except Exception:
                     st.caption("QR 표시 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.")
+
+    # 기존 호환 초대(내부 parent_code)
+    if parent_code:
+        with st.expander("기존 초대 코드(호환용)", expanded=False):
+            st.caption("예전 방식(6자리/8자리)도 유지합니다.")
+            st.code((parent_code or "").strip().upper(), language=None)
 
     if not children:
         st.info("아직 연결된 자녀가 없어요. 자녀가 회원가입 시 ‘부모 초대 코드’를 입력하면 자동으로 연결돼요.")
