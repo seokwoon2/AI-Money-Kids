@@ -380,6 +380,22 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     # (상단바는 별도의 스코프 CSS로 PC/모바일 배치를 안정화)
 
     base_css = """
+    /* ===== 전역 디자인 토큰 (카드형 UI, 최소 색상) ===== */
+    :root {
+        --amf-bg: #F6F7F9;
+        --amf-card: #ffffff;
+        --amf-text: #111827;
+        --amf-muted: #6b7280;
+        --amf-border: rgba(17, 24, 39, 0.08);
+        --amf-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+        --amf-shadow-hover: 0 4px 12px rgba(17, 24, 39, 0.1);
+        --amf-accent: #4F7DF3;
+        --amf-accent-hover: #3D6BE0;
+        --amf-radius: 12px;
+        --amf-radius-lg: 16px;
+        --amf-radius-xl: 20px;
+    }
+
     /* 기본 네비게이션 제거 */
     [data-testid="stSidebarNav"] {display: none !important;}
 
@@ -447,11 +463,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
 
     /* 프로필 카드 */
     .amf-profile {
-        background: linear-gradient(135deg, rgba(102,126,234,0.10), rgba(118,75,162,0.10));
-        border: 1px solid rgba(102,126,234,0.18);
-        border-radius: 16px;
+        background: var(--amf-card);
+        border: 1px solid var(--amf-border);
+        border-radius: var(--amf-radius-lg);
         padding: 14px 14px;
         margin: 6px 0 12px 0;
+        box-shadow: var(--amf-shadow);
     }
     .amf-profile-name {
         font-size: 15px;
@@ -486,12 +503,12 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         gap:8px;
         padding: 7px 12px;
         border-radius: 999px;
-        background: rgba(255,255,255,0.92);
-        border: 1px solid rgba(17,24,39,0.08);
-        box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+        background: var(--amf-card);
+        border: 1px solid var(--amf-border);
+        box-shadow: var(--amf-shadow);
         font-weight: 900;
         font-size: 12px;
-        color: #374151;
+        color: var(--amf-muted);
         white-space: nowrap;
         justify-content: flex-end;
     }
@@ -509,18 +526,24 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         align-items: center !important;
         gap: 0.55rem !important;
     }
-    /* 상단바 버튼 기본 톤 */
+    /* 상단바 버튼 기본 톤 - 작고 자연스럽게 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button[aria-haspopup="dialog"],
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) .stButton > button{
-        height: 42px !important;
-        padding: 0 10px !important;
-        border-radius: 999px !important;
-        font-weight: 900 !important;
-        border: 1px solid rgba(17,24,39,0.08) !important;
-        background: rgba(255,255,255,0.92) !important;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.06) !important;
+        height: 38px !important;
+        padding: 0 12px !important;
+        border-radius: var(--amf-radius) !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        border: 1px solid var(--amf-border) !important;
+        background: var(--amf-card) !important;
+        box-shadow: var(--amf-shadow) !important;
         line-height: 1 !important;
         white-space: nowrap !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) button:hover{
+        box-shadow: var(--amf-shadow-hover) !important;
+        transform: translateY(-1px) !important;
     }
     /* 상단바 segmented_control 기본 */
     div[data-testid="stVerticalBlock"]:has(#amf_topnav_anchor) div[data-testid="stSegmentedControl"] button{
@@ -543,31 +566,31 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
         margin-bottom: 5px !important;
     }
     
-    /* 활성 메뉴: 보라색 */
+    /* 활성 메뉴: 포인트 컬러 */
     .stSidebar .stButton > button[type="primary"] {
-        background-color: #6C5CE7 !important;
+        background-color: var(--amf-accent) !important;
         color: white !important;
-        box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3) !important;
+        box-shadow: var(--amf-shadow) !important;
         border: none !important;
     }
     
     /* 비활성 메뉴: 라이트 */
     .stSidebar .stButton > button[type="secondary"] {
         background-color: transparent !important;
-        color: #374151 !important;
-        border: 1px solid #DFE6E9 !important;
+        color: var(--amf-text) !important;
+        border: 1px solid var(--amf-border) !important;
     }
     
-    /* 호버 효과 */
+    /* 호버 효과 - 자연스럽게 */
     .stSidebar .stButton > button:hover {
-        transform: translateX(4px) !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        transform: translateX(2px) !important;
+        box-shadow: var(--amf-shadow-hover) !important;
     }
     
     .stSidebar .stButton > button[type="secondary"]:hover {
-        background-color: #F1F3F5 !important;
-        border-color: #6C5CE7 !important;
-        color: #636E72 !important;
+        background-color: var(--amf-bg) !important;
+        border-color: var(--amf-accent) !important;
+        color: var(--amf-text) !important;
     }
     
     /* 로그아웃 버튼 */

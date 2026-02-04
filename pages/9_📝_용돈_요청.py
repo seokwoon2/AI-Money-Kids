@@ -30,6 +30,36 @@ def main():
 
     render_sidebar_menu(user_id, user_name, "child")
 
+    # 전역 디자인 토큰 적용
+    st.markdown("""
+    <style>
+        :root {
+            --amf-bg: #F6F7F9;
+            --amf-card: #ffffff;
+            --amf-text: #111827;
+            --amf-muted: #6b7280;
+            --amf-border: rgba(17,24,39,0.08);
+            --amf-shadow: 0 2px 8px rgba(17,24,39,0.06);
+            --amf-accent: #4F7DF3;
+            --amf-accent-hover: #3D6BE0;
+            --amf-radius: 12px;
+            --amf-radius-lg: 16px;
+        }
+        .stApp { background: var(--amf-bg) !important; }
+        .stButton > button {
+            border-radius: var(--amf-radius) !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            padding: 7px 14px !important;
+        }
+        .stButton > button[kind="primary"] {
+            background: var(--amf-accent) !important;
+            border: none !important;
+            color: white !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title("📝 용돈/지출 요청")
     st.caption("부모님께 용돈을 요청하거나 지출 승인을 요청할 수 있어요.")
 

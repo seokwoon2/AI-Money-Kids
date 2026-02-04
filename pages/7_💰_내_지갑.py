@@ -39,10 +39,10 @@ def main():
 
     st.markdown(
         f"""
-        <div style="background:linear-gradient(135deg,#667eea,#764ba2); color:white; border-radius:18px; padding:18px 16px;">
-            <div style="font-weight:800; opacity:0.9;">현재 잔액</div>
-            <div style="font-size:40px; font-weight:900; letter-spacing:-0.6px; margin-top:4px; line-height:1.05;">{int(balance):,}원</div>
-            <div style="margin-top:6px; opacity:0.9; font-weight:700; font-size:13px;">
+        <div style="background:var(--amf-card); border:1px solid var(--amf-border); color:var(--amf-text); border-radius:var(--amf-radius-lg); padding:18px 16px; box-shadow:var(--amf-shadow);">
+            <div style="font-weight:700; color:var(--amf-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">현재 잔액</div>
+            <div style="font-size:40px; font-weight:900; letter-spacing:-0.6px; margin-top:4px; line-height:1.05; color:var(--amf-text);">{int(balance):,}원</div>
+            <div style="margin-top:8px; color:var(--amf-muted); font-weight:600; font-size:13px;">
                 받은 용돈 {int(total_allowance):,}원 · 저축 {int(total_saving):,}원 · 지출 {int(total_spend):,}원
             </div>
         </div>

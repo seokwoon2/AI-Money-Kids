@@ -151,11 +151,11 @@ def main():
           padding: 12px 12px !important;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-card {
-          border-radius: 18px;
+          border-radius: var(--amf-radius-lg);
           padding: 14px 14px;
-          border: 1px solid rgba(15,23,42,0.08);
+          border: 1px solid var(--amf-border);
           background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(99,102,241,0.10));
-          box-shadow: 0 14px 30px rgba(0,0,0,0.08);
+          box-shadow: var(--amf-shadow);
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-row {
           display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
@@ -193,10 +193,11 @@ def main():
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-kpi .k {
           flex: 1 1 140px;
-          border-radius: 14px;
+          border-radius: var(--amf-radius);
           padding: 10px 10px;
-          background: rgba(255,255,255,0.72);
-          border: 1px solid rgba(15,23,42,0.06);
+          background: var(--amf-card);
+          border: 1px solid var(--amf-border);
+          box-shadow: var(--amf-shadow);
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-kpi .k .t {
           font-size: 11px;

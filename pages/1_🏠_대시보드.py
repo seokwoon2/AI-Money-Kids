@@ -151,20 +151,35 @@ def _inject_dashboard_css():
     st.markdown(
         """
         <style>
+            /* 전역 디자인 토큰 (utils/menu.py와 동기화) */
             :root{
-                --bg:#f5f6fb;
-                --card:#ffffff;
-                --text:#111827;
-                --muted:#6b7280;
-                --border:rgba(17,24,39,0.08);
-                --shadow:0 18px 45px rgba(17,24,39,0.08);
-                --shadow2:0 10px 24px rgba(17,24,39,0.06);
-                --brand1:#667eea;
-                --brand2:#764ba2;
+                --amf-bg:#F6F7F9;
+                --amf-card:#ffffff;
+                --amf-text:#111827;
+                --amf-muted:#6b7280;
+                --amf-border:rgba(17,24,39,0.08);
+                --amf-shadow:0 2px 8px rgba(17,24,39,0.06);
+                --amf-shadow-hover:0 4px 12px rgba(17,24,39,0.1);
+                --amf-accent:#4F7DF3;
+                --amf-accent-hover:#3D6BE0;
+                --amf-radius:12px;
+                --amf-radius-lg:16px;
+                --amf-radius-xl:20px;
+                
+                /* 하위 호환성 (기존 변수명) */
+                --bg: var(--amf-bg);
+                --card: var(--amf-card);
+                --text: var(--amf-text);
+                --muted: var(--amf-muted);
+                --border: var(--amf-border);
+                --shadow: var(--amf-shadow-hover);
+                --shadow2: var(--amf-shadow);
+                --brand1: var(--amf-accent);
+                --brand2: var(--amf-accent-hover);
             }
 
             /* page background + container width */
-            .stApp { background: var(--bg) !important; }
+            .stApp { background: var(--amf-bg) !important; }
             .block-container { max-width: 1200px !important; padding-top: 0.9rem !important; }
 
             /* remove default chrome for app-like feel */
@@ -173,158 +188,204 @@ def _inject_dashboard_css():
             header { background: transparent !important; }
 
             /* typography */
-            h1, h2, h3 { letter-spacing: -0.3px; color: var(--text); }
-            .amf-kicker { color: var(--muted); font-weight: 800; font-size: 12px; }
-            .amf-title { font-size: 28px; font-weight: 950; margin: 0; }
-            .amf-sub { margin-top: 6px; color: var(--muted); font-weight: 800; font-size: 13px; }
+            h1, h2, h3 { letter-spacing: -0.3px; color: var(--amf-text); }
+            .amf-kicker { color: var(--amf-muted); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .amf-title { font-size: 28px; font-weight: 900; margin: 0; color: var(--amf-text); }
+            .amf-sub { margin-top: 6px; color: var(--amf-muted); font-weight: 600; font-size: 13px; }
 
-            /* app bar */
+            /* app bar - 카드형으로 변경 */
             .amf-appbar {
-                display:flex;
-                align-items:flex-start;
-                justify-content:space-between;
-                gap: 12px;
-                margin-bottom: 14px;
+                background: var(--amf-card);
+                border: 1px solid var(--amf-border);
+                border-radius: var(--amf-radius-lg);
+                padding: 16px 18px;
+                margin-bottom: 16px;
+                box-shadow: var(--amf-shadow);
+            }
+            .amf-appbar-content {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
             }
             .amf-chip {
                 display:inline-flex;
                 align-items:center;
                 gap:8px;
-                padding: 7px 12px;
-                border-radius: 999px;
-                background: rgba(255,255,255,0.92);
-                border: 1px solid var(--border);
-                box-shadow: var(--shadow2);
-                font-weight: 900;
+                padding: 6px 12px;
+                border-radius: var(--amf-radius);
+                background: var(--amf-card);
+                border: 1px solid var(--amf-border);
+                box-shadow: var(--amf-shadow);
+                font-weight: 700;
                 font-size: 12px;
-                color: #374151;
+                color: var(--amf-muted);
                 white-space: nowrap;
             }
-            .amf-chip strong { color: var(--text); }
+            .amf-chip strong { color: var(--amf-text); }
 
-            /* 상단 액션(팝오버 버튼)이 입력창처럼 커지지 않게 */
+            /* 상단 액션(팝오버 버튼) - 작고 자연스럽게 */
             button[aria-haspopup="dialog"]{
                 width: auto !important;
-                min-width: 44px !important;
-                border-radius: 999px !important;
-                padding: 7px 12px !important;
-                font-weight: 900 !important;
-                background: rgba(255,255,255,0.92) !important;
-                border: 1px solid var(--border) !important;
-                box-shadow: var(--shadow2) !important;
+                min-width: 40px !important;
+                border-radius: var(--amf-radius) !important;
+                padding: 6px 12px !important;
+                font-weight: 700 !important;
+                font-size: 13px !important;
+                background: var(--amf-card) !important;
+                border: 1px solid var(--amf-border) !important;
+                box-shadow: var(--amf-shadow) !important;
+                transition: all 0.2s ease !important;
             }
             button[aria-haspopup="dialog"]:hover{
                 transform: translateY(-1px);
-                box-shadow: var(--shadow) !important;
+                box-shadow: var(--amf-shadow-hover) !important;
             }
 
-            /* metric cards */
+            /* metric cards - 카드형 UI */
             [data-testid="stMetric"]{
-                background: var(--card) !important;
-                border: 1px solid var(--border) !important;
-                border-radius: 18px !important;
+                background: var(--amf-card) !important;
+                border: 1px solid var(--amf-border) !important;
+                border-radius: var(--amf-radius-lg) !important;
                 padding: 14px 14px !important;
-                box-shadow: var(--shadow2) !important;
+                box-shadow: var(--amf-shadow) !important;
             }
-            [data-testid="stMetricLabel"] { color: var(--muted) !important; font-weight: 900 !important; }
-            [data-testid="stMetricValue"] { color: var(--text) !important; font-weight: 950 !important; letter-spacing: -0.4px; }
+            [data-testid="stMetricLabel"] { color: var(--amf-muted) !important; font-weight: 700 !important; font-size: 12px !important; }
+            [data-testid="stMetricValue"] { color: var(--amf-text) !important; font-weight: 900 !important; letter-spacing: -0.4px; }
 
-            /* containers with border=True */
+            /* containers with border=True - 카드형 UI */
             div[data-testid="stVerticalBlockBorderWrapper"]{
-                border-radius: 18px !important;
-                border: 1px solid var(--border) !important;
-                background: var(--card) !important;
-                box-shadow: var(--shadow2) !important;
+                border-radius: var(--amf-radius-lg) !important;
+                border: 1px solid var(--amf-border) !important;
+                background: var(--amf-card) !important;
+                box-shadow: var(--amf-shadow) !important;
             }
 
-            /* buttons */
+            /* buttons - 작고 자연스럽게, 웹 폼 느낌 제거 */
             .stButton > button{
-                border-radius: 14px !important;
-                font-weight: 900 !important;
-                padding: 10px 14px !important;
+                border-radius: var(--amf-radius) !important;
+                font-weight: 600 !important;
+                font-size: 13px !important;
+                padding: 7px 14px !important;
+                transition: all 0.2s ease !important;
+                border: 1px solid var(--amf-border) !important;
+                background: var(--amf-card) !important;
+                color: var(--amf-text) !important;
+                box-shadow: var(--amf-shadow) !important;
             }
-            .stButton > button[kind="primary"], button[kind="primary"], button[data-testid="baseButton-primary"]{
-                background: linear-gradient(135deg, var(--brand1), var(--brand2)) !important;
+            .stButton > button:hover {
+                transform: translateY(-1px) !important;
+                box-shadow: var(--amf-shadow-hover) !important;
+                border-color: var(--amf-accent) !important;
+            }
+            /* Primary 버튼 - 포인트 컬러만 사용 */
+            .stButton > button[kind="primary"], 
+            button[kind="primary"], 
+            button[data-testid="baseButton-primary"]{
+                background: var(--amf-accent) !important;
                 border: none !important;
                 color: white !important;
-                box-shadow: 0 12px 26px rgba(102,126,234,0.22) !important;
+                box-shadow: var(--amf-shadow) !important;
             }
-            .stButton > button[kind="primary"]:hover, button[kind="primary"]:hover, button[data-testid="baseButton-primary"]:hover{
-                transform: translateY(-1px);
-                box-shadow: 0 16px 34px rgba(102,126,234,0.30) !important;
+            .stButton > button[kind="primary"]:hover, 
+            button[kind="primary"]:hover, 
+            button[data-testid="baseButton-primary"]:hover{
+                background: var(--amf-accent-hover) !important;
+                transform: translateY(-1px) !important;
+                box-shadow: var(--amf-shadow-hover) !important;
+            }
+            /* Secondary 버튼 - 더 자연스럽게 */
+            .stButton > button[kind="secondary"],
+            button[kind="secondary"] {
+                background: var(--amf-bg) !important;
+                border: 1px solid var(--amf-border) !important;
+                color: var(--amf-text) !important;
+            }
+            .stButton > button[kind="secondary"]:hover,
+            button[kind="secondary"]:hover {
+                background: var(--amf-card) !important;
+                border-color: var(--amf-accent) !important;
             }
 
             /* info/warning/success */
             [data-testid="stAlert"]{
-                border-radius: 16px !important;
-                border: 1px solid var(--border) !important;
-                box-shadow: var(--shadow2) !important;
+                border-radius: var(--amf-radius-lg) !important;
+                border: 1px solid var(--amf-border) !important;
+                box-shadow: var(--amf-shadow) !important;
             }
 
             /* progress bar */
             [data-testid="stProgress"] > div > div{
-                background: linear-gradient(135deg, var(--brand1), var(--brand2)) !important;
+                background: var(--amf-accent) !important;
             }
 
             /* 빈 상태 카드 */
             .amf-empty {
-                background: var(--card);
-                border: 1px solid var(--border);
-                border-radius: 18px;
+                background: var(--amf-card);
+                border: 1px solid var(--amf-border);
+                border-radius: var(--amf-radius-lg);
                 padding: 16px;
-                box-shadow: var(--shadow2);
+                box-shadow: var(--amf-shadow);
             }
             .amf-empty h3{
                 margin: 0 0 6px 0;
                 font-size: 16px;
-                font-weight: 950;
-                color: var(--text);
+                font-weight: 900;
+                color: var(--amf-text);
             }
             .amf-empty p{
                 margin: 0;
-                color: var(--muted);
-                font-weight: 800;
+                color: var(--amf-muted);
+                font-weight: 600;
                 font-size: 13px;
                 line-height: 1.45;
             }
 
-            /* 아이 홈 hero */
+            /* 아이 홈 hero - 카드형 */
             .amf-hero{
-                background: linear-gradient(135deg, var(--brand1), var(--brand2));
+                background: var(--amf-card);
+                border: 1px solid var(--amf-border);
                 padding: 18px 16px;
-                border-radius: 20px;
-                color: white;
-                box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+                border-radius: var(--amf-radius-xl);
+                color: var(--amf-text);
+                box-shadow: var(--amf-shadow);
             }
-            .amf-hero-label{ font-weight: 900; opacity: 0.92; }
+            .amf-hero-label{ 
+                font-weight: 700; 
+                color: var(--amf-muted);
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
             .amf-hero-value{
-                font-size: 46px;
-                font-weight: 950;
+                font-size: 42px;
+                font-weight: 900;
                 letter-spacing: -0.8px;
-                margin-top: 2px;
+                margin-top: 4px;
                 line-height: 1.05;
+                color: var(--amf-text);
             }
             .amf-hero-sub{
-                margin-top: 6px;
-                opacity: 0.9;
-                font-weight: 800;
+                margin-top: 8px;
+                color: var(--amf-muted);
+                font-weight: 600;
                 font-size: 13px;
             }
 
             /* tab list pill (used elsewhere) */
             .stTabs [data-baseweb="tab-list"]{
-                background:#eef0f5;
-                border-radius: 16px;
-                padding: 6px;
-                gap: 8px;
+                background: var(--amf-bg);
+                border-radius: var(--amf-radius);
+                padding: 4px;
+                gap: 4px;
             }
             .stTabs [data-baseweb="tab"]{
-                border-radius: 14px;
-                font-weight: 900;
+                border-radius: var(--amf-radius);
+                font-weight: 700;
+                font-size: 13px;
             }
             .stTabs [aria-selected="true"]{
-                background: white;
-                box-shadow: 0 10px 22px rgba(17,24,39,0.08);
+                background: var(--amf-card);
+                box-shadow: var(--amf-shadow);
             }
 
             /* ✅ Mobile-first tweaks */
@@ -402,22 +463,34 @@ def main():
             unsafe_allow_html=True,
         )
 
-    # app bar (title)
-    # ✅ 모바일 우선: 상단을 2줄 구조로(타이틀/액션) 고정
-    st.markdown(
-        f"""
-        <div class="amf-appbar">
-          <div>
-            <div class="amf-kicker">AI Money Friends</div>
-            <div class="amf-title">안녕하세요, {user_name}님 👋</div>
-            <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.divider()
+    # app bar (title) - 카드형으로 변경
+    if user_type == "child":
+        st.markdown(
+            f"""
+            <div class="amf-appbar">
+              <div class="amf-appbar-content">
+                <div class="amf-kicker">AI Money Friends</div>
+                <div class="amf-title">안녕하세요, {user_name}님 👋</div>
+                <div class="amf-sub">오늘도 한 걸음씩 돈 관리 실력을 키워봐요</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        # 부모님용은 기존 스타일 유지
+        st.markdown(
+            f"""
+            <div class="amf-appbar">
+              <div class="amf-appbar-content">
+                <div class="amf-kicker">AI Money Friends</div>
+                <div class="amf-title">안녕하세요, {user_name}님 👋</div>
+                <div class="amf-sub">가족의 금융 활동을 한눈에 확인하세요</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     if user_type == "parent":
         parent_code = (user or {}).get("parent_code", "")
@@ -750,39 +823,165 @@ def main():
         else:
             st.caption("내 캐릭터가 아직 없어요. 설정에서 선택할 수 있어요.")
 
-        # 감정 기록(소비 전/후/오늘 기분)
-        st.subheader("😊 감정 기록")
-        st.caption("돈 쓰기 전/후 기분을 남기면, 머니프렌즈가 더 잘 도와줘요.")
-        # ✅ 이모지 대신 요즘 톤(라벨+짧은 이모지)로 정리
-        emotion_options = ["신남 ✨", "좋아 🙂", "그냥 그래 😐", "걱정돼 😟", "화났어 😡"]
+        # 감정 기록(소비 전/후/오늘 기분) - 칩 UI로 변경
+        st.markdown("""
+        <style>
+            .amf-emotion-section {
+                background: var(--amf-card);
+                border: 1px solid var(--amf-border);
+                border-radius: var(--amf-radius-lg);
+                padding: 18px;
+                margin-bottom: 16px;
+                box-shadow: var(--amf-shadow);
+            }
+            .amf-emotion-title {
+                font-size: 16px;
+                font-weight: 900;
+                color: var(--amf-text);
+                margin-bottom: 8px;
+            }
+            .amf-emotion-subtitle {
+                font-size: 13px;
+                color: var(--amf-muted);
+                font-weight: 600;
+                margin-bottom: 16px;
+                line-height: 1.5;
+            }
+            .amf-emotion-chips {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            .amf-emotion-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                border-radius: var(--amf-radius);
+                background: var(--amf-bg);
+                border: 1px solid var(--amf-border);
+                font-weight: 600;
+                font-size: 13px;
+                color: var(--amf-text);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .amf-emotion-chip:hover {
+                background: var(--amf-card);
+                border-color: var(--amf-accent);
+                transform: translateY(-1px);
+                box-shadow: var(--amf-shadow);
+            }
+            .amf-emotion-chip.selected {
+                background: var(--amf-accent);
+                border-color: var(--amf-accent);
+                color: white;
+            }
+            .amf-emotion-save-btn {
+                position: sticky;
+                bottom: 16px;
+                margin-top: 12px;
+                z-index: 10;
+            }
+            @media (max-width: 768px) {
+                .amf-emotion-chips {
+                    gap: 6px;
+                }
+                .amf-emotion-chip {
+                    padding: 7px 12px;
+                    font-size: 12px;
+                }
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # 대화형 문구
+        emotion_messages = {
+            "pre_spend": "지금 뭔가 사고 싶은 게 있나요? 그 전에 기분을 한번 체크해볼까요?",
+            "post_spend": "사고 나서 기분이 어때요? 만족스러웠나요, 아니면 후회가 되나요?",
+            "daily": "오늘 하루는 어땠어요? 기분 좋은 하루였나요?"
+        }
+        
+        emotion_options = [
+            ("신남 ✨", "신남"),
+            ("좋아 🙂", "좋아"),
+            ("그냥 그래 😐", "그냥 그래"),
+            ("걱정돼 😟", "걱정돼"),
+            ("화났어 😡", "화났어")
+        ]
+        
         tab_pre, tab_post, tab_daily = st.tabs(["🛑 지출 전", "🛍️ 지출 후", "🌤️ 오늘 기분"])
 
-        def _emotion_form(context: str, title: str, placeholder: str):
-            with st.form(f"emotion_{context}"):
-                if hasattr(st, "segmented_control"):
-                    picked = st.segmented_control(title, options=emotion_options, default=emotion_options[2], key=f"emo_seg_{context}")
+        def _emotion_form(context: str, message: str):
+            st.markdown(f"""
+            <div class="amf-emotion-section">
+                <div class="amf-emotion-title">😊 {message}</div>
+                <div class="amf-emotion-subtitle">AI 돈 친구가 옆에서 대화 걸어주는 앱</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 선택된 감정 상태 관리
+            key_selected = f"emotion_selected_{context}"
+            if key_selected not in st.session_state:
+                st.session_state[key_selected] = None
+            
+            # 칩 UI 렌더링
+            cols = st.columns(5)
+            selected_idx = None
+            for idx, (label, value) in enumerate(emotion_options):
+                with cols[idx]:
+                    is_selected = st.session_state[key_selected] == value
+                    chip_class = "selected" if is_selected else ""
+                    if st.button(
+                        label,
+                        key=f"emotion_chip_{context}_{idx}",
+                        use_container_width=True,
+                        type="primary" if is_selected else "secondary"
+                    ):
+                        st.session_state[key_selected] = value
+                        st.rerun()
+            
+            # 메모 입력
+            note_key = f"emotion_note_{context}"
+            note = st.text_input(
+                "한 줄 메모(선택)",
+                placeholder="예: 오늘은 기분이 좋아!",
+                key=note_key,
+                label_visibility="collapsed"
+            )
+            
+            # 저장 버튼 (하단 고정 느낌)
+            st.markdown('<div class="amf-emotion-save-btn">', unsafe_allow_html=True)
+            if st.button("💾 기록하기", key=f"emotion_save_{context}", use_container_width=True, type="primary"):
+                selected_emotion = st.session_state.get(key_selected)
+                if selected_emotion:
+                    try:
+                        db.create_emotion_log(
+                            user_id,
+                            context=context,
+                            emotion=selected_emotion,
+                            note=(note or "").strip() or None
+                        )
+                        if hasattr(st, "toast"):
+                            st.toast("✅ 기록했어요!", icon="😊")
+                        else:
+                            st.success("✅ 기록했어요!")
+                        st.session_state[key_selected] = None
+                        st.session_state[note_key] = ""
+                        st.rerun()
+                    except Exception:
+                        st.error("기록에 실패했어요. 잠시 후 다시 시도해주세요.")
                 else:
-                    picked = st.radio(title, options=emotion_options, horizontal=True, key=f"emo_radio_{context}")
-                note = st.text_input("한 줄 메모(선택)", placeholder=placeholder)
-                submitted = st.form_submit_button("기록하기", use_container_width=True, type="primary")
-            if submitted:
-                try:
-                    # 저장은 짧게(라벨 그대로)
-                    db.create_emotion_log(user_id, context=context, emotion=str(picked), note=(note or "").strip() or None)
-                    if hasattr(st, "toast"):
-                        st.toast("✅ 기록했어요!", icon="😊")
-                    else:
-                        st.success("✅ 기록했어요!")
-                    st.rerun()
-                except Exception:
-                    st.error("기록에 실패했어요. 잠시 후 다시 시도해주세요.")
+                    st.warning("감정을 선택해주세요.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with tab_pre:
-            _emotion_form("pre_spend", "지금 기분은 어때?", "예: 갖고 싶지만 참기 어려워…")
+            _emotion_form("pre_spend", emotion_messages["pre_spend"])
         with tab_post:
-            _emotion_form("post_spend", "사고 나서 기분은 어때?", "예: 샀는데 좀 후회돼…")
+            _emotion_form("post_spend", emotion_messages["post_spend"])
         with tab_daily:
-            _emotion_form("daily", "오늘 기분은 어때?", "예: 오늘은 기분이 좋아!")
+            _emotion_form("daily", emotion_messages["daily"])
 
         recent_emotions = []
         try:
