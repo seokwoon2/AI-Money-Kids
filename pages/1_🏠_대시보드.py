@@ -388,16 +388,36 @@ def _inject_dashboard_css():
                 box-shadow: var(--amf-shadow);
             }
 
+            /* 여백 최소화 - 전면 개편 */
+            .block-container { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+            div[data-testid="stVerticalBlock"] > div { gap: 0.5rem !important; }
+            div[data-testid="stVerticalBlockBorderWrapper"] { margin-bottom: 0.75rem !important; }
+            
+            /* 섹션 간격 최소화 */
+            h1, h2, h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+            .stSubheader { margin-top: 0.75rem !important; margin-bottom: 0.5rem !important; }
+            
+            /* 버튼 크기 작게 */
+            .stButton > button {
+                padding: 6px 12px !important;
+                font-size: 12px !important;
+                min-height: 32px !important;
+            }
+            
+            /* 메트릭 카드 여백 최소화 */
+            [data-testid="stMetric"] { padding: 10px 12px !important; }
+            [data-testid="stMetricValue"] { font-size: 20px !important; }
+            [data-testid="stMetricLabel"] { font-size: 11px !important; }
+            
             /* ✅ Mobile-first tweaks */
             @media (max-width: 768px){
-                .block-container { padding-top: 0.6rem !important; padding-left: 0.9rem !important; padding-right: 0.9rem !important; }
-                .amf-title { font-size: 22px; }
-                .amf-sub { font-size: 12px; }
-                .amf-chip { font-size: 11px; padding: 6px 10px; }
-                button[aria-haspopup="dialog"]{ padding: 6px 10px !important; }
-                [data-testid="stMetric"]{ padding: 12px 12px !important; }
-                [data-testid="stMetricValue"]{ font-size: 22px !important; }
-                .amf-hero-value{ font-size: 34px; }
+                .block-container { padding-top: 0.4rem !important; padding-left: 0.8rem !important; padding-right: 0.8rem !important; }
+                .amf-title { font-size: 20px; }
+                .amf-sub { font-size: 11px; }
+                .amf-chip { font-size: 10px; padding: 5px 9px; }
+                button[aria-haspopup="dialog"]{ padding: 5px 9px !important; }
+                [data-testid="stMetric"]{ padding: 8px 10px !important; }
+                [data-testid="stMetricValue"]{ font-size: 18px !important; }
             }
         </style>
         """,
@@ -823,80 +843,83 @@ def main():
         else:
             st.caption("내 캐릭터가 아직 없어요. 설정에서 선택할 수 있어요.")
 
-        # 감정 기록(소비 전/후/오늘 기분) - 칩 UI로 변경
+        # 감정 기록 - 진짜 칩 UI로 전면 개편
         st.markdown("""
         <style>
-            .amf-emotion-section {
+            .amf-emotion-card {
                 background: var(--amf-card);
                 border: 1px solid var(--amf-border);
                 border-radius: var(--amf-radius-lg);
-                padding: 18px;
-                margin-bottom: 16px;
+                padding: 20px;
+                margin-bottom: 12px;
                 box-shadow: var(--amf-shadow);
             }
-            .amf-emotion-title {
-                font-size: 16px;
-                font-weight: 900;
+            .amf-emotion-greeting {
+                font-size: 15px;
+                font-weight: 700;
                 color: var(--amf-text);
-                margin-bottom: 8px;
+                margin-bottom: 4px;
+                line-height: 1.4;
             }
-            .amf-emotion-subtitle {
-                font-size: 13px;
+            .amf-emotion-hint {
+                font-size: 12px;
                 color: var(--amf-muted);
-                font-weight: 600;
+                font-weight: 500;
                 margin-bottom: 16px;
-                line-height: 1.5;
             }
-            .amf-emotion-chips {
+            .amf-chip-container {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
-                margin-bottom: 12px;
+                margin-bottom: 14px;
             }
-            .amf-emotion-chip {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 14px;
+            .amf-chip-btn {
+                flex: 0 0 auto;
+                padding: 8px 16px;
                 border-radius: var(--amf-radius);
-                background: var(--amf-bg);
                 border: 1px solid var(--amf-border);
+                background: var(--amf-bg);
+                color: var(--amf-text);
                 font-weight: 600;
                 font-size: 13px;
-                color: var(--amf-text);
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.15s ease;
+                white-space: nowrap;
             }
-            .amf-emotion-chip:hover {
+            .amf-chip-btn:hover {
                 background: var(--amf-card);
                 border-color: var(--amf-accent);
                 transform: translateY(-1px);
-                box-shadow: var(--amf-shadow);
             }
-            .amf-emotion-chip.selected {
+            .amf-chip-btn.selected {
                 background: var(--amf-accent);
                 border-color: var(--amf-accent);
                 color: white;
             }
-            .amf-emotion-save-btn {
+            .amf-emotion-input {
+                margin-bottom: 12px;
+            }
+            .amf-emotion-save-mini {
                 position: sticky;
-                bottom: 16px;
+                bottom: 0;
+                background: var(--amf-card);
+                padding: 12px 0 0 0;
+                border-top: 1px solid var(--amf-border);
                 margin-top: 12px;
-                z-index: 10;
+                padding-top: 12px;
             }
             @media (max-width: 768px) {
-                .amf-emotion-chips {
+                .amf-chip-container {
                     gap: 6px;
                 }
-                .amf-emotion-chip {
-                    padding: 7px 12px;
+                .amf-chip-btn {
+                    padding: 7px 14px;
                     font-size: 12px;
                 }
             }
         </style>
         """, unsafe_allow_html=True)
         
-        # 대화형 문구
         emotion_messages = {
             "pre_spend": "지금 뭔가 사고 싶은 게 있나요? 그 전에 기분을 한번 체크해볼까요?",
             "post_spend": "사고 나서 기분이 어때요? 만족스러웠나요, 아니면 후회가 되나요?",
@@ -914,67 +937,100 @@ def main():
         tab_pre, tab_post, tab_daily = st.tabs(["🛑 지출 전", "🛍️ 지출 후", "🌤️ 오늘 기분"])
 
         def _emotion_form(context: str, message: str):
-            st.markdown(f"""
-            <div class="amf-emotion-section">
-                <div class="amf-emotion-title">😊 {message}</div>
-                <div class="amf-emotion-subtitle">AI 돈 친구가 옆에서 대화 걸어주는 앱</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # 선택된 감정 상태 관리
-            key_selected = f"emotion_selected_{context}"
-            if key_selected not in st.session_state:
-                st.session_state[key_selected] = None
-            
-            # 칩 UI 렌더링
-            cols = st.columns(5)
-            selected_idx = None
-            for idx, (label, value) in enumerate(emotion_options):
-                with cols[idx]:
-                    is_selected = st.session_state[key_selected] == value
+            with st.container(border=True):
+                st.markdown(f"""
+                <div class="amf-emotion-card">
+                    <div class="amf-emotion-greeting">{message}</div>
+                    <div class="amf-emotion-hint">AI 돈 친구가 옆에서 대화 걸어주는 앱</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                key_selected = f"emotion_selected_{context}"
+                if key_selected not in st.session_state:
+                    st.session_state[key_selected] = None
+                
+                # 진짜 칩 UI (HTML/CSS로 구현)
+                selected_value = st.session_state.get(key_selected)
+                chip_html = '<div class="amf-chip-container">'
+                for label, value in emotion_options:
+                    is_selected = selected_value == value
                     chip_class = "selected" if is_selected else ""
-                    if st.button(
-                        label,
-                        key=f"emotion_chip_{context}_{idx}",
-                        use_container_width=True,
-                        type="primary" if is_selected else "secondary"
-                    ):
-                        st.session_state[key_selected] = value
-                        st.rerun()
-            
-            # 메모 입력
-            note_key = f"emotion_note_{context}"
-            note = st.text_input(
-                "한 줄 메모(선택)",
-                placeholder="예: 오늘은 기분이 좋아!",
-                key=note_key,
-                label_visibility="collapsed"
-            )
-            
-            # 저장 버튼 (하단 고정 느낌)
-            st.markdown('<div class="amf-emotion-save-btn">', unsafe_allow_html=True)
-            if st.button("💾 기록하기", key=f"emotion_save_{context}", use_container_width=True, type="primary"):
-                selected_emotion = st.session_state.get(key_selected)
-                if selected_emotion:
-                    try:
-                        db.create_emotion_log(
-                            user_id,
-                            context=context,
-                            emotion=selected_emotion,
-                            note=(note or "").strip() or None
-                        )
-                        if hasattr(st, "toast"):
-                            st.toast("✅ 기록했어요!", icon="😊")
-                        else:
-                            st.success("✅ 기록했어요!")
-                        st.session_state[key_selected] = None
-                        st.session_state[note_key] = ""
-                        st.rerun()
-                    except Exception:
-                        st.error("기록에 실패했어요. 잠시 후 다시 시도해주세요.")
-                else:
-                    st.warning("감정을 선택해주세요.")
-            st.markdown('</div>', unsafe_allow_html=True)
+                    chip_html += f'''
+                    <button 
+                        class="amf-chip-btn {chip_class}" 
+                        onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', value: '{value}'}}, '*');"
+                        data-value="{value}"
+                        style="{'background: var(--amf-accent); border-color: var(--amf-accent); color: white;' if is_selected else ''}"
+                    >{label}</button>
+                    '''
+                chip_html += '</div>'
+                
+                # JavaScript로 칩 선택 처리
+                st.markdown(f"""
+                <div id="emotion_chips_{context}">
+                    {chip_html}
+                </div>
+                <script>
+                    (function() {{
+                        const container = document.getElementById('emotion_chips_{context}');
+                        const buttons = container.querySelectorAll('.amf-chip-btn');
+                        buttons.forEach(btn => {{
+                            btn.addEventListener('click', function() {{
+                                const value = this.getAttribute('data-value');
+                                // Streamlit에 값 전달
+                                const event = new CustomEvent('emotion_selected', {{ detail: {{ value: value, context: '{context}' }} }});
+                                window.dispatchEvent(event);
+                            }});
+                        }});
+                    }})();
+                </script>
+                """, unsafe_allow_html=True)
+                
+                # Streamlit 버튼으로 대체 (JavaScript가 작동하지 않을 경우)
+                cols = st.columns(5)
+                for idx, (label, value) in enumerate(emotion_options):
+                    with cols[idx]:
+                        if st.button(
+                            label,
+                            key=f"emotion_chip_{context}_{idx}",
+                            use_container_width=True,
+                            type="primary" if st.session_state.get(key_selected) == value else "secondary"
+                        ):
+                            st.session_state[key_selected] = value
+                            st.rerun()
+                
+                note_key = f"emotion_note_{context}"
+                note = st.text_input(
+                    "메모 (선택)",
+                    placeholder="예: 오늘은 기분이 좋아!",
+                    key=note_key,
+                    label_visibility="collapsed"
+                )
+                
+                # 하단 미니 저장 버튼
+                st.markdown('<div class="amf-emotion-save-mini">', unsafe_allow_html=True)
+                if st.button("💾 기록하기", key=f"emotion_save_{context}", use_container_width=True, type="primary"):
+                    selected_emotion = st.session_state.get(key_selected)
+                    if selected_emotion:
+                        try:
+                            db.create_emotion_log(
+                                user_id,
+                                context=context,
+                                emotion=selected_emotion,
+                                note=(note or "").strip() or None
+                            )
+                            if hasattr(st, "toast"):
+                                st.toast("✅ 기록했어요!", icon="😊")
+                            else:
+                                st.success("✅ 기록했어요!")
+                            st.session_state[key_selected] = None
+                            st.session_state[note_key] = ""
+                            st.rerun()
+                        except Exception:
+                            st.error("기록에 실패했어요.")
+                    else:
+                        st.warning("감정을 선택해주세요.")
+                st.markdown('</div>', unsafe_allow_html=True)
 
         with tab_pre:
             _emotion_form("pre_spend", emotion_messages["pre_spend"])
@@ -1001,21 +1057,20 @@ def main():
                     if note:
                         st.caption(note)
 
-        # hero card (모바일 대응을 위해 클래스 기반 스타일)
-        st.markdown(
-            f"""
-            <div class="amf-hero">
-                <div class="amf-hero-label">내 잔액</div>
-                <div class="amf-hero-value">{int(cstats["balance"]):,}원</div>
-                <div class="amf-hero-sub">저축 {int(cstats["total_saving"]):,}원 · 지출 {int(cstats["total_spend"]):,}원</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # hero card - 전면 개편: 카드형, 여백 최소화
+        with st.container(border=True):
+            st.markdown(
+                f"""
+                <div style="padding: 4px 0;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--amf-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">내 잔액</div>
+                    <div style="font-size: 36px; font-weight: 900; color: var(--amf-text); letter-spacing: -0.8px; line-height: 1.05; margin-bottom: 8px;">{int(cstats["balance"]):,}원</div>
+                    <div style="font-size: 12px; color: var(--amf-muted); font-weight: 600;">저축 {int(cstats["total_saving"]):,}원 · 지출 {int(cstats["total_spend"]):,}원</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        st.divider()
-
-        # 이번 달 요약
+        # 이번 달 요약 - 카드형, 여백 최소화
         now = datetime.now()
         ym = f"{now.year}-{now.month:02d}"
         m_allow = 0.0
@@ -1033,31 +1088,35 @@ def main():
                 m_save += amt
             elif t in ("planned_spending", "impulse_buying"):
                 m_spend += amt
-        st.subheader("📅 이번 달 요약")
-        y1, y2 = st.columns(2)
-        with y1:
-            st.metric("받은 용돈", f"{int(m_allow):,}원")
-        with y2:
-            st.metric("저축", f"{int(m_save):,}원")
-        st.metric("지출", f"{int(m_spend):,}원")
+        
+        with st.container(border=True):
+            st.markdown('<div style="font-size: 13px; font-weight: 700; color: var(--amf-text); margin-bottom: 12px;">이번 달 요약</div>', unsafe_allow_html=True)
+            y1, y2, y3 = st.columns(3)
+            with y1:
+                st.metric("받은 용돈", f"{int(m_allow):,}원", delta=None)
+            with y2:
+                st.metric("저축", f"{int(m_save):,}원", delta=None)
+            with y3:
+                st.metric("지출", f"{int(m_spend):,}원", delta=None)
 
         # 진행 중인 미션(오늘)
         today = date.today().isoformat()
         db.assign_daily_missions_if_needed(user_id, today)
         missions = db.get_missions_for_user(user_id, date_str=today, active_only=True)
 
-        # ✅ 모바일 우선: 2컬럼 대신 세로 스택
-        st.subheader("✅ 오늘의 미션")
-        if not missions:
-            st.caption("오늘의 미션이 없어요.")
-        else:
-            for m in missions:
-                with st.container(border=True):
-                    st.markdown(f"**{m.get('title')}**")
-                    if m.get("description"):
-                        st.caption(_ko_mission_desc(m.get("description")))
-                    st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
-                    if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True):
+        # 오늘의 미션 - 카드형, 여백 최소화
+        with st.container(border=True):
+            st.markdown('<div style="font-size: 13px; font-weight: 700; color: var(--amf-text); margin-bottom: 12px;">✅ 오늘의 미션</div>', unsafe_allow_html=True)
+            if not missions:
+                st.caption("오늘의 미션이 없어요.")
+            else:
+                for m in missions:
+                    with st.container(border=True):
+                        st.markdown(f"**{m.get('title')}**")
+                        if m.get("description"):
+                            st.caption(_ko_mission_desc(m.get("description")))
+                        st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
+                        if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True, type="primary"):
                         # XP/레벨업 토스트(애니메이션 느낌)
                         xp_before = 0
                         lvl_before = 1
