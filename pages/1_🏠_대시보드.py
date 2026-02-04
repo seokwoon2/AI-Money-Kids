@@ -1117,16 +1117,16 @@ def main():
                             st.caption(_ko_mission_desc(m.get("description")))
                         st.caption(f"난이도: {m.get('difficulty')} · 보상: {int(m.get('reward_amount') or 0):,}원")
                         if st.button("완료!", key=f"complete_m_{m['id']}", use_container_width=True, type="primary"):
-                        # XP/레벨업 토스트(애니메이션 느낌)
-                        xp_before = 0
-                        lvl_before = 1
-                        try:
-                            xp_before = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else 0
-                            lvl_before = max(1, xp_before // 20 + 1)
-                        except Exception:
-                            pass
-                        ok = db.complete_mission(int(m["id"]))
-                        if ok:
+                            # XP/레벨업 토스트(애니메이션 느낌)
+                            xp_before = 0
+                            lvl_before = 1
+                            try:
+                                xp_before = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else 0
+                                lvl_before = max(1, xp_before // 20 + 1)
+                            except Exception:
+                                pass
+                            ok = db.complete_mission(int(m["id"]))
+                            if ok:
                             reward = float(m.get("reward_amount") or 0)
                             if reward > 0:
                                 db.save_behavior_v2(
