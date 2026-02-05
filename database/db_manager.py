@@ -307,6 +307,28 @@ class DatabaseManager:
             except sqlite3.OperationalError:
                 pass
 
+            # 회원가입(문서 템플릿) 호환 컬럼
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN invite_code TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN parent_id INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN children_json TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN agree_marketing INTEGER NOT NULL DEFAULT 0")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
             # user_skins 테이블(없으면 생성)
             try:
                 cursor.execute(

@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
     last_reward_level INTEGER NOT NULL DEFAULT 0,  -- 레벨업 보상 지급 체크포인트
     user_type TEXT NOT NULL DEFAULT 'child',  -- 'parent' or 'child'
     parent_code TEXT NOT NULL,
+    invite_code TEXT,  -- 회원가입 템플릿 호환(6자리 초대코드)
+    parent_id INTEGER, -- 회원가입 템플릿 호환(부모 id)
+    children_json TEXT, -- 회원가입 템플릿 호환(자녀 목록 JSON)
+    agree_marketing INTEGER NOT NULL DEFAULT 0, -- 마케팅 동의
     parent_ssn TEXT,  -- 부모 주민등록번호 (암호화 저장)
     phone_number TEXT,  -- 휴대폰번호
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

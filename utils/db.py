@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Iterable, Iterator, Optional
+import json
 
 from database.db_manager import DatabaseManager
 from utils.auth import generate_parent_code, hash_password
@@ -216,18 +217,42 @@ class _UsersCollection:
                 return None
 
         # Mongo 예시 호환: 부모 초대코드(invite_code)로 parent 검색
-        # 현재 앱은 users.parent_code(8자리) + 마지막 6자리로도 검색합니다.
-        if filt.get("user_type") == "parent" and filt.get("invite_code"):
+        # 1) users.invite_code 컬럼이 있으면 그걸 우선 사용
+        # 2) 없으면 기존 parent_code(8자리/마지막 6자리) 검색으로 폴백
+        if (filt.get("user_type") == "parent" or not filt.get("user_type")) and filt.get("invite_code"):
             code = str(filt.get("invite_code") or "").strip().upper()
             if not code:
                 return None
             try:
-                row = self._dbm.find_parent_by_invite_code(code) if hasattr(self._dbm, "find_parent_by_invite_code") else None
-                if not row:
+                conn = self._dbm._get_connection()  # pylint: disable=protected-access
+                cur = conn.cursor()
+                try:
+                    # invite_code 컬럼이 있으면 그걸로 찾기
+                    cur.execute(
+                        """
+                        SELECT *
+                        FROM users
+                        WHERE user_type = 'parent'
+                          AND UPPER(COALESCE(invite_code,'')) = ?
+                        LIMIT 1
+                        """,
+                        (code,),
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        d = dict(row)
+                        d["_id"] = int(d.get("id") or 0)
+                        return d
+                finally:
+                    conn.close()
+
+                # 폴백: 기존 parent_code 구조(8자리/6자리)로 찾기
+                row2 = self._dbm.find_parent_by_invite_code(code) if hasattr(self._dbm, "find_parent_by_invite_code") else None
+                if not row2:
                     return None
-                d = dict(row)
-                d["_id"] = int(d.get("id") or 0)
-                return d
+                d2 = dict(row2)
+                d2["_id"] = int(d2.get("id") or 0)
+                return d2
             except Exception:
                 return None
 
@@ -256,6 +281,15 @@ class _UsersCollection:
 
         # ✅ 이 앱의 DB 구조: parent_code 필수
         parent_code = str(doc.get("parent_code") or "").strip().upper()
+        invite_code = str(doc.get("invite_code") or "").strip().upper() or None
+        parent_id = doc.get("parent_id")
+        children_json = None
+        if doc.get("children") is not None:
+            try:
+                children_json = json.dumps(list(doc.get("children") or []), ensure_ascii=False)
+            except Exception:
+                children_json = json.dumps([], ensure_ascii=False)
+        agree_marketing = 1 if bool(doc.get("agree_marketing")) else 0
         if user_type == "parent":
             parent_code = parent_code or generate_parent_code()
         else:
@@ -286,8 +320,8 @@ class _UsersCollection:
         try:
             cur.execute(
                 """
-                INSERT INTO users (username, password_hash, name, age, parent_code, user_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (username, password_hash, name, age, parent_code, user_type, invite_code, parent_id, children_json, agree_marketing, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     username,
@@ -296,6 +330,10 @@ class _UsersCollection:
                     None,
                     parent_code,
                     user_type,
+                    invite_code,
+                    (int(parent_id) if parent_id is not None and str(parent_id).isdigit() else None),
+                    children_json,
+                    int(agree_marketing),
                     _to_sqlite_ts(doc.get("created_at") or datetime.now()),
                 ),
             )
@@ -314,6 +352,28 @@ class _UsersCollection:
         _id = filt.get("_id") or filt.get("id")
         if not _id:
             return 0
+        # $push(회원가입 템플릿의 children) 최소 지원
+        push_obj = update.get("$push") if isinstance(update.get("$push"), dict) else {}
+        if push_obj:
+            if "children" in push_obj:
+                child_id = push_obj.get("children")
+                conn = self._dbm._get_connection()  # pylint: disable=protected-access
+                cur = conn.cursor()
+                try:
+                    cur.execute("SELECT children_json FROM users WHERE id = ? LIMIT 1", (int(_id),))
+                    row = cur.fetchone()
+                    current = []
+                    try:
+                        current = json.loads((row["children_json"] if row else "") or "[]") or []
+                    except Exception:
+                        current = []
+                    current.append(child_id)
+                    cur.execute("UPDATE users SET children_json = ? WHERE id = ?", (json.dumps(current, ensure_ascii=False), int(_id)))
+                    conn.commit()
+                    return int(cur.rowcount or 0)
+                finally:
+                    conn.close()
+
         # $set만 지원
         set_obj = update.get("$set") if isinstance(update.get("$set"), dict) else {}
         if not set_obj:
