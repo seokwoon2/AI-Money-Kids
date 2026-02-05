@@ -64,9 +64,9 @@ def main():
         div[data-testid="stVerticalBlock"]:has(#amf_link_page_anchor) .amf-link-hero {
           padding: 14px 14px;
           border-radius: 18px;
-          background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.12));
-          border: 1px solid rgba(255,255,255,0.12);
-          box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+          background: linear-gradient(135deg, rgba(255,235,0,0.20), rgba(255,255,255,0.70));
+          border: 1px solid rgba(17,24,39,0.08);
+          box-shadow: var(--amf-shadow);
         }
         div[data-testid="stVerticalBlock"]:has(#amf_link_page_anchor) .amf-link-hero-title{
           font-size: 18px;
@@ -91,9 +91,9 @@ def main():
           font-weight: 700;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_link_page_anchor) .amf-step .chip.on{
-          border-color: rgba(16,185,129,0.45);
-          background: rgba(16,185,129,0.14);
-          color: #065f46;
+          border-color: rgba(255,235,0,0.55);
+          background: rgba(255,235,0,0.22);
+          color: #191919;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_link_page_anchor) .amf-digit-boxes{
           display:flex; gap:10px; justify-content:center; align-items:center;
@@ -126,9 +126,9 @@ def main():
         div[data-testid="stVerticalBlock"]:has(#amf_link_done_anchor) .amf-done-card{
           padding: 18px 16px;
           border-radius: 20px;
-          background: linear-gradient(135deg, rgba(16,185,129,0.20), rgba(99,102,241,0.12));
-          border: 1px solid rgba(255,255,255,0.14);
-          box-shadow: 0 14px 34px rgba(0,0,0,0.10);
+          background: linear-gradient(135deg, rgba(255,235,0,0.22), rgba(255,255,255,0.70));
+          border: 1px solid rgba(17,24,39,0.08);
+          box-shadow: var(--amf-shadow);
           text-align:center;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_link_done_anchor) .amf-done-title{

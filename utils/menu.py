@@ -382,20 +382,45 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     # (상단바는 별도의 스코프 CSS로 PC/모바일 배치를 안정화)
 
     base_css = """
-    /* ===== 전역 디자인 토큰 (카드형 UI, 최소 색상) ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+
+    /* ===== 전역 디자인 토큰 (카카오뱅크 톤) ===== */
     :root {
-        --amf-bg: #F6F7F9;
-        --amf-card: #ffffff;
-        --amf-text: #111827;
-        --amf-muted: #6b7280;
+        /* 배경은 연회색, 카드는 흰색 (가독성/구분감) */
+        --amf-bg: #F9F9F9;
+        --amf-surface: #FFFFFF;
+        --amf-card: #FFFFFF;
+        --amf-text: #191919;
+        --amf-muted: rgba(25,25,25,0.60);
         --amf-border: rgba(17, 24, 39, 0.08);
         --amf-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
-        --amf-shadow-hover: 0 4px 12px rgba(17, 24, 39, 0.1);
-        --amf-accent: #4F7DF3;
-        --amf-accent-hover: #3D6BE0;
+        --amf-shadow-hover: 0 4px 12px rgba(17, 24, 39, 0.10);
+        --amf-accent: #FFEB00;           /* Kakao yellow */
+        --amf-accent-hover: #F2DD00;
         --amf-radius: 12px;
         --amf-radius-lg: 16px;
         --amf-radius-xl: 20px;
+    }
+
+    html, body, [class*="css"]{
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* 앱 배경(전역) */
+    .stApp { background: var(--amf-bg) !important; }
+
+    /* 기본 컨테이너 카드화: st.container(border=True) */
+    div[data-testid="stVerticalBlockBorderWrapper"]{
+        border-radius: var(--amf-radius-lg) !important;
+        border: 1px solid var(--amf-border) !important;
+        background: var(--amf-card) !important;
+        box-shadow: var(--amf-shadow) !important;
+    }
+
+    /* 기본 입력 스타일 */
+    .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox div[data-baseweb="select"]{
+        border-radius: 12px !important;
+        border: 1px solid var(--amf-border) !important;
     }
 
     /* 기본 네비게이션 제거 */
@@ -571,7 +596,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     /* 활성 메뉴: 포인트 컬러 */
     .stSidebar .stButton > button[type="primary"] {
         background-color: var(--amf-accent) !important;
-        color: white !important;
+        color: var(--amf-text) !important;
         box-shadow: var(--amf-shadow) !important;
         border: none !important;
     }
@@ -590,7 +615,7 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     }
     
     .stSidebar .stButton > button[type="secondary"]:hover {
-        background-color: var(--amf-bg) !important;
+        background-color: var(--amf-surface) !important;
         border-color: var(--amf-accent) !important;
         color: var(--amf-text) !important;
     }
@@ -608,6 +633,19 @@ def render_sidebar_menu(user_id: int, user_name: str, user_type: str):
     button[key*="로그아웃"]:hover {
         background-color: #FF6B6B !important;
         box-shadow: 0 4px 12px rgba(255, 118, 117, 0.4) !important;
+    }
+
+    /* ✅ 전역 primary 버튼(노랑은 primary만) */
+    .stButton > button[kind="primary"],
+    button[kind="primary"]{
+        background: var(--amf-accent) !important;
+        color: var(--amf-text) !important;
+        border: 0 !important;
+        font-weight: 900 !important;
+    }
+    .stButton > button[kind="primary"]:hover,
+    button[kind="primary"]:hover{
+        background: var(--amf-accent-hover) !important;
     }
 
     """

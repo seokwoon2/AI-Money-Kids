@@ -49,42 +49,7 @@ def main():
 
     render_sidebar_menu(user_id, user_name, user_type)
 
-    # 전역 디자인 토큰 적용
-    st.markdown("""
-    <style>
-        :root {
-            --amf-bg: #F6F7F9;
-            --amf-card: #ffffff;
-            --amf-text: #111827;
-            --amf-muted: #6b7280;
-            --amf-border: rgba(17,24,39,0.08);
-            --amf-shadow: 0 2px 8px rgba(17,24,39,0.06);
-            --amf-shadow-hover: 0 4px 12px rgba(17,24,39,0.1);
-            --amf-accent: #4F7DF3;
-            --amf-accent-hover: #3D6BE0;
-            --amf-radius: 12px;
-            --amf-radius-lg: 16px;
-        }
-        .stApp { background: var(--amf-bg) !important; }
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            border-radius: var(--amf-radius-lg) !important;
-            border: 1px solid var(--amf-border) !important;
-            background: var(--amf-card) !important;
-            box-shadow: var(--amf-shadow) !important;
-        }
-        .stButton > button {
-            border-radius: var(--amf-radius) !important;
-            font-weight: 600 !important;
-            font-size: 13px !important;
-            padding: 7px 14px !important;
-        }
-        .stButton > button[kind="primary"] {
-            background: var(--amf-accent) !important;
-            border: none !important;
-            color: white !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    # 전역 디자인 토큰/CSS는 utils/menu.py에서 주입됩니다.
 
     st.title("✅ 미션")
     st.caption("일일/주간/커스텀 미션을 진행하고 보상을 받아요.")
@@ -101,11 +66,11 @@ def main():
         st.markdown(
             f"""
             <div style="
-              background: linear-gradient(135deg, #667eea, #764ba2);
+              background: linear-gradient(135deg, rgba(255,235,0,0.95), rgba(255,235,0,0.55));
               padding: 16px 16px;
               border-radius: 18px;
-              color: white;
-              box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+              color: #191919;
+              box-shadow: 0 18px 40px rgba(17,24,39,0.10);
               margin-bottom: 12px;
             ">
               <div style="font-weight:950; font-size:18px;">🎉 레벨업!</div>

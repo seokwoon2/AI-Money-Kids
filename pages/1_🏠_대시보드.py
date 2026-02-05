@@ -163,32 +163,7 @@ def _inject_dashboard_css():
     st.markdown(
         """
         <style>
-            /* 전역 디자인 토큰 (utils/menu.py와 동기화) */
-            :root{
-                --amf-bg:#F6F7F9;
-                --amf-card:#ffffff;
-                --amf-text:#111827;
-                --amf-muted:#6b7280;
-                --amf-border:rgba(17,24,39,0.08);
-                --amf-shadow:0 2px 8px rgba(17,24,39,0.06);
-                --amf-shadow-hover:0 4px 12px rgba(17,24,39,0.1);
-                --amf-accent:#4F7DF3;
-                --amf-accent-hover:#3D6BE0;
-                --amf-radius:12px;
-                --amf-radius-lg:16px;
-                --amf-radius-xl:20px;
-                
-                /* 하위 호환성 (기존 변수명) */
-                --bg: var(--amf-bg);
-                --card: var(--amf-card);
-                --text: var(--amf-text);
-                --muted: var(--amf-muted);
-                --border: var(--amf-border);
-                --shadow: var(--amf-shadow-hover);
-                --shadow2: var(--amf-shadow);
-                --brand1: var(--amf-accent);
-                --brand2: var(--amf-accent-hover);
-            }
+            /* 전역 디자인 토큰은 utils/menu.py에서 주입됩니다. */
 
             /* page background + container width */
             .stApp { background: var(--amf-bg) !important; }
@@ -295,7 +270,7 @@ def _inject_dashboard_css():
             button[data-testid="baseButton-primary"]{
                 background: var(--amf-accent) !important;
                 border: none !important;
-                color: white !important;
+                color: var(--amf-text) !important;
                 box-shadow: var(--amf-shadow) !important;
             }
             .stButton > button[kind="primary"]:hover, 
@@ -475,11 +450,11 @@ def main():
         st.markdown(
             f"""
             <div style="
-              background: linear-gradient(135deg, #667eea, #764ba2);
+              background: linear-gradient(135deg, rgba(255,235,0,0.95), rgba(255,235,0,0.55));
               padding: 16px 16px;
               border-radius: 18px;
-              color: white;
-              box-shadow: 0 18px 40px rgba(118,75,162,0.25);
+              color: #191919;
+              box-shadow: 0 18px 40px rgba(17,24,39,0.10);
               margin-bottom: 12px;
             ">
               <div style="font-weight:950; font-size:18px;">🎉 레벨업!</div>

@@ -2,6 +2,7 @@ import streamlit as st
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+from utils.ui import render_page_header, section_label
 
 
 def _guard_child() -> bool:
@@ -25,14 +26,14 @@ def main():
     user_name = st.session_state.get("user_name", "사용자")
     render_sidebar_menu(user_id, user_name, "child")
 
-    st.title("🎯 저축 목표")
-    st.caption("목표를 만들고, 목표별로 저축을 쌓아가요.")
+    render_page_header("🎯 저축 목표", "목표를 만들고, 목표별로 저축을 쌓아가요.")
 
-    st.subheader("목표 만들기")
-    with st.form("create_goal"):
-        title = st.text_input("목표 이름", placeholder="예: 자전거 사기")
-        target = st.number_input("목표 금액(원)", min_value=1000, step=1000, value=50000)
-        submitted = st.form_submit_button("목표 추가", use_container_width=True)
+    section_label("목표 만들기")
+    with st.container(border=True):
+        with st.form("create_goal"):
+            title = st.text_input("목표 이름", placeholder="예: 자전거 사기")
+            target = st.number_input("목표 금액(원)", min_value=1000, step=1000, value=50000)
+            submitted = st.form_submit_button("목표 추가", use_container_width=True, type="primary")
     if submitted:
         if not title.strip():
             st.error("목표 이름을 입력하세요.")
@@ -48,7 +49,7 @@ def main():
         st.caption("아직 목표가 없어요.")
         return
 
-    st.subheader("내 목표")
+    section_label("내 목표")
     active_goals = [g for g in goals if int(g.get("is_active") or 0) == 1]
     archived_goals = [g for g in goals if int(g.get("is_active") or 0) == 0]
 

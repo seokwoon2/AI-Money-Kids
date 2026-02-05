@@ -4,6 +4,8 @@ from datetime import datetime
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+from utils.ui import render_page_header, section_label
+from components.blob_character import get_blob_html
 
 
 def _guard_parent() -> bool:
@@ -31,8 +33,7 @@ def main():
     parent_code = (parent or {}).get("parent_code", "")
     children = db.get_users_by_parent_code(parent_code) if parent_code else []
 
-    st.title("📊 리포트")
-    st.caption("자녀별 소비/저축 패턴과 가족 통계를 확인해요.")
+    render_page_header("📊 리포트", "자녀별 소비/저축 패턴과 가족 통계를 확인해요.")
 
     # 기간: 이번 달 기준
     now = datetime.now()
@@ -43,17 +44,18 @@ def main():
     monthly_total = int(monthly.get("monthly_total") or 0)
     yesterday_total = int(monthly.get("yesterday_total") or 0)
 
-    # ✅ 모바일 우선: 3열 → 2열 + 단일
-    a, b = st.columns(2)
-    with a:
-        st.metric("이번달 가족 저축", f"{monthly_total:,}원")
-    with b:
-        st.metric("어제 저축", f"{yesterday_total:,}원")
-    st.metric("자녀 수", f"{len(children)}명")
+    section_label("가족 요약")
+    with st.container(border=True):
+        a, b = st.columns(2)
+        with a:
+            st.metric("이번달 가족 저축", f"{monthly_total:,}원")
+        with b:
+            st.metric("어제 저축", f"{yesterday_total:,}원")
+        st.metric("자녀 수", f"{len(children)}명")
 
     st.divider()
 
-    st.subheader("최근 6개월 저축 추이")
+    section_label("최근 6개월 저축 추이")
     rows = db.get_children_monthly_savings(parent_code) if parent_code else []
     month_map = {str(r.get("month") or "").lstrip("0"): float(r.get("total_amount") or 0) for r in rows}
     # chart labels
@@ -62,11 +64,12 @@ def main():
     for i in range(5, -1, -1):
         m = (cur_m - i - 1) % 12 + 1
         chart.append({"월": f"{m}월", "저축(원)": month_map.get(str(m), 0.0)})
-    st.bar_chart(chart, x="월", y="저축(원)", use_container_width=True)
+    with st.container(border=True):
+        st.bar_chart(chart, x="월", y="저축(원)", use_container_width=True)
 
     st.divider()
 
-    st.subheader("카테고리별 지출(이번 달)")
+    section_label("카테고리별 지출(이번 달)")
     if not children:
         st.info("연결된 자녀가 없어요.")
         return
@@ -87,11 +90,12 @@ def main():
         st.caption("이번 달 지출 기록이 아직 없어요.")
     else:
         chart2 = [{"카테고리": k, "지출(원)": v} for k, v in sorted(spend_by_cat.items(), key=lambda x: x[1], reverse=True)]
-        st.bar_chart(chart2, x="카테고리", y="지출(원)", use_container_width=True)
+        with st.container(border=True):
+            st.bar_chart(chart2, x="카테고리", y="지출(원)", use_container_width=True)
 
     st.divider()
 
-    st.subheader("자녀별 요약")
+    section_label("자녀별 요약")
     summary = []
     for ch in children:
         cid = int(ch["id"])
@@ -113,13 +117,14 @@ def main():
                 "지출": int(total_spend),
             }
         )
-    st.dataframe(summary, use_container_width=True, hide_index=True)
+    with st.container(border=True):
+        st.dataframe(summary, use_container_width=True, hide_index=True)
 
     st.caption("잔액은 ‘용돈 지급 - 저축 - (계획/충동)지출’로 계산한 추정치입니다.")
 
     st.divider()
 
-    st.subheader("😊 감정 타임라인(최근)")
+    section_label("감정 타임라인(최근)")
     st.caption("자녀가 지출 전/후 기분을 기록하면, 패턴을 더 잘 볼 수 있어요.")
     logs = []
     try:
@@ -130,19 +135,34 @@ def main():
         st.caption("아직 감정 기록이 없어요.")
     else:
         ctx_map = {"pre_spend": "지출 전", "post_spend": "지출 후", "daily": "오늘"}
-        rows = []
-        for e in logs[:60]:
-            ts = str(e.get("created_at") or "")[:16].replace("T", " ")
-            rows.append(
-                {
-                    "시간": ts,
-                    "자녀": e.get("child_name") or e.get("child_username") or "-",
-                    "상황": ctx_map.get(e.get("context") or "", e.get("context") or ""),
-                    "감정": e.get("emotion") or "",
-                    "메모": (e.get("note") or "").strip(),
-                }
-            )
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        with st.container(border=True):
+            for e in logs[:12]:
+                ts = str(e.get("created_at") or "")[:16].replace("T", " ")
+                child = e.get("child_name") or e.get("child_username") or "-"
+                ctx = ctx_map.get(e.get("context") or "", e.get("context") or "")
+                emo = str(e.get("emotion") or "").strip()
+                note = (e.get("note") or "").strip()
+                st.markdown(
+                    f"""
+                    <div style="
+                      display:flex;
+                      gap:12px;
+                      align-items:flex-start;
+                      padding: 10px 8px;
+                      border-bottom: 1px dashed rgba(17,24,39,0.08);
+                    ">
+                      <div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center;">
+                        {get_blob_html(emo, size=44)}
+                      </div>
+                      <div style="flex:1; min-width:0;">
+                        <div style="font-weight:950; color:var(--amf-text); letter-spacing:-0.2px;">{child} · {ctx}</div>
+                        <div style="margin-top:2px; font-weight:700; color:var(--amf-muted); font-size:12px;">{ts}</div>
+                        {f'<div style="margin-top:6px; color:var(--amf-text); font-weight:700; font-size:13px; white-space:pre-wrap;">{note}</div>' if note else ''}
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     st.divider()
 

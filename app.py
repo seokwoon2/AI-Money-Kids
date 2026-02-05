@@ -42,6 +42,54 @@ st.set_page_config(
     menu_items=None  # 기본 메뉴 숨기기
 )
 
+# ===== 전역 리디자인 CSS (로그인 화면 포함) =====
+# - utils/menu.py의 전역 토큰과 톤을 맞춥니다.
+# - f-string 금지(CSS의 { } 충돌 방지)
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+    :root {
+        --amf-bg: #F9F9F9;
+        --amf-surface: #FFFFFF;
+        --amf-card: #FFFFFF;
+        --amf-text: #191919;
+        --amf-muted: rgba(25,25,25,0.60);
+        --amf-border: rgba(17,24,39,0.08);
+        --amf-shadow: 0 2px 8px rgba(17,24,39,0.06);
+        --amf-shadow-hover: 0 4px 12px rgba(17,24,39,0.10);
+        --amf-accent: #FFEB00;
+        --amf-accent-hover: #F2DD00;
+        --amf-radius: 12px;
+        --amf-radius-lg: 16px;
+    }
+    html, body, [class*="css"]{
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .stApp { background: var(--amf-bg) !important; }
+    /* 기본 primary 버튼: 노랑 + 검정 글자 */
+    .stButton > button[kind="primary"],
+    button[kind="primary"]{
+        background: var(--amf-accent) !important;
+        color: var(--amf-text) !important;
+        border: 0 !important;
+        font-weight: 900 !important;
+        border-radius: var(--amf-radius-lg) !important;
+    }
+    .stButton > button[kind="primary"]:hover,
+    button[kind="primary"]:hover{
+        background: var(--amf-accent-hover) !important;
+    }
+    /* 입력 */
+    .stTextInput input, .stTextArea textarea, .stNumberInput input{
+        border-radius: 12px !important;
+        border: 1px solid var(--amf-border) !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # 세션 상태 초기화
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -610,7 +658,7 @@ def _signup_page_premium():
             header, footer { display: none !important; }
 
             html, body, [data-testid="stAppViewContainer"]{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                background: #F9F9F9 !important;
             }
             [data-testid="stAppViewContainer"] > .main { background: transparent !important; }
 
@@ -640,14 +688,14 @@ def _signup_page_premium():
                 transition: all 0.3s;
             }
             .step.active .step-circle {
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+                background: #FFEB00;
+                color: #191919;
+                box-shadow: 0 6px 16px rgba(17,24,39,0.12);
                 transform: scale(1.1);
             }
             .step.completed .step-circle { background: #4CAF50; color: white; }
             .step-label { font-size: 13px; color: #666; font-weight: 500; }
-            .step.active .step-label { color: #667eea; font-weight: 700; }
+            .step.active .step-label { color: #191919; font-weight: 900; }
             .step-line {
                 position: absolute; top: 25px; left: 50%;
                 width: 100%; height: 2px;
@@ -686,20 +734,20 @@ def _signup_page_premium():
             .user-type-card::before {
                 content: '';
                 position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                background: linear-gradient(135deg, rgba(102,126,234,0.05), rgba(118,75,162,0.05));
+                background: rgba(255,235,0,0.18);
                 opacity: 0;
                 transition: opacity 0.3s;
             }
             .user-type-card:hover {
-                border-color: #667eea;
+                border-color: #FFEB00;
                 transform: translateY(-8px);
-                box-shadow: 0 15px 35px rgba(102,126,234,0.3);
+                box-shadow: 0 15px 35px rgba(17,24,39,0.12);
             }
             .user-type-card:hover::before { opacity: 1; }
             .user-type-card.selected {
-                border-color: #667eea;
-                background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-                box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+                border-color: #FFEB00;
+                background: rgba(255,235,0,0.22);
+                box-shadow: 0 10px 30px rgba(17,24,39,0.10);
             }
             .user-type-icon { font-size: 72px; margin-bottom: 1rem; display: block; }
             .user-type-title { font-size: 24px; font-weight: 700; color: #2D3436; margin-bottom: 0.5rem; }
@@ -714,8 +762,8 @@ def _signup_page_premium():
                 transition: all 0.3s !important;
             }
             .stTextInput input:focus {
-                border-color: #667eea !important;
-                box-shadow: 0 0 0 4px rgba(102,126,234,0.1) !important;
+                border-color: #FFEB00 !important;
+                box-shadow: 0 0 0 4px rgba(255,235,0,0.25) !important;
                 transform: translateY(-2px) !important;
             }
             .stTextInput > label {
@@ -760,10 +808,10 @@ def _signup_page_premium():
                 box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
             }
             button[kind="primary"] {
-                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                background: #FFEB00 !important;
                 border: none !important;
-                color: white !important;
-                box-shadow: 0 8px 20px rgba(102,126,234,0.3) !important;
+                color: #191919 !important;
+                box-shadow: 0 8px 20px rgba(17,24,39,0.12) !important;
             }
 
             /* 섹션 제목 */
@@ -918,10 +966,11 @@ def _signup_page_premium():
                 if user_type == "parent":
                     st.markdown(
                         """
-                        <div style='background:linear-gradient(135deg, #667eea, #764ba2);
-                                    color:white; padding:1rem; border-radius:16px;
-                                    text-align:center; margin-bottom:1.2rem; font-weight:700;
-                                    box-shadow: 0 8px 20px rgba(102,126,234,0.25);'>
+                        <div style='background:rgba(255,235,0,0.22);
+                                    color:#191919; padding:1rem; border-radius:16px;
+                                    text-align:center; margin-bottom:1.2rem; font-weight:900;
+                                    border:1px solid rgba(17,24,39,0.08);
+                                    box-shadow: 0 10px 22px rgba(17,24,39,0.10);'>
                             👨‍👩‍👧 부모님으로 가입합니다
                         </div>
                         """,
@@ -1206,7 +1255,7 @@ def signup_page():
             [data-testid="stSidebar"] { display: none !important; }
             header, footer { display: none !important; }
             html, body, [data-testid="stAppViewContainer"]{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                background: #F9F9F9 !important;
             }
             [data-testid="stAppViewContainer"] > .main { background: transparent !important; }
             .main > div { padding: 0 !important; }
@@ -1224,13 +1273,12 @@ def signup_page():
 
             /* 오른쪽 폼 카드 */
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor){
-                /* Glass 카드: 보라 배경 위에서도 화이트 폰트가 자연스럽게 */
-                background: rgba(255,255,255,0.12) !important;
+                /* Kakao tone */
+                background: #FFFFFF !important;
                 border-radius: 22px !important;
-                box-shadow: 0 18px 45px rgba(0,0,0,0.28) !important;
-                border: 1px solid rgba(255,255,255,0.22) !important;
+                box-shadow: 0 18px 45px rgba(17,24,39,0.10) !important;
+                border: 1px solid rgba(17,24,39,0.08) !important;
                 overflow: hidden !important;
-                backdrop-filter: blur(14px);
             }
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) > div{
                 padding: 1.85rem 1.6rem !important;
@@ -1240,13 +1288,13 @@ def signup_page():
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h1,
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h2,
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) h3{
-                color: rgba(255,255,255,0.96) !important;
+                color: #191919 !important;
                 letter-spacing: -0.2px;
             }
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) p,
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) span,
             div[data-testid="stVerticalBlockBorderWrapper"]:has(#signup_card_anchor) label{
-                color: rgba(255,255,255,0.88) !important;
+                color: rgba(25,25,25,0.72) !important;
             }
 
             .stTextInput input {
@@ -1260,16 +1308,16 @@ def signup_page():
                 color: rgba(17,24,39,0.45) !important;
             }
             .stTextInput input:focus {
-                border-color: #667eea !important;
-                box-shadow: 0 0 0 3px rgba(102,126,234,0.12) !important;
+                border-color: #FFEB00 !important;
+                box-shadow: 0 0 0 3px rgba(255,235,0,0.25) !important;
             }
 
             .stButton button { border-radius: 12px !important; font-weight: 800 !important; }
             button[kind="primary"]{
-                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                background: #FFEB00 !important;
                 border: none !important;
-                color: white !important;
-                box-shadow: 0 10px 22px rgba(102,126,234,0.25) !important;
+                color: #191919 !important;
+                box-shadow: 0 10px 22px rgba(17,24,39,0.12) !important;
             }
 
             /* 가입 유형 선택 안내(노란 warning 대신) */
@@ -1279,9 +1327,9 @@ def signup_page():
                 gap:10px;
                 padding: 12px 14px;
                 border-radius: 14px;
-                border: 1px solid rgba(255,255,255,0.18);
-                background: rgba(0,0,0,0.10);
-                color: rgba(255,255,255,0.94);
+                border: 1px solid rgba(17,24,39,0.08);
+                background: rgba(255,235,0,0.22);
+                color: #191919;
                 font-weight: 900;
                 margin: 0.4rem 0 0.6rem 0;
             }
@@ -1331,8 +1379,8 @@ def signup_page():
             """
             <div style='text-align:center;'>
                 <div style='font-size:44px; margin-bottom:0.65rem;'>🐷</div>
-                <div style='font-size:22px; font-weight:950; color:rgba(255,255,255,0.96); line-height:1.15;'>AI Money Friends</div>
-                <div style='color:rgba(255,255,255,0.82); margin:0.45rem 0 0.95rem 0; font-size:13px; font-weight:800;'>아이들의 경제 교육 친구</div>
+                <div style='font-size:22px; font-weight:950; color:#191919; line-height:1.15;'>AI Money Friends</div>
+                <div style='color:rgba(25,25,25,0.65); margin:0.45rem 0 0.95rem 0; font-size:13px; font-weight:800;'>아이들의 경제 교육 친구</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1342,9 +1390,9 @@ def signup_page():
         st.markdown(
             f"""
             <div style="display:flex; gap:10px; justify-content:center; margin: 6px 0 10px 0;">
-              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step==1 else 'rgba(255,255,255,0.35)'};"></div>
-              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step==2 else 'rgba(255,255,255,0.35)'};"></div>
-              <div style="width:10px;height:10px;border-radius:99px;background:{'#fff' if step in (3,4) else 'rgba(255,255,255,0.35)'};"></div>
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#FFEB00' if step==1 else 'rgba(17,24,39,0.14)'};"></div>
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#FFEB00' if step==2 else 'rgba(17,24,39,0.14)'};"></div>
+              <div style="width:10px;height:10px;border-radius:99px;background:{'#FFEB00' if step in (3,4) else 'rgba(17,24,39,0.14)'};"></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1889,7 +1937,7 @@ def login_page():
         <style>
             /* 배경을 최상단 컨테이너까지 통일 (상/하단 보라색 테두리/틈 방지) */
             html, body, [data-testid="stAppViewContainer"] {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                background: #F9F9F9 !important;
             }
             [data-testid="stAppViewContainer"] > .main { background: transparent !important; }
 
@@ -1929,8 +1977,8 @@ def login_page():
                 padding: 12px 14px !important;
             }
             .stTextInput input:focus {
-                border-color: #667eea !important;
-                box-shadow: 0 0 0 3px rgba(102,126,234,0.12) !important;
+                border-color: #FFEB00 !important;
+                box-shadow: 0 0 0 3px rgba(255,235,0,0.25) !important;
             }
 
             /* 버튼 */
@@ -1940,16 +1988,16 @@ def login_page():
             .stButton > button[kind="primary"],
             button[kind="primary"],
             button[data-testid="baseButton-primary"] {
-                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                background: #FFEB00 !important;
                 border: none !important;
-                color: white !important;
-                box-shadow: 0 10px 22px rgba(102,126,234,0.25) !important;
+                color: #191919 !important;
+                box-shadow: 0 10px 22px rgba(17,24,39,0.12) !important;
             }
             .stButton > button[kind="primary"]:hover,
             button[kind="primary"]:hover,
             button[data-testid="baseButton-primary"]:hover {
                 transform: translateY(-1px);
-                box-shadow: 0 14px 28px rgba(102,126,234,0.32) !important;
+                box-shadow: 0 14px 28px rgba(17,24,39,0.16) !important;
             }
 
             /* 카드: form 자체를 카드로 */
@@ -1992,8 +2040,8 @@ def login_page():
                 font-weight: 900;
                 text-align: center;
                 color: #111827;
-                background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12));
-                border: 1px solid rgba(102,126,234,0.18);
+                background: rgba(255,235,0,0.22);
+                border: 1px solid rgba(17,24,39,0.08);
             }
 
             /* 소셜 버튼 내부 점(•) 같은 브라우저 기본 스타일 방지 */

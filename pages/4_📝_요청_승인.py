@@ -2,6 +2,7 @@ import streamlit as st
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+from utils.ui import render_page_header, section_label
 
 
 def _guard_parent(db: DatabaseManager):
@@ -27,8 +28,7 @@ def main():
     render_sidebar_menu(parent_id, user_name, "parent")
 
     parent_code = parent.get("parent_code") if parent else ""
-    st.title("📝 요청 승인")
-    st.caption("아이의 용돈/지출 요청을 승인하거나 거절할 수 있어요.")
+    render_page_header("📝 요청 승인", "아이의 용돈/지출 요청을 승인하거나 거절할 수 있어요.")
 
     if not parent_code:
         st.error("부모 코드를 확인할 수 없어요.")
@@ -39,6 +39,7 @@ def main():
         st.success("현재 대기 중인 요청이 없어요.")
         return
 
+    section_label("대기 중 요청")
     for req in pending:
         rtype = req.get("request_type")
         rtype_kr = "용돈 요청" if rtype == "allowance" else ("지출 승인" if rtype == "spend" else rtype)
@@ -46,14 +47,14 @@ def main():
         title = f"{req.get('child_name')} ({req.get('child_username')}) - {rtype_kr}"
         with st.container(border=True):
             st.markdown(f"**{title}**")
-            st.write(f"- 금액: **{amount:,}원**")
+            st.markdown(f"금액 · **{amount:,}원**")
             if req.get("category"):
-                st.write(f"- 카테고리: **{req.get('category')}**")
+                st.caption(f"카테고리: {req.get('category')}")
             if req.get("reason"):
-                st.write(f"- 사유: {req.get('reason')}")
+                st.caption(f"사유: {req.get('reason')}")
 
             c1, c2 = st.columns(2)
-            approve = c1.button("✅ 승인", use_container_width=True, key=f"approve_{req['id']}")
+            approve = c1.button("✅ 승인", use_container_width=True, key=f"approve_{req['id']}", type="primary")
             reject = c2.button("❌ 거절", use_container_width=True, key=f"reject_{req['id']}")
 
             if approve or reject:

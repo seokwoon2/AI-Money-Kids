@@ -99,7 +99,7 @@ def _progress_ring(pct: float, label: str) -> str:
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:78px;">
           <svg width="52" height="52" viewBox="0 0 52 52" style="overflow:visible;">
             <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(15,23,42,0.10)" stroke-width="6"></circle>
-            <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(16,185,129,0.95)" stroke-width="6"
+            <circle cx="26" cy="26" r="{radius}" fill="none" stroke="rgba(255,235,0,0.95)" stroke-width="6"
               stroke-linecap="round"
               stroke-dasharray="{dash:.2f} {gap:.2f}"
               transform="rotate(-90 26 26)"></circle>
@@ -144,7 +144,7 @@ def main():
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) div[data-testid="stVerticalBlockBorderWrapper"]{
           border-radius: 18px !important;
           border: 1px solid rgba(15,23,42,0.08) !important;
-          background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(99,102,241,0.08)) !important;
+          background: var(--amf-card) !important;
           box-shadow: 0 14px 30px rgba(0,0,0,0.08) !important;
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) div[data-testid="stVerticalBlockBorderWrapper"] > div{
@@ -154,7 +154,7 @@ def main():
           border-radius: var(--amf-radius-lg);
           padding: 14px 14px;
           border: 1px solid var(--amf-border);
-          background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(99,102,241,0.10));
+          background: var(--amf-card);
           box-shadow: var(--amf-shadow);
         }
         div[data-testid="stVerticalBlock"]:has(#amf_challenge_anchor) .amf-row {

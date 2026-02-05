@@ -52,7 +52,7 @@ def main():
 
     st.markdown(
         f"""
-        <div style="background:linear-gradient(135deg,#111827,#374151); color:white; border-radius:18px; padding:18px 16px;">
+        <div style="background:linear-gradient(135deg, rgba(255,235,0,0.95), rgba(255,235,0,0.55)); color:#191919; border-radius:18px; padding:18px 16px; border:1px solid rgba(17,24,39,0.08); box-shadow: 0 14px 30px rgba(17,24,39,0.10);">
             <div style="font-weight:900; opacity:0.9;">Lv.{level} · {user_name}</div>
             <div style="font-size:34px; font-weight:900; letter-spacing:-0.6px; margin-top:4px;">
                 XP {xp}

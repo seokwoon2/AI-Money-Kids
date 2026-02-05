@@ -74,11 +74,11 @@ def main():
                 st.markdown(
                     f"""
                     <div style="
-                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        background: linear-gradient(135deg, rgba(255,235,0,0.95), rgba(255,235,0,0.55));
                         padding: 18px 16px;
                         border-radius: 16px;
-                        color: white;
-                        box-shadow: 0 16px 32px rgba(102,126,234,0.20);
+                        color: #191919;
+                        box-shadow: 0 16px 32px rgba(17,24,39,0.10);
                     ">
                         <div style="font-weight:900; opacity:0.9;">자녀에게 아래 코드를 알려주세요</div>
                         <div style="

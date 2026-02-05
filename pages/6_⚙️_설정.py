@@ -5,6 +5,7 @@ from datetime import date
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
 from utils.characters import get_character_catalog, get_character_by_code, get_skins_for_character, get_skin_by_code
+from utils.ui import render_page_header, section_label
 
 
 def _guard_login() -> bool:
@@ -30,24 +31,25 @@ def main():
 
     user = db.get_user_by_id(user_id)
 
-    st.title("⚙️ 설정")
+    render_page_header("⚙️ 설정", "프로필/알림/보안을 관리해요.")
     tab_profile, tab_notify, tab_security = st.tabs(["👤 프로필", "🔔 알림", "🔒 보안"])
 
     with tab_profile:
-        st.subheader("프로필")
+        section_label("프로필")
         # ✅ 모바일 우선: 프로필은 세로 스택(파일 업로더가 옆에 있으면 너무 좁아짐)
-        st.write(f"- 이름: **{(user or {}).get('name', user_name)}**")
-        if username:
-            st.write(f"- 아이디: **{username}**")
-        st.write(f"- 유형: **{(user or {}).get('user_type', user_type)}**")
-        if (user or {}).get("birth_date"):
-            st.write(f"- 생년월일: **{(user or {}).get('birth_date')}**")
-        if (user or {}).get("character_code"):
-            c = get_character_by_code((user or {}).get("character_code"))
-            if c:
-                st.write(f"- 캐릭터: **{c.get('emoji','🐾')} {c.get('name')}** ({c.get('role')})")
-        st.write("- 부모 코드:")
-        st.code((user or {}).get("parent_code", ""), language=None)
+        with st.container(border=True):
+            st.write(f"- 이름: **{(user or {}).get('name', user_name)}**")
+            if username:
+                st.write(f"- 아이디: **{username}**")
+            st.write(f"- 유형: **{(user or {}).get('user_type', user_type)}**")
+            if (user or {}).get("birth_date"):
+                st.write(f"- 생년월일: **{(user or {}).get('birth_date')}**")
+            if (user or {}).get("character_code"):
+                c = get_character_by_code((user or {}).get("character_code"))
+                if c:
+                    st.write(f"- 캐릭터: **{c.get('emoji','🐾')} {c.get('name')}** ({c.get('role')})")
+            st.write("- 부모 코드:")
+            st.code((user or {}).get("parent_code", ""), language=None)
 
         st.caption("프로필 사진(임시)")
         st.file_uploader("사진 업로드", type=["png", "jpg", "jpeg"])
@@ -191,7 +193,7 @@ def main():
                 st.info("아직 해금되지 않은 스킨이에요. 레벨을 올려보세요!")
 
     with tab_notify:
-        st.subheader("알림")
+        section_label("알림")
         st.caption("알림은 `notifications` 테이블에 저장됩니다.")
 
         unread = db.get_notifications(user_id, unread_only=True, limit=20)
@@ -214,7 +216,7 @@ def main():
                     st.rerun()
 
     with tab_security:
-        st.subheader("비밀번호 변경")
+        section_label("비밀번호 변경")
         with st.form("change_password"):
             pw1 = st.text_input("새 비밀번호", type="password", placeholder="4자 이상")
             pw2 = st.text_input("새 비밀번호 확인", type="password")

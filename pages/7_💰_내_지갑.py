@@ -2,6 +2,7 @@ import streamlit as st
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+from utils.ui import render_page_header, section_label
 
 
 def _guard_child() -> bool:
@@ -25,7 +26,7 @@ def main():
     user_name = st.session_state.get("user_name", "사용자")
     render_sidebar_menu(user_id, user_name, "child")
 
-    st.title("💰 내 지갑")
+    render_page_header("💰 내 지갑", "수입/저축/지출을 한눈에 확인해요.")
     behaviors = db.get_user_behaviors(user_id, limit=5000)
 
     total_allowance = sum((b.get("amount") or 0) for b in behaviors if b.get("behavior_type") == "allowance")
@@ -37,21 +38,26 @@ def main():
     )
     balance = total_allowance - total_saving - total_spend
 
-    st.markdown(
-        f"""
-        <div style="background:var(--amf-card); border:1px solid var(--amf-border); color:var(--amf-text); border-radius:var(--amf-radius-lg); padding:18px 16px; box-shadow:var(--amf-shadow);">
-            <div style="font-weight:700; color:var(--amf-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">현재 잔액</div>
-            <div style="font-size:40px; font-weight:900; letter-spacing:-0.6px; margin-top:4px; line-height:1.05; color:var(--amf-text);">{int(balance):,}원</div>
-            <div style="margin-top:8px; color:var(--amf-muted); font-weight:600; font-size:13px;">
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            <div style="padding: 2px 2px;">
+              <div style="font-weight:900; color:var(--amf-muted); font-size:12px; letter-spacing:0.5px; text-transform:uppercase;">
+                현재 잔액
+              </div>
+              <div style="font-size:40px; font-weight:950; letter-spacing:-0.7px; margin-top:4px; line-height:1.05; color:var(--amf-text);">
+                {int(balance):,}원
+              </div>
+              <div style="margin-top:10px; color:var(--amf-muted); font-weight:700; font-size:13px; line-height:1.45;">
                 받은 용돈 {int(total_allowance):,}원 · 저축 {int(total_saving):,}원 · 지출 {int(total_spend):,}원
+              </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.divider()
-    st.subheader("최근 거래")
+    section_label("최근 거래")
     if not behaviors:
         st.caption("아직 거래 기록이 없어요.")
     else:
@@ -78,7 +84,8 @@ def main():
                     "메모": b.get("description") or "",
                 }
             )
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        with st.container(border=True):
+            st.dataframe(rows, use_container_width=True, hide_index=True)
 
     st.divider()
     # ✅ 모바일 우선: 3열 → 2열 + 단일
