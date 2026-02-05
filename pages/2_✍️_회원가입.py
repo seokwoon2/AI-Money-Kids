@@ -125,7 +125,7 @@ if not is_mobile:
                     </div>
                 </div>
                 """
-            ),
+            ).strip(),
             unsafe_allow_html=True,
         )
 
@@ -142,7 +142,7 @@ if not is_mobile:
                     </div>
                 </div>
                 """
-            ),
+            ).strip(),
             unsafe_allow_html=True,
         )
 
@@ -156,7 +156,7 @@ if not is_mobile:
                     <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 3 else '#ddd'}; font-size: 24px;">⚫</span>
                 </div>
                 """
-            ),
+            ).strip(),
             unsafe_allow_html=True,
         )
 
@@ -195,7 +195,7 @@ if not is_mobile:
                     }
                     </style>
                     """
-                ),
+                ).strip(),
                 unsafe_allow_html=True,
             )
 
@@ -228,16 +228,18 @@ if not is_mobile:
                 strength, strength_text = validate_password(password)
                 colors = ["#FF4D4F", "#FAAD14", "#52C41A"]
                 st.markdown(
-                    f"""
-                <div style="margin-top: -10px; margin-bottom: 16px;">
-                    <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-                        <div style="flex: 1; height: 4px; background: {colors[0] if strength >= 0 else '#ddd'}; border-radius: 2px;"></div>
-                        <div style="flex: 1; height: 4px; background: {colors[1] if strength >= 1 else '#ddd'}; border-radius: 2px;"></div>
-                        <div style="flex: 1; height: 4px; background: {colors[2] if strength >= 2 else '#ddd'}; border-radius: 2px;"></div>
-                    </div>
-                    <div style="font-size: 12px; color: #999;">비밀번호 강도: {strength_text}</div>
-                </div>
-                """,
+                    _dedent(
+                        f"""
+                        <div style="margin-top: -10px; margin-bottom: 16px;">
+                            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                                <div style="flex: 1; height: 4px; background: {colors[0] if strength >= 0 else '#ddd'}; border-radius: 2px;"></div>
+                                <div style="flex: 1; height: 4px; background: {colors[1] if strength >= 1 else '#ddd'}; border-radius: 2px;"></div>
+                                <div style="flex: 1; height: 4px; background: {colors[2] if strength >= 2 else '#ddd'}; border-radius: 2px;"></div>
+                            </div>
+                            <div style="font-size: 12px; color: #999;">비밀번호 강도: {strength_text}</div>
+                        </div>
+                        """
+                    ).strip(),
                     unsafe_allow_html=True,
                 )
 
