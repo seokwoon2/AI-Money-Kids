@@ -948,45 +948,8 @@ def main():
                 key_selected = f"emotion_selected_{context}"
                 if key_selected not in st.session_state:
                     st.session_state[key_selected] = None
-                
-                # 진짜 칩 UI (HTML/CSS로 구현)
-                selected_value = st.session_state.get(key_selected)
-                chip_html = '<div class="amf-chip-container">'
-                for label, value in emotion_options:
-                    is_selected = selected_value == value
-                    chip_class = "selected" if is_selected else ""
-                    chip_html += f'''
-                    <button 
-                        class="amf-chip-btn {chip_class}" 
-                        onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', value: '{value}'}}, '*');"
-                        data-value="{value}"
-                        style="{'background: var(--amf-accent); border-color: var(--amf-accent); color: white;' if is_selected else ''}"
-                    >{label}</button>
-                    '''
-                chip_html += '</div>'
-                
-                # JavaScript로 칩 선택 처리
-                st.markdown(f"""
-                <div id="emotion_chips_{context}">
-                    {chip_html}
-                </div>
-                <script>
-                    (function() {{
-                        const container = document.getElementById('emotion_chips_{context}');
-                        const buttons = container.querySelectorAll('.amf-chip-btn');
-                        buttons.forEach(btn => {{
-                            btn.addEventListener('click', function() {{
-                                const value = this.getAttribute('data-value');
-                                // Streamlit에 값 전달
-                                const event = new CustomEvent('emotion_selected', {{ detail: {{ value: value, context: '{context}' }} }});
-                                window.dispatchEvent(event);
-                            }});
-                        }});
-                    }})();
-                </script>
-                """, unsafe_allow_html=True)
-                
-                # Streamlit 버튼으로 대체 (JavaScript가 작동하지 않을 경우)
+
+                # ✅ Streamlit 네이티브 버튼만 사용 (HTML/JS 주입 금지: 태그가 화면에 노출될 수 있음)
                 cols = st.columns(5)
                 for idx, (label, value) in enumerate(emotion_options):
                     with cols[idx]:
