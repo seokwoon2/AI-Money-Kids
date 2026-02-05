@@ -1,9 +1,21 @@
 import streamlit as st
 
 from datetime import date, datetime
+from pathlib import Path
 
 from database.db_manager import DatabaseManager
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
+
+
+def _resolve_asset_path(rel_path: str) -> str:
+    """
+    pages/ 아래 파일에서 실행되더라도 assets 경로가 깨지지 않게
+    레포 루트 기준으로 한 번 더 해석합니다.
+    """
+    p = Path(rel_path)
+    if p.is_file():
+        return str(p)
+    return str((Path(__file__).resolve().parents[1] / rel_path).resolve())
 
 
 def _safe_seed_defaults(db: DatabaseManager) -> None:
@@ -843,164 +855,199 @@ def main():
         else:
             st.caption("내 캐릭터가 아직 없어요. 설정에서 선택할 수 있어요.")
 
-        # 감정 기록 - 진짜 칩 UI로 전면 개편
-        st.markdown("""
-        <style>
-            .amf-emotion-card {
+        # 감정 기록 - 리디자인(칩 + 하단 미니 CTA, 카카오뱅크 톤)
+        st.markdown('<div id="amf_emotion_dash_anchor"></div>', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <style>
+            /* scope: dashboard emotion */
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-emo-wrap{
                 background: var(--amf-card);
                 border: 1px solid var(--amf-border);
                 border-radius: var(--amf-radius-lg);
-                padding: 20px;
-                margin-bottom: 12px;
+                padding: 18px 18px 14px 18px;
                 box-shadow: var(--amf-shadow);
             }
-            .amf-emotion-greeting {
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-emo-title{
                 font-size: 15px;
-                font-weight: 700;
+                font-weight: 900;
                 color: var(--amf-text);
+                letter-spacing: -0.2px;
                 margin-bottom: 4px;
-                line-height: 1.4;
             }
-            .amf-emotion-hint {
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-emo-sub{
                 font-size: 12px;
-                color: var(--amf-muted);
-                font-weight: 500;
-                margin-bottom: 16px;
-            }
-            .amf-chip-container {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                margin-bottom: 14px;
-            }
-            .amf-chip-btn {
-                flex: 0 0 auto;
-                padding: 8px 16px;
-                border-radius: var(--amf-radius);
-                border: 1px solid var(--amf-border);
-                background: var(--amf-bg);
-                color: var(--amf-text);
                 font-weight: 600;
-                font-size: 13px;
-                cursor: pointer;
-                transition: all 0.15s ease;
-                white-space: nowrap;
-            }
-            .amf-chip-btn:hover {
-                background: var(--amf-card);
-                border-color: var(--amf-accent);
-                transform: translateY(-1px);
-            }
-            .amf-chip-btn.selected {
-                background: var(--amf-accent);
-                border-color: var(--amf-accent);
-                color: white;
-            }
-            .amf-emotion-input {
+                color: var(--amf-muted);
+                line-height: 1.45;
                 margin-bottom: 12px;
             }
-            .amf-emotion-save-mini {
+
+            /* segmented (type) */
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) div[data-testid="stSegmentedControl"]{
+                margin: 0 !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) div[data-testid="stSegmentedControl"] button{
+                height: 36px !important;
+                border-radius: 999px !important;
+                font-weight: 800 !important;
+                font-size: 13px !important;
+            }
+
+            /* chips row */
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-chiprow{
+                display:flex;
+                flex-wrap:wrap;
+                gap: 8px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-chiprow .stButton > button{
+                border-radius: 999px !important;
+                padding: 7px 12px !important;
+                font-size: 13px !important;
+                font-weight: 800 !important;
+                min-height: 34px !important;
+            }
+
+            /* memo */
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) textarea{
+                min-height: 84px !important;
+                border-radius: 14px !important;
+                border: 1px solid var(--amf-border) !important;
+                box-shadow: none !important;
+                font-size: 13px !important;
+            }
+
+            /* sticky mini cta */
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-sticky{
                 position: sticky;
-                bottom: 0;
-                background: var(--amf-card);
-                padding: 12px 0 0 0;
-                border-top: 1px solid var(--amf-border);
-                margin-top: 12px;
-                padding-top: 12px;
+                bottom: 10px;
+                margin-top: 10px;
+                padding-top: 10px;
+                background: linear-gradient(to top, rgba(246,247,249,0.95), rgba(246,247,249,0.0));
             }
-            @media (max-width: 768px) {
-                .amf-chip-container {
-                    gap: 6px;
-                }
-                .amf-chip-btn {
-                    padding: 7px 14px;
-                    font-size: 12px;
-                }
+            div[data-testid="stVerticalBlock"]:has(#amf_emotion_dash_anchor) .amf-sticky .stButton > button[kind="primary"]{
+                height: 44px !important;
+                border-radius: 14px !important;
+                font-weight: 900 !important;
+                font-size: 14px !important;
+                box-shadow: none !important;
             }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        emotion_messages = {
-            "pre_spend": "지금 뭔가 사고 싶은 게 있나요? 그 전에 기분을 한번 체크해볼까요?",
-            "post_spend": "사고 나서 기분이 어때요? 만족스러웠나요, 아니면 후회가 되나요?",
-            "daily": "오늘 하루는 어땠어요? 기분 좋은 하루였나요?"
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # 상태
+        if "emotion_type_dash" not in st.session_state:
+            st.session_state["emotion_type_dash"] = "지출 전"
+        if "emotion_selected_dash" not in st.session_state:
+            st.session_state["emotion_selected_dash"] = None
+
+        type_options = ["지출 전", "지출 후", "오늘 기분"]
+        type_to_context = {"지출 전": "pre_spend", "지출 후": "post_spend", "오늘 기분": "daily"}
+        type_to_msg = {
+            "지출 전": "지금 기분을 먼저 체크해볼까?",
+            "지출 후": "사고 나서 기분이 어때?",
+            "오늘 기분": "오늘 하루는 어땠어?",
         }
-        
-        emotion_options = [
-            ("신남 ✨", "신남"),
-            ("좋아 🙂", "좋아"),
-            ("그냥 그래 😐", "그냥 그래"),
-            ("걱정돼 😟", "걱정돼"),
-            ("화났어 😡", "화났어")
+        emotion_items = [
+            ("excited", "신남", "assets/emotions/excited.png"),
+            ("happy", "좋아", "assets/emotions/happy.png"),
+            ("neutral", "보통", "assets/emotions/neutral.png"),
+            ("worried", "걱정", "assets/emotions/worried.png"),
+            ("angry", "화남", "assets/emotions/angry.png"),
         ]
-        
-        tab_pre, tab_post, tab_daily = st.tabs(["🛑 지출 전", "🛍️ 지출 후", "🌤️ 오늘 기분"])
+        emotion_key_to_label = {k: v for (k, v, _p) in emotion_items}
 
-        def _emotion_form(context: str, message: str):
-            with st.container(border=True):
-                st.markdown(f"""
-                <div class="amf-emotion-card">
-                    <div class="amf-emotion-greeting">{message}</div>
-                    <div class="amf-emotion-hint">AI 돈 친구가 옆에서 대화 걸어주는 앱</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                key_selected = f"emotion_selected_{context}"
-                if key_selected not in st.session_state:
-                    st.session_state[key_selected] = None
-
-                # ✅ Streamlit 네이티브 버튼만 사용 (HTML/JS 주입 금지: 태그가 화면에 노출될 수 있음)
-                cols = st.columns(5)
-                for idx, (label, value) in enumerate(emotion_options):
-                    with cols[idx]:
-                        if st.button(
-                            label,
-                            key=f"emotion_chip_{context}_{idx}",
-                            use_container_width=True,
-                            type="primary" if st.session_state.get(key_selected) == value else "secondary"
-                        ):
-                            st.session_state[key_selected] = value
-                            st.rerun()
-                
-                note_key = f"emotion_note_{context}"
-                note = st.text_input(
-                    "메모 (선택)",
-                    placeholder="예: 오늘은 기분이 좋아!",
-                    key=note_key,
-                    label_visibility="collapsed"
+        with st.container(border=True):
+            picked_type = (
+                st.segmented_control(
+                    "타입",
+                    options=type_options,
+                    default=st.session_state["emotion_type_dash"],
+                    label_visibility="collapsed",
+                    key="emotion_type_dash_seg",
                 )
-                
-                # 하단 미니 저장 버튼
-                st.markdown('<div class="amf-emotion-save-mini">', unsafe_allow_html=True)
-                if st.button("💾 기록하기", key=f"emotion_save_{context}", use_container_width=True, type="primary"):
-                    selected_emotion = st.session_state.get(key_selected)
-                    if selected_emotion:
-                        try:
-                            db.create_emotion_log(
-                                user_id,
-                                context=context,
-                                emotion=selected_emotion,
-                                note=(note or "").strip() or None
-                            )
-                            if hasattr(st, "toast"):
-                                st.toast("✅ 기록했어요!", icon="😊")
-                            else:
-                                st.success("✅ 기록했어요!")
-                            st.session_state[key_selected] = None
-                            st.session_state[note_key] = ""
-                            st.rerun()
-                        except Exception:
-                            st.error("기록에 실패했어요.")
-                    else:
-                        st.warning("감정을 선택해주세요.")
-                st.markdown('</div>', unsafe_allow_html=True)
+                if hasattr(st, "segmented_control")
+                else st.radio(
+                    "타입",
+                    options=type_options,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="emotion_type_dash_radio",
+                )
+            )
+            st.session_state["emotion_type_dash"] = picked_type or st.session_state["emotion_type_dash"]
 
-        with tab_pre:
-            _emotion_form("pre_spend", emotion_messages["pre_spend"])
-        with tab_post:
-            _emotion_form("post_spend", emotion_messages["post_spend"])
-        with tab_daily:
-            _emotion_form("daily", emotion_messages["daily"])
+            st.markdown(
+                f"""
+                <div class="amf-emo-wrap">
+                  <div class="amf-emo-title">{type_to_msg.get(st.session_state["emotion_type_dash"], "지금 기분은 어때?")}</div>
+                  <div class="amf-emo-sub">짧게 남기면, AI 돈 친구가 더 잘 도와줘요.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-weight:900; font-size:14px;'>어떤 기분이었나요?</div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+            # 칩 버튼(네이티브)
+            st.markdown('<div class="amf-chiprow">', unsafe_allow_html=True)
+            cols = st.columns(5)
+            for i, (emo_key, emo_label, emo_img) in enumerate(emotion_items):
+                with cols[i]:
+                    img_path = _resolve_asset_path(emo_img)
+                    if Path(img_path).is_file():
+                        st.image(img_path, width=44)
+                    else:
+                        # 이미지가 없거나 경로가 깨졌을 때도 UI가 비지 않게 최소 표시
+                        st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
+                    if st.button(
+                        emo_label,
+                        key=f"emo_chip_dash_{i}",
+                        use_container_width=True,
+                        type="primary" if st.session_state["emotion_selected_dash"] == emo_key else "secondary",
+                    ):
+                        st.session_state["emotion_selected_dash"] = emo_key
+                        st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            memo = st.text_area(
+                "메모",
+                value=st.session_state.get("emotion_memo_dash", ""),
+                placeholder="오늘의 감정을 자유롭게 기록해보세요",
+                label_visibility="collapsed",
+                key="emotion_memo_dash",
+            )
+
+            # 하단 미니 CTA
+            st.markdown('<div class="amf-sticky">', unsafe_allow_html=True)
+            if st.button("기록하기", key="emo_save_dash", use_container_width=True, type="primary"):
+                emo = st.session_state.get("emotion_selected_dash")
+                if not emo:
+                    st.warning("감정을 먼저 선택해줘!")
+                else:
+                    try:
+                        db.create_emotion_log(
+                            user_id,
+                            context=type_to_context.get(st.session_state["emotion_type_dash"], "daily"),
+                            emotion=str(emo),
+                            note=(memo or "").strip() or None,
+                        )
+                        if hasattr(st, "toast"):
+                            st.toast("✅ 기록했어!", icon="😊")
+                        else:
+                            st.success("✅ 기록했어!")
+                        st.session_state["emotion_selected_dash"] = None
+                        st.session_state["emotion_memo_dash"] = ""
+                        st.rerun()
+                    except Exception:
+                        st.error("기록에 실패했어. 잠시 후 다시 해볼래?")
+            st.markdown("</div>", unsafe_allow_html=True)
 
         recent_emotions = []
         try:
@@ -1013,7 +1060,8 @@ def main():
                     ts = str(e.get("created_at") or "")[:16].replace("T", " ")
                     ctx = e.get("context") or ""
                     ctx_kr = {"pre_spend": "지출 전", "post_spend": "지출 후", "daily": "오늘"}.get(ctx, ctx)
-                    emo = e.get("emotion") or ""
+                    emo_key = e.get("emotion") or ""
+                    emo = emotion_key_to_label.get(str(emo_key), str(emo_key))
                     note = (e.get("note") or "").strip()
                     line = f"{emo} **{ctx_kr}** · {ts}"
                     st.markdown(line)

@@ -5,6 +5,23 @@ from utils.menu import render_sidebar_menu, hide_sidebar_navigation
 from datetime import datetime, timedelta
 import time
 from utils.money_format import format_korean_won
+from pathlib import Path
+
+
+STOP_EMOTION_ITEMS = [
+    ("excited", "신남", "assets/emotions/excited.png"),
+    ("happy", "좋아", "assets/emotions/happy.png"),
+    ("neutral", "보통", "assets/emotions/neutral.png"),
+    ("worried", "걱정", "assets/emotions/worried.png"),
+    ("angry", "화남", "assets/emotions/angry.png"),
+]
+
+
+def _resolve_asset_path(rel_path: str) -> str:
+    p = Path(rel_path)
+    if p.is_file():
+        return str(p)
+    return str((Path(__file__).resolve().parents[1] / rel_path).resolve())
 
 
 def _guard_child(db: DatabaseManager):
@@ -128,8 +145,27 @@ def main():
         st.subheader("🛑 잠깐 멈추기 (충동구매 방지)")
         st.caption("요청 보내기 전 10초만! 지금 기분과 이유를 확인해봐요.")
 
-        emotions = ["🤩", "😄", "🙂", "😐", "😟", "😡"]
-        e = st.radio("지금 기분은 어때?", options=emotions, horizontal=True, key="stop_emotion")
+        # ✅ 감정 선택: 이모지 대신 동글이 PNG(키 저장)
+        if "stop_emotion" not in st.session_state:
+            st.session_state["stop_emotion"] = None
+        st.markdown("**지금 기분은 어때?**")
+        cols = st.columns(5)
+        for i, (emo_key, emo_label, emo_img) in enumerate(STOP_EMOTION_ITEMS):
+            with cols[i]:
+                img_path = _resolve_asset_path(emo_img)
+                if Path(img_path).is_file():
+                    st.image(img_path, width=44)
+                else:
+                    st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
+                if st.button(
+                    emo_label,
+                    key=f"stop_emo_btn_{emo_key}",
+                    use_container_width=True,
+                    type="primary" if st.session_state.get("stop_emotion") == emo_key else "secondary",
+                ):
+                    st.session_state["stop_emotion"] = emo_key
+                    st.rerun()
+        e = st.session_state.get("stop_emotion")
         why = st.selectbox(
             "왜 사고 싶어?",
             ["그냥 갖고 싶어", "친구가 있어서", "스트레스/화가 나서", "배고파서/심심해서", "꼭 필요해서", "기타"],
@@ -145,7 +181,7 @@ def main():
             score += 25
         if float(amount or 0) >= 10000:
             score += 15
-        if e in ("🤩", "😡"):
+        if e in ("excited", "angry"):
             score += 20
         if why in ("스트레스/화가 나서", "배고파서/심심해서", "그냥 갖고 싶어"):
             score += 20
@@ -188,7 +224,8 @@ def main():
 
                 # 멈추기 기록 + 코인 보상
                 try:
-                    db.create_emotion_log(user_id, context="pre_spend", emotion=e, note=(note or why))
+                    if e:
+                        db.create_emotion_log(user_id, context="pre_spend", emotion=str(e), note=(note or why))
                 except Exception:
                     pass
                 try:
@@ -216,7 +253,7 @@ def main():
         with c2:
             send_disabled = float(amount or 0) > float(balance or 0)
             if st.button("👉 그래도 부모님께 요청 보내기", use_container_width=True, key="send_spend_req", disabled=send_disabled):
-                _send_request("spend", stop_used=False, risk_score=score, emotion=e, note=(note or why))
+                _send_request("spend", stop_used=False, risk_score=score, emotion=(str(e) if e else None), note=(note or why))
 
     st.divider()
     st.subheader("내 요청 히스토리")

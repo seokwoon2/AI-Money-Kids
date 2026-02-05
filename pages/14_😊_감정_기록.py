@@ -1,12 +1,24 @@
 import streamlit as st
 
+import base64
 from datetime import datetime, timedelta, date
+from pathlib import Path
+from typing import Optional
 
 from utils.menu import render_sidebar_menu, hide_sidebar_navigation
 from utils.db import get_db
 
 
-EMOTION_IMAGES = {
+EMOTION_ASSETS = {
+    "excited": "assets/emotions/excited.png",
+    "happy": "assets/emotions/happy.png",
+    "neutral": "assets/emotions/neutral.png",
+    "worried": "assets/emotions/worried.png",
+    "angry": "assets/emotions/angry.png",
+}
+
+# 로컬 파일이 없을 때만 사용하는 폴백(기존 디자인 리소스)
+EMOTION_REMOTE_FALLBACKS = {
     "excited": "https://www.genspark.ai/api/files/s/HJIiPUqW?cache_control=3600",
     "happy": "https://www.genspark.ai/api/files/s/o8zRj6rJ?cache_control=3600",
     "neutral": "https://www.genspark.ai/api/files/s/iwSejoix?cache_control=3600",
@@ -23,6 +35,25 @@ EMOTION_LABELS = {
 }
 
 TYPE_LABELS = ["지출 전", "저축", "오늘 기분"]
+
+
+def _resolve_asset_path(rel_path: str) -> Path:
+    p = Path(rel_path)
+    if p.is_file():
+        return p
+    # pages/ 아래에서 실행될 수도 있어서, 레포 루트를 기준으로 한 번 더 시도
+    return (Path(__file__).resolve().parents[1] / rel_path).resolve()
+
+
+def _try_make_png_data_uri(rel_path: str) -> Optional[str]:
+    try:
+        p = _resolve_asset_path(rel_path)
+        if not p.is_file():
+            return None
+        encoded = base64.b64encode(p.read_bytes()).decode("ascii")
+        return "data:image/png;base64," + encoded
+    except Exception:
+        return None
 
 
 def _guard_login() -> bool:
@@ -218,11 +249,11 @@ def _inject_page_css():
     }
 
     /* 감정 이미지 매핑(옵션 순서 고정) */
-    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(1) > div{ background-image: url("https://www.genspark.ai/api/files/s/HJIiPUqW?cache_control=3600"); }
-    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(2) > div{ background-image: url("https://www.genspark.ai/api/files/s/o8zRj6rJ?cache_control=3600"); }
-    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(3) > div{ background-image: url("https://www.genspark.ai/api/files/s/iwSejoix?cache_control=3600"); }
-    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(4) > div{ background-image: url("https://www.genspark.ai/api/files/s/Yvgb7hPR?cache_control=3600"); }
-    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(5) > div{ background-image: url("https://www.genspark.ai/api/files/s/56HvDG9j?cache_control=3600"); }
+    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(1) > div{ background-image: url("__URI_EXCITED__"); }
+    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(2) > div{ background-image: url("__URI_HAPPY__"); }
+    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(3) > div{ background-image: url("__URI_NEUTRAL__"); }
+    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(4) > div{ background-image: url("__URI_WORRIED__"); }
+    div[data-testid="stVerticalBlock"]:has(#amf_emotion_cards_anchor) div[role="radiogroup"] > label:nth-child(5) > div{ background-image: url("__URI_ANGRY__"); }
 
     /* 메모 입력 */
     div[data-testid="stVerticalBlock"]:has(#amf_memo_anchor) textarea{
@@ -283,6 +314,21 @@ def _inject_page_css():
         word-break: break-word;
     }
     """
+
+    # 로컬 감정 이미지 5개를 data URI로 주입(배포 환경에서도 안전)
+    excited_uri = _try_make_png_data_uri(EMOTION_ASSETS["excited"]) or EMOTION_REMOTE_FALLBACKS["excited"]
+    happy_uri = _try_make_png_data_uri(EMOTION_ASSETS["happy"]) or EMOTION_REMOTE_FALLBACKS["happy"]
+    neutral_uri = _try_make_png_data_uri(EMOTION_ASSETS["neutral"]) or EMOTION_REMOTE_FALLBACKS["neutral"]
+    worried_uri = _try_make_png_data_uri(EMOTION_ASSETS["worried"]) or EMOTION_REMOTE_FALLBACKS["worried"]
+    angry_uri = _try_make_png_data_uri(EMOTION_ASSETS["angry"]) or EMOTION_REMOTE_FALLBACKS["angry"]
+
+    css = (
+        css.replace("__URI_EXCITED__", excited_uri)
+        .replace("__URI_HAPPY__", happy_uri)
+        .replace("__URI_NEUTRAL__", neutral_uri)
+        .replace("__URI_WORRIED__", worried_uri)
+        .replace("__URI_ANGRY__", angry_uri)
+    )
     st.markdown('<div id="amf_emotion_page_anchor"></div>', unsafe_allow_html=True)
     st.markdown("<style>\n" + css + "\n</style>", unsafe_allow_html=True)
 
