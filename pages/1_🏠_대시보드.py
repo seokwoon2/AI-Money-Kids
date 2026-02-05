@@ -1127,54 +1127,65 @@ def main():
                                 pass
                             ok = db.complete_mission(int(m["id"]))
                             if ok:
-                            reward = float(m.get("reward_amount") or 0)
-                            if reward > 0:
-                                db.save_behavior_v2(
+                                reward = float(m.get("reward_amount") or 0)
+                                if reward > 0:
+                                    db.save_behavior_v2(
+                                        user_id,
+                                        "allowance",
+                                        reward,
+                                        description="미션 보상",
+                                        category="미션",
+                                    )
+                                db.create_notification(
                                     user_id,
-                                    "allowance",
-                                    reward,
-                                    description="미션 보상",
-                                    category="미션",
+                                    "미션 완료!",
+                                    f"보상 {int(reward):,}원을 받았어요.",
+                                    level="success",
                                 )
-                            db.create_notification(user_id, "미션 완료!", f"보상 {int(reward):,}원을 받았어요.", level="success")
-                            db.award_badges_if_needed(user_id)
-                            # 레벨업 보상 처리
-                            xp_after = xp_before
-                            lvl_after = lvl_before
-                            try:
-                                xp_after = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else xp_before
-                                lvl_after = max(1, xp_after // 20 + 1)
-                            except Exception:
-                                pass
-                            gained_xp = max(0, xp_after - xp_before)
-                            reward_info = {}
-                            try:
-                                reward_info = db.grant_level_rewards_if_needed(user_id) if hasattr(db, "grant_level_rewards_if_needed") else {}
-                            except Exception:
-                                reward_info = {}
-                            coins_gained = int((reward_info or {}).get("coins_gained") or 0)
-                            skins_unlocked = (reward_info or {}).get("skins_unlocked") or []
+                                db.award_badges_if_needed(user_id)
 
-                            if hasattr(st, "toast"):
-                                st.toast(f"✨ XP +{gained_xp}", icon="🧠")
+                                # 레벨업 보상 처리
+                                xp_after = xp_before
+                                lvl_after = lvl_before
+                                try:
+                                    xp_after = int(db.get_xp(user_id) or 0) if hasattr(db, "get_xp") else xp_before
+                                    lvl_after = max(1, xp_after // 20 + 1)
+                                except Exception:
+                                    pass
+
+                                gained_xp = max(0, xp_after - xp_before)
+                                reward_info = {}
+                                try:
+                                    reward_info = (
+                                        db.grant_level_rewards_if_needed(user_id)
+                                        if hasattr(db, "grant_level_rewards_if_needed")
+                                        else {}
+                                    )
+                                except Exception:
+                                    reward_info = {}
+                                coins_gained = int((reward_info or {}).get("coins_gained") or 0)
+                                skins_unlocked = (reward_info or {}).get("skins_unlocked") or []
+
+                                if hasattr(st, "toast"):
+                                    st.toast(f"✨ XP +{gained_xp}", icon="🧠")
+                                    if lvl_after > lvl_before:
+                                        st.toast(f"🎉 레벨업! Lv.{lvl_before} → Lv.{lvl_after}", icon="⬆️")
+                                    if coins_gained:
+                                        st.toast(f"🪙 코인 +{coins_gained}", icon="🪙")
+                                    if skins_unlocked:
+                                        st.toast("🎨 새 스킨이 해금됐어요!", icon="🎨")
+
                                 if lvl_after > lvl_before:
-                                    st.toast(f"🎉 레벨업! Lv.{lvl_before} → Lv.{lvl_after}", icon="⬆️")
-                                if coins_gained:
-                                    st.toast(f"🪙 코인 +{coins_gained}", icon="🪙")
-                                if skins_unlocked:
-                                    st.toast("🎨 새 스킨이 해금됐어요!", icon="🎨")
-                            if lvl_after > lvl_before:
-                                st.session_state["levelup_event"] = {
-                                    "before": lvl_before,
-                                    "after": lvl_after,
-                                    "coins_gained": coins_gained,
-                                    "skins_unlocked": skins_unlocked,
-                                }
-                            if lvl_after > lvl_before:
-                                st.balloons()
-                            st.rerun()
-                        else:
-                            st.info("이미 완료했거나 처리할 수 없어요.")
+                                    st.session_state["levelup_event"] = {
+                                        "before": lvl_before,
+                                        "after": lvl_after,
+                                        "coins_gained": coins_gained,
+                                        "skins_unlocked": skins_unlocked,
+                                    }
+                                    st.balloons()
+                                st.rerun()
+                            else:
+                                st.info("이미 완료했거나 처리할 수 없어요.")
         if st.button("📌 미션 페이지로 이동", use_container_width=True):
             st.switch_page("pages/10_✅_미션.py")
 
