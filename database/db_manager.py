@@ -333,9 +333,56 @@ class DatabaseManager:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
+            # ✅ Cloud/구버전 DB 방어: 필요한 테이블이 없으면 먼저 생성
+            # (schema.sql이 적용되지 않았거나, 초기 DB가 최소 테이블만 가진 경우)
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS mission_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parent_code TEXT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    difficulty TEXT DEFAULT 'easy',
+                    reward_amount REAL DEFAULT 0,
+                    is_active INTEGER DEFAULT 1,
+                    created_by INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS mission_assignments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    template_id INTEGER NOT NULL,
+                    cycle TEXT NOT NULL, -- daily/weekly/custom
+                    assigned_date TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'active', -- active/completed
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS badges (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    icon TEXT,
+                    required_xp INTEGER NOT NULL DEFAULT 0
+                )
+                """
+            )
+            conn.commit()
+
             # 기본 미션 템플릿(시스템 공용)
             cursor.execute("SELECT COUNT(*) as cnt FROM mission_templates")
-            if int(cursor.fetchone()["cnt"] or 0) == 0:
+            row = cursor.fetchone()
+            cnt = int((row["cnt"] if row else 0) or 0)
+            if cnt == 0:
                 templates = [
                     ("오늘은 저금통에 1,000원 저축하기", "저축 기록을 남겨요", "easy", 500),
                     ("계획 지출 1건 기록하기", "계획 소비로 지출을 계획해요", "normal", 300),
@@ -353,7 +400,9 @@ class DatabaseManager:
 
             # 기본 배지
             cursor.execute("SELECT COUNT(*) as cnt FROM badges")
-            if int(cursor.fetchone()["cnt"] or 0) == 0:
+            row = cursor.fetchone()
+            cnt = int((row["cnt"] if row else 0) or 0)
+            if cnt == 0:
                 badges = [
                     ("xp_10", "새싹 경제가", "활동을 10번 완료했어요", "🌱", 10),
                     ("xp_50", "성실한 저축가", "활동을 50번 완료했어요", "💎", 50),
