@@ -2207,9 +2207,14 @@ def login_page():
                     st.rerun()
 
             if st.button("📝 회원가입하기", key="go_signup_btn", use_container_width=True):
-                st.session_state["show_signup"] = True
-                st.session_state.current_auth_screen = "signup"
-                st.rerun()
+                # ✅ 신규 리디자인 회원가입 페이지로 이동
+                try:
+                    st.switch_page("pages/2_✍️_회원가입.py")
+                except Exception:
+                    # 폴백: 기존 app.py 내 회원가입 플로우
+                    st.session_state["show_signup"] = True
+                    st.session_state.current_auth_screen = "signup"
+                    st.rerun()
 
 
 def main_page():
