@@ -2142,6 +2142,32 @@ class DatabaseManager:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
+            # ✅ Cloud/구버전 DB 방어: goals/goal_contributions 테이블이 없으면 먼저 생성
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS goals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    target_amount REAL NOT NULL DEFAULT 0,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS goal_contributions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    goal_id INTEGER NOT NULL,
+                    amount REAL NOT NULL DEFAULT 0,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.commit()
+
             if active_only:
                 cursor.execute(
                     "SELECT * FROM goals WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC",
@@ -2161,6 +2187,19 @@ class DatabaseManager:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
+            # ✅ Cloud/구버전 DB 방어
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS goal_contributions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    goal_id INTEGER NOT NULL,
+                    amount REAL NOT NULL DEFAULT 0,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.commit()
             cursor.execute(
                 "INSERT INTO goal_contributions (goal_id, amount, note) VALUES (?, ?, ?)",
                 (goal_id, amount, note),
@@ -2174,6 +2213,19 @@ class DatabaseManager:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
+            # ✅ Cloud/구버전 DB 방어
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS goal_contributions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    goal_id INTEGER NOT NULL,
+                    amount REAL NOT NULL DEFAULT 0,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.commit()
             cursor.execute("SELECT SUM(amount) as total FROM goal_contributions WHERE goal_id = ?", (goal_id,))
             row = cursor.fetchone()
             return float(row["total"] or 0)
