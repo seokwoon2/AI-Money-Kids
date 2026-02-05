@@ -6,6 +6,7 @@ from utils.auth import hash_password
 import random
 import string
 from datetime import datetime
+from textwrap import dedent as _dedent
 
 st.set_page_config(
     page_title="회원가입 - AI Money Friends",
@@ -74,84 +75,88 @@ if not is_mobile:
     # 왼쪽: 일러스트 영역
     with col_left:
         st.markdown(
-            f"""
-        <div style="
-            background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['primary_dark']} 100%);
-            border-radius: 24px;
-            padding: 60px 40px;
-            height: 100%;
-            min-height: 600px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        ">
-            <div style="font-size: 120px; margin-bottom: 24px;">🎉</div>
-            <h2 style="color: white; font-size: 32px; font-weight: 700; margin-bottom: 16px;">
-                함께 시작해볼까요?
-            </h2>
-            <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 40px;">
-                AI Money Friends와 함께<br/>
-                금융 교육을 시작해요!
-            </p>
+            _dedent(
+                f"""
+                <div style="
+                    background: linear-gradient(135deg, {COLORS['primary']} 0%, {COLORS['primary_dark']} 100%);
+                    border-radius: 24px;
+                    padding: 60px 40px;
+                    height: 100%;
+                    min-height: 600px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                ">
+                    <div style="font-size: 120px; margin-bottom: 24px;">🎉</div>
+                    <h2 style="color: white; font-size: 32px; font-weight: 700; margin-bottom: 16px;">
+                        함께 시작해볼까요?
+                    </h2>
+                    <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 40px;">
+                        AI Money Friends와 함께<br/>
+                        금융 교육을 시작해요!
+                    </p>
 
-            <!-- 기능 뱃지 -->
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 40px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
-                    💰 돈 관리
-                </span>
-                <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
-                    🎯 저축 목표
-                </span>
-                <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
-                    😊 감정 기록
-                </span>
-                <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
-                    👨‍👩‍👧 가족 연결
-                </span>
-            </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 40px;">
+                        <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
+                            💰 돈 관리
+                        </span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
+                            🎯 저축 목표
+                        </span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
+                            😊 감정 기록
+                        </span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; color: white; font-size: 14px;">
+                            👨‍👩‍👧 가족 연결
+                        </span>
+                    </div>
 
-            <!-- 신뢰 배지 -->
-            <div style="
-                background: rgba(255,255,255,0.1);
-                backdrop-filter: blur(10px);
-                padding: 16px 24px;
-                border-radius: 16px;
-                color: white;
-                font-size: 14px;
-            ">
-                ✅ 1,000+ 가족이 함께해요
-            </div>
-        </div>
-        """,
+                    <div style="
+                        background: rgba(255,255,255,0.1);
+                        backdrop-filter: blur(10px);
+                        padding: 16px 24px;
+                        border-radius: 16px;
+                        color: white;
+                        font-size: 14px;
+                    ">
+                        ✅ 1,000+ 가족이 함께해요
+                    </div>
+                </div>
+                """
+            ),
             unsafe_allow_html=True,
         )
 
     # 오른쪽: 가입 폼
     with col_right:
         st.markdown(
-            """
-        <div style="padding: 40px 20px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-                <div style="font-size: 48px; margin-bottom: 12px;">🐷</div>
-                <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">회원가입</h1>
-                <p style="font-size: 14px; color: #999;">어린이를 위한 금융 교육 친구</p>
-            </div>
-        </div>
-        """,
+            _dedent(
+                """
+                <div style="padding: 40px 20px;">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">🐷</div>
+                        <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">회원가입</h1>
+                        <p style="font-size: 14px; color: #999;">어린이를 위한 금융 교육 친구</p>
+                    </div>
+                </div>
+                """
+            ),
             unsafe_allow_html=True,
         )
 
         # 진행 단계 표시
         st.markdown(
-            f"""
-        <div style="text-align: center; margin-bottom: 32px;">
-            <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 1 else '#ddd'}; font-size: 24px;">⚫</span>
-            <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 2 else '#ddd'}; margin: 0 8px; font-size: 24px;">⚫</span>
-            <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 3 else '#ddd'}; font-size: 24px;">⚫</span>
-        </div>
-        """,
+            _dedent(
+                f"""
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 1 else '#ddd'}; font-size: 24px;">⚫</span>
+                    <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 2 else '#ddd'}; margin: 0 8px; font-size: 24px;">⚫</span>
+                    <span style="color: {'#8B7EC8' if st.session_state.signup_step >= 3 else '#ddd'}; font-size: 24px;">⚫</span>
+                </div>
+                """
+            ),
             unsafe_allow_html=True,
         )
 
@@ -175,20 +180,22 @@ if not is_mobile:
 
             # 버튼 스타일 추가
             st.markdown(
-                """
-            <style>
-            div[data-testid="column"] > div > div > div > button {
-                height: 120px !important;
-                font-size: 18px !important;
-                font-weight: 700 !important;
-                border: 2px solid #E8E8E8 !important;
-            }
-            div[data-testid="column"] > div > div > div > button:hover {
-                border-color: #8B7EC8 !important;
-                background: #F5F3FF !important;
-            }
-            </style>
-            """,
+                _dedent(
+                    """
+                    <style>
+                    div[data-testid="column"] > div > div > div > button {
+                        height: 120px !important;
+                        font-size: 18px !important;
+                        font-weight: 700 !important;
+                        border: 2px solid #E8E8E8 !important;
+                    }
+                    div[data-testid="column"] > div > div > div > button:hover {
+                        border-color: #8B7EC8 !important;
+                        background: #F5F3FF !important;
+                    }
+                    </style>
+                    """
+                ),
                 unsafe_allow_html=True,
             )
 
